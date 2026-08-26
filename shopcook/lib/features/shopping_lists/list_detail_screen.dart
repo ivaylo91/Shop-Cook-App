@@ -54,11 +54,28 @@ class ListDetailScreen extends ConsumerWidget {
                       onChanged: (v) => ref
                           .read(shoppingListRepositoryProvider)
                           .toggleProductChecked(p.id, v ?? false),
-                      secondary: IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () => ref
-                            .read(shoppingListRepositoryProvider)
-                            .deleteProduct(p.id),
+                      secondary: PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == 'delete') {
+                            ref
+                                .read(shoppingListRepositoryProvider)
+                                .deleteProduct(p.id);
+                          } else {
+                            _moveToMeal(
+                              context,
+                              ref,
+                              p,
+                              mealsAsync.valueOrNull ?? const [],
+                            );
+                          }
+                        },
+                        itemBuilder: (context) => const [
+                          PopupMenuItem(
+                            value: 'move',
+                            child: Text('Move to meal…'),
+                          ),
+                          PopupMenuItem(value: 'delete', child: Text('Delete')),
+                        ],
                       ),
                     ),
                   )
@@ -131,6 +148,51 @@ class ListDetailScreen extends ConsumerWidget {
           .createMeal(list.id, name.trim());
     }
   }
+
+  Future<void> _moveToMeal(
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+    List<Meal> meals,
+  ) async {
+    if (meals.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Create a meal first, then move items into it.'),
+        ),
+      );
+      return;
+    }
+
+    final mealId = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(
+                'Move "${product.name}" to',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            for (final meal in meals)
+              ListTile(
+                leading: const Icon(Icons.restaurant_menu),
+                title: Text(meal.name),
+                onTap: () => Navigator.pop(context, meal.id),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (mealId != null) {
+      await ref
+          .read(shoppingListRepositoryProvider)
+          .moveProductToMeal(product.id, mealId);
+    }
+  }
 }
 
 class _MealTile extends ConsumerWidget {
@@ -141,12 +203,26 @@ class _MealTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final products =
+        ref.watch(_mealProductsProvider(meal.id)).valueOrNull ?? const [];
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: ListTile(
         leading: const Icon(Icons.restaurant_menu),
         title: Text(meal.name),
-        trailing: const Icon(Icons.chevron_right),
+        subtitle: Text(_ingredientSummary(products)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete meal',
+              onPressed: () => _confirmDelete(context, ref),
+            ),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
         onTap: () => context.push(
           '/list/${list.id}/meal/${meal.id}',
           extra: meal,
@@ -154,10 +230,49 @@ class _MealTile extends ConsumerWidget {
       ),
     );
   }
+
+  String _ingredientSummary(List<Product> products) {
+    if (products.isEmpty) return 'No ingredients yet';
+    final checked = products.where((p) => p.isChecked).length;
+    final noun = products.length == 1 ? 'ingredient' : 'ingredients';
+    return '${products.length} $noun · $checked checked';
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete "${meal.name}"?'),
+        content: const Text(
+          'Its ingredients and attached recipe will be deleted too.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed ?? false) {
+      await ref.read(shoppingListRepositoryProvider).deleteMeal(meal.id);
+    }
+  }
 }
 
 final _mealsProvider = StreamProvider.family<List<Meal>, String>((ref, listId) {
   return ref.watch(shoppingListRepositoryProvider).watchMeals(listId);
+});
+
+final _mealProductsProvider = StreamProvider.family<List<Product>, String>((
+  ref,
+  mealId,
+) {
+  return ref.watch(shoppingListRepositoryProvider).watchProductsForMeal(mealId);
 });
 
 final _unassignedProductsProvider =

@@ -43,6 +43,10 @@ class ShoppingListRepository {
   Stream<List<Product>> watchUnassignedProducts(String listId) =>
       _db.watchUnassignedProducts(listId);
 
+  /// Every product in the list, whether or not it belongs to a meal.
+  Stream<List<Product>> watchAllProducts(String listId) =>
+      _db.watchProductsForList(listId);
+
   Stream<List<Product>> watchProductsForMeal(String mealId) =>
       _db.watchProductsForMeal(mealId);
 
@@ -68,6 +72,9 @@ class ShoppingListRepository {
 
   Future<void> toggleProductChecked(String id, bool value) =>
       _db.toggleChecked(id, value);
+
+  Future<void> moveProductToMeal(String productId, String? mealId) =>
+      _db.setProductMeal(productId, mealId);
 
   Future<void> deleteProduct(String id) => _db.deleteProduct(id);
 }

@@ -42,6 +42,7 @@ class ListsScreen extends ConsumerWidget {
                 child: ListTile(
                   leading: const Icon(Icons.list_alt),
                   title: Text(list.name),
+                  subtitle: _ListProgress(listId: list.id),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/list/${list.id}', extra: list),
                 ),
@@ -87,6 +88,30 @@ class ListsScreen extends ConsumerWidget {
   }
 }
 
+/// Shopping progress for one list, e.g. "2 of 5 checked".
+class _ListProgress extends ConsumerWidget {
+  final String listId;
+
+  const _ListProgress({required this.listId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final products =
+        ref.watch(_listProductsProvider(listId)).valueOrNull ?? const [];
+    if (products.isEmpty) return const Text('Empty');
+
+    final checked = products.where((p) => p.isChecked).length;
+    return Text('$checked of ${products.length} checked');
+  }
+}
+
 final _listsStreamProvider = StreamProvider<List<ShoppingList>>((ref) {
   return ref.watch(shoppingListRepositoryProvider).watchLists();
+});
+
+final _listProductsProvider = StreamProvider.family<List<Product>, String>((
+  ref,
+  listId,
+) {
+  return ref.watch(shoppingListRepositoryProvider).watchAllProducts(listId);
 });

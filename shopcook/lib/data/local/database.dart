@@ -70,6 +70,17 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 1;
 
+  /// SQLite disables foreign keys per connection by default, which silently
+  /// makes every `onDelete: KeyAction.cascade` above a no-op — deleting a list
+  /// or meal would leave its products and recipes behind as unreachable rows
+  /// that still count toward the shopping progress. Turn them on at open.
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+    },
+  );
+
   // ShoppingLists
   Stream<List<ShoppingList>> watchLists() =>
       (select(shoppingLists)
@@ -111,11 +122,14 @@ class AppDatabase extends _$AppDatabase {
   Future<void> insertProduct(ProductsCompanion entry) =>
       into(products).insert(entry);
 
-  Future<void> updateProduct(ProductsCompanion entry) =>
-      update(products).replace(entry);
-
   Future<void> deleteProduct(String id) =>
       (delete(products)..where((t) => t.id.equals(id))).go();
+
+  /// Moves a product into [mealId], or back onto the list itself when null.
+  Future<void> setProductMeal(String id, String? mealId) =>
+      (update(products)..where((t) => t.id.equals(id))).write(
+        ProductsCompanion(mealId: Value(mealId)),
+      );
 
   Future<void> toggleChecked(String id, bool value) =>
       (update(products)..where((t) => t.id.equals(id))).write(
