@@ -33,6 +33,28 @@ flutter config --jdk-dir="/path/to/jdk-17"
 
 iOS platform files are generated (`ios/`), but building/running the iOS target requires Xcode on macOS — not possible from this Linux machine. Open the project in Xcode on a Mac to build for iOS.
 
+## Accounts
+
+Signing in is required: the app opens on the login screen and nothing is
+reachable until you have a session. Auth is Supabase email/password; the
+session is persisted locally, so a returning user is not pushed back to
+login just for being offline.
+
+**Data is still local to the device.** Signing in establishes identity but
+does not sync anything yet — see "Not built yet" below.
+
+### Testing sign-up
+
+This project has **email confirmation enabled**, so `signUp` creates the user
+but withholds a session until the link is clicked; the app shows a "check
+your inbox" notice for that case. The project also uses Supabase's built-in
+SMTP, which is rate-limited and not intended for production — expect
+`email rate limit exceeded` after a handful of sign-ups.
+
+For frictionless local testing, turn off **Authentication → Sign In / Up →
+Confirm email** in the Supabase dashboard. For real use, configure custom
+SMTP.
+
 ## Importing ingredients from a recipe
 
 Attach a recipe link to a meal, then tap the import icon on the recipe card.
@@ -67,7 +89,14 @@ Until then, the recipe search screen still works end-to-end via **"Attach a link
 - Project ref: `wqidsbhicyfufncxyqww`
 - URL and publishable key are in `lib/core/supabase_config.dart` (the publishable key is safe to ship client-side).
 
-## Out of scope for v1
+## Not built yet
 
-- User accounts and cross-device sync (data is local to the device only).
-- Publishing/store builds.
+- **Cloud sync.** Lists live only on the device. Two consequences worth
+  knowing while this is true:
+  - Signing in on a second phone shows an empty app.
+  - Local data is not scoped per user, so if two people sign in on the same
+    device they see the same lists.
+- **Offline lockout.** Because signing in is required, a session that
+  expires while offline leaves the app unreachable until there is a
+  connection. Persisted sessions make this rare, not impossible.
+- Publishing/store builds (the release APK is signed with the debug key).

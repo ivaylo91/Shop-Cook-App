@@ -4,8 +4,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/local/database.dart';
 import '../data/remote/recipe_import_api.dart';
 import '../data/remote/recipe_search_api.dart';
+import '../data/repositories/auth_repository.dart';
 import '../data/repositories/recipe_repository.dart';
 import '../data/repositories/shopping_list_repository.dart';
+
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepository(Supabase.instance.client);
+});
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();

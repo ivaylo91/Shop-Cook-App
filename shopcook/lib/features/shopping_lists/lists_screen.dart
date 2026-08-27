@@ -14,7 +14,19 @@ class ListsScreen extends ConsumerWidget {
     final listsAsync = ref.watch(_listsStreamProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('ShopCook')),
+      appBar: AppBar(
+        title: const Text('ShopCook'),
+        actions: [
+          IconButton(
+            icon: const FaIcon(
+              FontAwesomeIcons.rightFromBracket,
+              size: 18,
+            ),
+            tooltip: 'Sign out',
+            onPressed: () => _confirmSignOut(context, ref),
+          ),
+        ],
+      ),
       body: listsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -57,6 +69,38 @@ class ListsScreen extends ConsumerWidget {
         child: const FaIcon(FontAwesomeIcons.plus, size: 18),
       ),
     );
+  }
+
+  Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
+    final email = ref.read(authRepositoryProvider).currentUser?.email;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: Text(
+          email == null
+              ? 'You will need to sign in again to get back in.'
+              : 'You are signed in as $email. You will need to sign in '
+                    'again to get back in.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed ?? false) {
+      await ref.read(authRepositoryProvider).signOut();
+      // The router redirect takes it from here.
+    }
   }
 
   Future<void> _createList(BuildContext context, WidgetRef ref) async {
