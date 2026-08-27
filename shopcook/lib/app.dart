@@ -6,6 +6,7 @@ import 'data/local/database.dart';
 import 'features/meals/meal_detail_screen.dart';
 import 'features/recipes/recipe_search_screen.dart';
 import 'features/recipes/recipe_view_screen.dart';
+import 'features/shopping/shopping_mode_screen.dart';
 import 'features/shopping_lists/list_detail_screen.dart';
 import 'features/shopping_lists/lists_screen.dart';
 
@@ -16,6 +17,11 @@ final _router = GoRouter(
       path: '/list/:listId',
       builder: (context, state) =>
           ListDetailScreen(list: state.extra as ShoppingList),
+    ),
+    GoRoute(
+      path: '/list/:listId/shop',
+      builder: (context, state) =>
+          ShoppingModeScreen(list: state.extra as ShoppingList),
     ),
     GoRoute(
       path: '/list/:listId/meal/:mealId',

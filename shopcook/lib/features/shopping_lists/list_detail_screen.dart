@@ -17,7 +17,16 @@ class ListDetailScreen extends ConsumerWidget {
     final unassignedAsync = ref.watch(_unassignedProductsProvider(list.id));
 
     return Scaffold(
-      appBar: AppBar(title: Text(list.name)),
+      appBar: AppBar(
+        title: Text(list.name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart_outlined),
+            tooltip: 'Shopping mode',
+            onPressed: () => context.push('/list/${list.id}/shop', extra: list),
+          ),
+        ],
+      ),
       body: ListView(
         children: [
           mealsAsync.when(
