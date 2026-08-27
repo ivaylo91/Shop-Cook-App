@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
+import '../../core/brand/shopcook_logo.dart';
 import '../../core/design.dart';
 
 /// Shared frame for the sign in and register screens, so the two feel like
@@ -59,18 +58,7 @@ class _Brand extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(Insets.md),
-          decoration: BoxDecoration(
-            color: AppColors.accent.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(Radii.chip),
-          ),
-          child: const FaIcon(
-            FontAwesomeIcons.basketShopping,
-            size: 20,
-            color: AppColors.accent,
-          ),
-        ),
+        const ShopCookLogoBadge(size: 52),
         const SizedBox(width: Insets.md),
         Text('ShopCook', style: AppText.title),
       ],
