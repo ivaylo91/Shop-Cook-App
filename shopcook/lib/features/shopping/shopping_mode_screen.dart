@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/design.dart';
 import '../../core/providers.dart';
@@ -51,7 +52,7 @@ class ShoppingModeScreen extends ConsumerWidget {
                 if (picked.isNotEmpty) ...[
                   const SizedBox(height: Insets.xl),
                   _SectionLabel(
-                    icon: Icons.shopping_basket_outlined,
+                    icon: FontAwesomeIcons.basketShopping,
                     label: 'In the basket',
                     count: picked.length,
                     color: AppColors.inkMuted,
@@ -214,9 +215,9 @@ class _DonePeak extends StatelessWidget {
                 color: AppColors.accent.withValues(alpha: 0.14),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.check_rounded,
-                size: 36,
+              child: const FaIcon(
+                FontAwesomeIcons.check,
+                size: 32,
                 color: AppColors.accent,
               ),
             ),
@@ -419,7 +420,7 @@ class _CheckDot extends StatelessWidget {
             ),
           ),
           child: checked
-              ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+              ? const FaIcon(FontAwesomeIcons.check, size: 13, color: Colors.white)
               : null,
         ),
       ),
@@ -445,9 +446,9 @@ class _EmptyState extends StatelessWidget {
                 color: AppColors.accent.withValues(alpha: 0.10),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.shopping_cart_outlined,
-                size: 40,
+              child: const FaIcon(
+                FontAwesomeIcons.cartShopping,
+                size: 36,
                 color: AppColors.accent,
               ),
             ),
@@ -463,7 +464,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: Insets.xl),
             FilledButton.icon(
               onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.add),
+              icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
               label: const Text('Add ingredients'),
             ),
           ],

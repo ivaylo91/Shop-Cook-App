@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/providers.dart';
 import '../../data/local/database.dart';
@@ -109,14 +110,14 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
                     controller: _controller,
                     decoration: const InputDecoration(
                       hintText: 'Search YouTube & the web',
-                      prefixIcon: Icon(Icons.search),
+                      prefixIcon: Icon(FontAwesomeIcons.magnifyingGlass, size: 16),
                       border: OutlineInputBorder(),
                     ),
                     onSubmitted: _runSearch,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.link),
+                  icon: const FaIcon(FontAwesomeIcons.link, size: 18),
                   tooltip: 'Attach a link manually',
                   onPressed: _attachManualLink,
                 ),
@@ -145,7 +146,7 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: _attachManualLink,
-              icon: const Icon(Icons.link),
+              icon: const FaIcon(FontAwesomeIcons.link, size: 18),
               label: const Text('Attach a link manually instead'),
             ),
           ],
@@ -160,8 +161,8 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
           leading: r.thumbnailUrl.isEmpty
               ? Icon(
                   r.type == RecipeResultType.video
-                      ? Icons.play_circle_outline
-                      : Icons.article_outlined,
+                      ? FontAwesomeIcons.play
+                      : FontAwesomeIcons.fileLines,
                 )
               : Image.network(
                   r.thumbnailUrl,
@@ -169,7 +170,7 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
                   height: 64,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.broken_image_outlined),
+                      const FaIcon(FontAwesomeIcons.image, size: 18),
                 ),
           title: Text(r.title),
           subtitle: Text(r.source),

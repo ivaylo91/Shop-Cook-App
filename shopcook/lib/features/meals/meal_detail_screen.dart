@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/providers.dart';
 import '../../data/local/database.dart';
@@ -48,7 +49,7 @@ class MealDetailScreen extends ConsumerWidget {
                             .read(shoppingListRepositoryProvider)
                             .toggleProductChecked(p.id, v ?? false),
                         secondary: IconButton(
-                          icon: const Icon(Icons.delete_outline),
+                          icon: const FaIcon(FontAwesomeIcons.trashCan, size: 16),
                           onPressed: () => ref
                               .read(shoppingListRepositoryProvider)
                               .deleteProduct(p.id),
@@ -84,8 +85,8 @@ class MealDetailScreen extends ConsumerWidget {
                         child: ListTile(
                           leading: Icon(
                             r.sourceType == RecipeSourceType.video
-                                ? Icons.play_circle_outline
-                                : Icons.article_outlined,
+                                ? FontAwesomeIcons.play
+                                : FontAwesomeIcons.fileLines,
                           ),
                           title: Text(r.title),
                           subtitle: Text(
@@ -94,7 +95,7 @@ class MealDetailScreen extends ConsumerWidget {
                                 : 'Web',
                           ),
                           trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
+                            icon: const FaIcon(FontAwesomeIcons.trashCan, size: 16),
                             onPressed: () => ref
                                 .read(recipeRepositoryProvider)
                                 .deleteRecipe(r.id),
@@ -120,7 +121,7 @@ class MealDetailScreen extends ConsumerWidget {
               '/list/$listId/meal/${meal.id}/search',
               extra: meal,
             ),
-            icon: const Icon(Icons.search),
+            icon: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 16),
             label: const Text('Find recipe'),
           ),
           const SizedBox(width: 12),
@@ -140,7 +141,7 @@ class MealDetailScreen extends ConsumerWidget {
                     );
               }
             },
-            icon: const Icon(Icons.add),
+            icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
             label: const Text('Ingredient'),
           ),
         ],

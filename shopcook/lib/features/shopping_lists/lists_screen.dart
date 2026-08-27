@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/providers.dart';
 import '../../data/local/database.dart';
@@ -34,16 +35,16 @@ class ListsScreen extends ConsumerWidget {
                   color: Theme.of(context).colorScheme.errorContainer,
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: const Icon(Icons.delete_outline),
+                  child: const FaIcon(FontAwesomeIcons.trashCan, size: 18),
                 ),
                 onDismissed: (_) => ref
                     .read(shoppingListRepositoryProvider)
                     .deleteList(list.id),
                 child: ListTile(
-                  leading: const Icon(Icons.list_alt),
+                  leading: const FaIcon(FontAwesomeIcons.rectangleList, size: 20),
                   title: Text(list.name),
                   subtitle: _ListProgress(listId: list.id),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: const FaIcon(FontAwesomeIcons.chevronRight, size: 14),
                   onTap: () => context.push('/list/${list.id}', extra: list),
                 ),
               );
@@ -53,7 +54,7 @@ class ListsScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _createList(context, ref),
-        child: const Icon(Icons.add),
+        child: const FaIcon(FontAwesomeIcons.plus, size: 18),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/providers.dart';
 import '../../data/local/database.dart';
@@ -21,7 +22,7 @@ class ListDetailScreen extends ConsumerWidget {
         title: Text(list.name),
         actions: [
           IconButton(
-            icon: const Icon(Icons.shopping_cart_outlined),
+            icon: const FaIcon(FontAwesomeIcons.cartShopping, size: 18),
             tooltip: 'Shopping mode',
             onPressed: () => context.push('/list/${list.id}/shop', extra: list),
           ),
@@ -64,6 +65,10 @@ class ListDetailScreen extends ConsumerWidget {
                           .read(shoppingListRepositoryProvider)
                           .toggleProductChecked(p.id, v ?? false),
                       secondary: PopupMenuButton<String>(
+                        icon: const FaIcon(
+                          FontAwesomeIcons.ellipsisVertical,
+                          size: 16,
+                        ),
                         onSelected: (value) {
                           if (value == 'delete') {
                             ref
@@ -100,7 +105,7 @@ class ListDetailScreen extends ConsumerWidget {
           FloatingActionButton.extended(
             heroTag: 'add-meal',
             onPressed: () => _createMeal(context, ref),
-            icon: const Icon(Icons.restaurant_menu),
+            icon: const FaIcon(FontAwesomeIcons.utensils, size: 16),
             label: const Text('Meal'),
           ),
           const SizedBox(width: 12),
@@ -119,7 +124,7 @@ class ListDetailScreen extends ConsumerWidget {
                     );
               }
             },
-            icon: const Icon(Icons.add_shopping_cart),
+            icon: const FaIcon(FontAwesomeIcons.cartPlus, size: 16),
             label: const Text('Item'),
           ),
         ],
@@ -187,7 +192,7 @@ class ListDetailScreen extends ConsumerWidget {
             ),
             for (final meal in meals)
               ListTile(
-                leading: const Icon(Icons.restaurant_menu),
+                leading: const FaIcon(FontAwesomeIcons.utensils, size: 18),
                 title: Text(meal.name),
                 onTap: () => Navigator.pop(context, meal.id),
               ),
@@ -218,18 +223,18 @@ class _MealTile extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: ListTile(
-        leading: const Icon(Icons.restaurant_menu),
+        leading: const FaIcon(FontAwesomeIcons.utensils, size: 18),
         title: Text(meal.name),
         subtitle: Text(_ingredientSummary(products)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.delete_outline),
+              icon: const FaIcon(FontAwesomeIcons.trashCan, size: 16),
               tooltip: 'Delete meal',
               onPressed: () => _confirmDelete(context, ref),
             ),
-            const Icon(Icons.chevron_right),
+            const FaIcon(FontAwesomeIcons.chevronRight, size: 14),
           ],
         ),
         onTap: () => context.push(

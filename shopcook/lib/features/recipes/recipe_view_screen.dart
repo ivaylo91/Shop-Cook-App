@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../data/local/database.dart';
 
@@ -49,7 +50,7 @@ class _RecipeViewScreenState extends State<RecipeViewScreen> {
         title: Text(widget.recipe.title),
         actions: [
           IconButton(
-            icon: const Icon(Icons.open_in_browser),
+            icon: const FaIcon(FontAwesomeIcons.arrowUpRightFromSquare, size: 18),
             tooltip: 'Open externally',
             onPressed: () => launchUrl(
               Uri.parse(widget.recipe.sourceUrl),

@@ -1,16 +1,17 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 /// Aisles in the rough order you walk a supermarket.
 enum ProductCategory {
-  produce('Produce', Icons.eco_outlined),
-  bakery('Bakery', Icons.bakery_dining_outlined),
-  meatAndFish('Meat & fish', Icons.set_meal_outlined),
-  dairyAndEggs('Dairy & eggs', Icons.egg_outlined),
-  frozen('Frozen', Icons.ac_unit),
-  pantry('Pantry', Icons.kitchen_outlined),
-  drinks('Drinks', Icons.local_cafe_outlined),
-  household('Household', Icons.cleaning_services_outlined),
-  other('Other', Icons.shopping_basket_outlined);
+  produce('Produce', FontAwesomeIcons.carrot),
+  bakery('Bakery', FontAwesomeIcons.breadSlice),
+  meatAndFish('Meat & fish', FontAwesomeIcons.drumstickBite),
+  dairyAndEggs('Dairy & eggs', FontAwesomeIcons.egg),
+  frozen('Frozen', FontAwesomeIcons.snowflake),
+  pantry('Pantry', FontAwesomeIcons.jar),
+  drinks('Drinks', FontAwesomeIcons.mugHot),
+  household('Household', FontAwesomeIcons.soap),
+  other('Other', FontAwesomeIcons.basketShopping);
 
   const ProductCategory(this.label, this.icon);
 

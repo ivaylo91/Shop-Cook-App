@@ -5,6 +5,9 @@ ThemeData buildAppTheme() {
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
+    // Set once here so every Text inherits it; the tokens in design.dart
+    // deliberately leave fontFamily unset and merge over this.
+    fontFamily: 'Figtree',
     appBarTheme: AppBarTheme(
       backgroundColor: scheme.surface,
       foregroundColor: scheme.onSurface,
