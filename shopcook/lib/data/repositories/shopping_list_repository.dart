@@ -70,6 +70,28 @@ class ShoppingListRepository {
     );
   }
 
+  /// Adds several products at once, as when importing a recipe.
+  Future<void> addProducts({
+    required String listId,
+    String? mealId,
+    required List<({String name, String quantity, String unit})> items,
+  }) {
+    final now = DateTime.now();
+    return _db.insertProducts([
+      for (final (index, item) in items.indexed)
+        ProductsCompanion.insert(
+          id: _uuid.v4(),
+          listId: listId,
+          mealId: Value(mealId),
+          name: item.name,
+          quantity: Value(item.quantity),
+          unit: Value(item.unit),
+          // Nudge each timestamp so the list keeps the recipe's own order.
+          createdAt: now.add(Duration(milliseconds: index)),
+        ),
+    ]);
+  }
+
   Future<void> toggleProductChecked(String id, bool value) =>
       _db.toggleChecked(id, value);
 

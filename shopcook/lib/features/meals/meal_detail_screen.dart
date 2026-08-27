@@ -6,6 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/providers.dart';
 import '../../data/local/database.dart';
 import '../products/add_product_dialog.dart';
+import '../recipes/import_ingredients_sheet.dart';
 
 class MealDetailScreen extends ConsumerWidget {
   final String listId;
@@ -94,11 +95,33 @@ class MealDetailScreen extends ConsumerWidget {
                                 ? 'YouTube'
                                 : 'Web',
                           ),
-                          trailing: IconButton(
-                            icon: const FaIcon(FontAwesomeIcons.trashCan, size: 16),
-                            onPressed: () => ref
-                                .read(recipeRepositoryProvider)
-                                .deleteRecipe(r.id),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const FaIcon(
+                                  FontAwesomeIcons.fileImport,
+                                  size: 16,
+                                ),
+                                tooltip: 'Import ingredients',
+                                onPressed: () => importIngredients(
+                                  context,
+                                  ref,
+                                  recipeUrl: r.sourceUrl,
+                                  listId: listId,
+                                  mealId: meal.id,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const FaIcon(
+                                  FontAwesomeIcons.trashCan,
+                                  size: 16,
+                                ),
+                                onPressed: () => ref
+                                    .read(recipeRepositoryProvider)
+                                    .deleteRecipe(r.id),
+                              ),
+                            ],
                           ),
                           onTap: () =>
                               context.push('/recipe', extra: r),

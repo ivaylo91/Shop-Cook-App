@@ -42,8 +42,9 @@ const Map<ProductCategory, List<String>> _keywords = {
   ProductCategory.frozen: ['frozen', 'ice cream'],
   ProductCategory.pantry: [
     'bean', 'black pepper', 'cereal', 'flour', 'honey', 'jam', 'lentil',
-    'noodle', 'oat', 'oil', 'pasta', 'peanut butter', 'rice', 'salt', 'sauce',
-    'spaghetti', 'spice', 'stock', 'sugar', 'tomato paste', 'vinegar',
+    'noodle', 'oat', 'oil', 'pasta', 'peanut butter', 'puree', 'purée',
+    'rice', 'salt', 'sauce', 'spaghetti', 'spice', 'stock', 'sugar',
+    'tomato paste', 'vinegar',
   ],
   ProductCategory.drinks: [
     'beer', 'coffee', 'cola', 'juice', 'soda', 'tea', 'water', 'wine',

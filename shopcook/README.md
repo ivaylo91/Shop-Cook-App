@@ -33,6 +33,26 @@ flutter config --jdk-dir="/path/to/jdk-17"
 
 iOS platform files are generated (`ios/`), but building/running the iOS target requires Xcode on macOS — not possible from this Linux machine. Open the project in Xcode on a Mac to build for iOS.
 
+## Importing ingredients from a recipe
+
+Attach a recipe link to a meal, then tap the import icon on the recipe card.
+The `import-recipe` Edge Function fetches the page and reads the
+`schema.org/Recipe` JSON-LD that most recipe sites publish for Google; the app
+splits each line into a name, quantity and unit and lets you pick what to add.
+
+**This needs no API keys** — it works as soon as you have a recipe URL.
+
+Two limits worth knowing:
+
+- Some large sites (AllRecipes, Serious Eats, Simply Recipes) block
+  server-side fetches and return 403. BBC Good Food, Budget Bytes, Jamie
+  Oliver and RecipeTin Eats all work.
+- YouTube has no structured ingredient data, so videos cannot be imported —
+  only web recipes.
+
+The function refuses non-public addresses (localhost, private ranges,
+link-local) so it cannot be used to reach private infrastructure.
+
 ## Enabling live recipe search
 
 The `search-recipes` Edge Function is deployed, but returns empty results until its API keys are configured. Add these as secrets on the Supabase project (Project Settings → Edge Functions → Secrets, or `supabase secrets set KEY=value` via the Supabase CLI):

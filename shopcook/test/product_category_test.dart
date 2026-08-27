@@ -33,6 +33,12 @@ void main() {
       expect(categorize('Frozen Peas'), ProductCategory.frozen);
     });
 
+    test('files tomato products by what they actually are', () {
+      expect(categorize('Tomato purée'), ProductCategory.pantry);
+      expect(categorize('Tomato paste'), ProductCategory.pantry);
+      expect(categorize('Cherry tomatoes'), ProductCategory.produce);
+    });
+
     test('keeps related products apart', () {
       expect(categorize('Sour Cream'), ProductCategory.dairyAndEggs);
       expect(categorize('Red Bell Pepper'), ProductCategory.produce);

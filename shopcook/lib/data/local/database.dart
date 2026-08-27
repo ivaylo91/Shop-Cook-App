@@ -122,6 +122,10 @@ class AppDatabase extends _$AppDatabase {
   Future<void> insertProduct(ProductsCompanion entry) =>
       into(products).insert(entry);
 
+  /// One transaction for a whole recipe's worth of ingredients.
+  Future<void> insertProducts(List<ProductsCompanion> entries) =>
+      batch((b) => b.insertAll(products, entries));
+
   Future<void> deleteProduct(String id) =>
       (delete(products)..where((t) => t.id.equals(id))).go();
 
