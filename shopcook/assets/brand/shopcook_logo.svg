@@ -1,0 +1,26 @@
+<!--
+  ShopCook mark: a shopping basket with steam rising from it.
+
+  Geometry mirrors lib/core/brand/shopcook_logo.dart exactly, in the same
+  100x100 box. This file is the source for the launcher icons; the Dart
+  painter is what the app draws at runtime. Change both together.
+
+  The weave slots are holes in the basket path (fill-rule="evenodd") rather
+  than a <mask>, so the mark works on any background and survives
+  rasterisers that handle masks poorly.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <g fill="none" stroke="CURRENT" stroke-width="8" stroke-linecap="round" opacity="STEAM">
+    <path d="M38,42 C29,33 47,27 38,16"/>
+    <path d="M62,42 C53,33 71,27 62,16"/>
+  </g>
+
+  <rect x="14" y="44" width="72" height="11" rx="5.5" fill="CURRENT"/>
+
+  <path fill="CURRENT" fill-rule="evenodd"
+        d="M20,60 L80,60 L72,79 Q70,86 63,86 L37,86 Q30,86 28,79 Z
+           M40.5,64 H41.5 A3,3 0 0 1 44.5,67 V76 A3,3 0 0 1 41.5,79
+             H40.5 A3,3 0 0 1 37.5,76 V67 A3,3 0 0 1 40.5,64 Z
+           M58.5,64 H59.5 A3,3 0 0 1 62.5,67 V76 A3,3 0 0 1 59.5,79
+             H58.5 A3,3 0 0 1 55.5,76 V67 A3,3 0 0 1 58.5,64 Z"/>
+</svg>

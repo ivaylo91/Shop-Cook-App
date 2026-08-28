@@ -1,7 +1,7 @@
 name: shopcook
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.2.1+3
+version: 0.2.2+4
 
 environment:
   sdk: ^3.9.2
@@ -26,6 +26,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.4
   flutter_lints: ^5.0.0
   drift_dev: ^2.22.1
   build_runner: ^2.4.13
@@ -44,3 +45,13 @@ flutter:
           weight: 600
         - asset: assets/fonts/Figtree-Bold.ttf
           weight: 700
+
+# Generates the Android launcher icons from the brand assets. Regenerate
+# with: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/brand/icon.png
+  adaptive_icon_background: "#2E7D32"
+  adaptive_icon_foreground: assets/brand/icon_foreground.png
+  remove_alpha_ios: true
