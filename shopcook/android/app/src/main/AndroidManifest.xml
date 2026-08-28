@@ -1,6 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for Supabase auth, recipe search and recipe import.
+         Flutter only declares this in the debug and profile manifests, so
+         without it here release builds have no network access at all and
+         every request fails silently. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
-        android:label="shopcook"
+        android:label="ShopCook"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
