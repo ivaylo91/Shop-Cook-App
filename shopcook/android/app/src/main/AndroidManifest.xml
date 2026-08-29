@@ -5,6 +5,16 @@
          every request fails silently. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- Android 11+ hides other installed apps unless declared here. Needed
+         so "Find recipes" can hand its search URL to the YouTube or TikTok
+         app rather than always falling back to a browser. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+    </queries>
+
     <application
         android:label="ShopCook"
         android:name="${applicationName}"
