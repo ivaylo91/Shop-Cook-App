@@ -70,20 +70,30 @@ class ListDetailScreen extends ConsumerWidget {
                           size: 16,
                         ),
                         onSelected: (value) {
-                          if (value == 'delete') {
-                            ref
-                                .read(shoppingListRepositoryProvider)
-                                .deleteProduct(p.id);
-                          } else {
-                            _moveToMeal(
-                              context,
-                              ref,
-                              p,
-                              mealsAsync.valueOrNull ?? const [],
-                            );
+                          switch (value) {
+                            case 'delete':
+                              ref
+                                  .read(shoppingListRepositoryProvider)
+                                  .deleteProduct(p.id);
+                            case 'recipes':
+                              context.push(
+                                '/ingredient-recipes',
+                                extra: (product: p, mealName: null),
+                              );
+                            case _:
+                              _moveToMeal(
+                                context,
+                                ref,
+                                p,
+                                mealsAsync.valueOrNull ?? const [],
+                              );
                           }
                         },
                         itemBuilder: (context) => const [
+                          PopupMenuItem(
+                            value: 'recipes',
+                            child: Text('Find recipes…'),
+                          ),
                           PopupMenuItem(
                             value: 'move',
                             child: Text('Move to meal…'),

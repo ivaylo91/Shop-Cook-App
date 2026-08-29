@@ -49,11 +49,33 @@ class MealDetailScreen extends ConsumerWidget {
                         onChanged: (v) => ref
                             .read(shoppingListRepositoryProvider)
                             .toggleProductChecked(p.id, v ?? false),
-                        secondary: IconButton(
-                          icon: const FaIcon(FontAwesomeIcons.trashCan, size: 16),
-                          onPressed: () => ref
-                              .read(shoppingListRepositoryProvider)
-                              .deleteProduct(p.id),
+                        secondary: PopupMenuButton<String>(
+                          icon: const FaIcon(
+                            FontAwesomeIcons.ellipsisVertical,
+                            size: 16,
+                          ),
+                          onSelected: (value) {
+                            if (value == 'delete') {
+                              ref
+                                  .read(shoppingListRepositoryProvider)
+                                  .deleteProduct(p.id);
+                            } else {
+                              context.push(
+                                '/ingredient-recipes',
+                                extra: (product: p, mealName: meal.name),
+                              );
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'recipes',
+                              child: Text('Find recipes…'),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete'),
+                            ),
+                          ],
                         ),
                       ),
                     )

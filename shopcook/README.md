@@ -55,6 +55,24 @@ For frictionless local testing, turn off **Authentication → Sign In / Up →
 Confirm email** in the Supabase dashboard. For real use, configure custom
 SMTP.
 
+## Recipe ideas from a shopping item
+
+Any product has **Find recipes…** in its menu, which opens "Cook with
+&lt;item&gt;". That screen offers:
+
+- **YouTube results in-app**, via the `search-recipes` Edge Function. Needs
+  `YOUTUBE_API_KEY` (see below); until it is set the section says so.
+  When the item belongs to a meal, a result can be attached to that meal.
+- **One-tap search in the YouTube and TikTok apps**, pre-filled with
+  "&lt;item&gt; recipe". Needs no keys and works today. Android routes the
+  link to the installed app, falling back to the browser.
+
+**Why TikTok is a deep link rather than in-app results:** TikTok has no
+public search API. The Display API only reaches the signed-in user's own
+videos, and the Research API requires approval and is limited to academic
+use. Pulling TikTok results into the app would mean a paid third-party
+scraping service, so the app opens TikTok's own search instead.
+
 ## Importing ingredients from a recipe
 
 Attach a recipe link to a meal, then tap the import icon on the recipe card.

@@ -10,6 +10,7 @@ import 'data/local/database.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
 import 'features/meals/meal_detail_screen.dart';
+import 'features/recipes/ingredient_recipes_screen.dart';
 import 'features/recipes/recipe_search_screen.dart';
 import 'features/recipes/recipe_view_screen.dart';
 import 'features/shopping/shopping_mode_screen.dart';
@@ -64,6 +65,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/list/:listId/meal/:mealId/search',
         builder: (context, state) =>
             RecipeSearchScreen(meal: state.extra as Meal),
+      ),
+      GoRoute(
+        path: '/ingredient-recipes',
+        builder: (context, state) {
+          final args = state.extra as ({Product product, String? mealName});
+          return IngredientRecipesScreen(
+            product: args.product,
+            mealName: args.mealName,
+          );
+        },
       ),
       GoRoute(
         path: '/recipe',
