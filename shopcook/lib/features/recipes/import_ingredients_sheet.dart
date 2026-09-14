@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/design.dart';
 import '../../core/providers.dart';
+import '../../core/ui/ui.dart';
 import 'ingredient_parser.dart';
 
 /// Runs the import end to end: fetch, let the user choose, then insert.
@@ -41,17 +42,12 @@ Future<void> importIngredients(
 
   final parsed = imported.ingredients.map(parseIngredient).toList();
 
+  // Ground, radius and drag handle come from the theme's bottomSheetTheme.
   final chosen = await showModalBottomSheet<List<ParsedIngredient>>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: AppColors.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.card)),
-    ),
-    builder: (context) => _IngredientPicker(
-      title: imported.title,
-      ingredients: parsed,
-    ),
+    builder: (context) =>
+        _IngredientPicker(title: imported.title, ingredients: parsed),
   );
 
   if (chosen == null || chosen.isEmpty) return;
@@ -118,33 +114,17 @@ class _IngredientPickerState extends State<_IngredientPicker> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.7,
       maxChildSize: 0.9,
       builder: (context, controller) => Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Insets.xl,
-              Insets.xl,
-              Insets.xl,
-              Insets.sm,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.title.isEmpty ? 'Ingredients' : widget.title,
-                  style: AppText.title,
-                ),
-                const SizedBox(height: Insets.xs),
-                Text(
-                  'Pick what to add to this meal.',
-                  style: AppText.caption.copyWith(color: AppColors.inkMuted),
-                ),
-              ],
-            ),
+          AppSheetHeader(
+            title: widget.title.isEmpty ? 'Ingredients' : widget.title,
+            subtitle: 'Pick what to add to this meal.',
           ),
           Expanded(
             child: ListView.builder(
@@ -164,13 +144,16 @@ class _IngredientPickerState extends State<_IngredientPicker> {
                       _selected.remove(index);
                     }
                   }),
-                  title: Text(ingredient.name, style: AppText.body),
+                  title: Text(
+                    ingredient.name,
+                    style: AppText.body.copyWith(color: palette.ink),
+                  ),
                   subtitle: amount.isEmpty
                       ? null
                       : Text(
                           amount,
                           style: AppText.caption.copyWith(
-                            color: AppColors.inkMuted,
+                            color: palette.inkMuted,
                           ),
                         ),
                   dense: true,

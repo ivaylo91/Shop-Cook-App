@@ -152,7 +152,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         if (_notice != null) ...[
           _Banner(
             message: _notice!,
-            color: AppColors.accent,
+            color: context.palette.accent,
             icon: FontAwesomeIcons.envelopeCircleCheck,
           ),
           const SizedBox(height: Insets.lg),
@@ -163,12 +163,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             minimumSize: const Size.fromHeight(52),
           ),
           child: _busy
-              ? const SizedBox(
+              ? SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: context.palette.onAccent,
                   ),
                 )
               : const Text('Create account'),
@@ -179,7 +179,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           children: [
             Text(
               'Already have one?',
-              style: AppText.body.copyWith(color: AppColors.inkMuted),
+              style: AppText.body.copyWith(color: context.palette.inkMuted),
             ),
             TextButton(
               onPressed: _busy

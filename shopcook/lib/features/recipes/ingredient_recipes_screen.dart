@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/design.dart';
 import '../../core/providers.dart';
+import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 import '../../data/remote/recipe_search_api.dart';
 
@@ -82,13 +83,7 @@ class _IngredientRecipesScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        title: Text('Cook with ${widget.product.name}', style: AppText.title),
-      ),
+      appBar: AppBar(title: Text('Cook with ${widget.product.name}')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           Insets.lg,
@@ -99,13 +94,13 @@ class _IngredientRecipesScreenState
         children: [
           _SearchAppsCard(query: _query, onOpen: _open),
           const SizedBox(height: Insets.xl),
-          Text('From YouTube', style: AppText.title),
+          Text(
+            'From YouTube',
+            style: AppText.title.copyWith(color: context.palette.ink),
+          ),
           const SizedBox(height: Insets.md),
           if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(Insets.xl),
-              child: Center(child: CircularProgressIndicator()),
-            )
+            const SkeletonRows(count: 3)
           else if (_results.isEmpty)
             const _NoResultsNote()
           else
@@ -132,23 +127,21 @@ class _SearchAppsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final term = Uri.encodeQueryComponent('$query recipe');
 
-    return Container(
-      padding: const EdgeInsets.all(Insets.xl),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(Radii.card),
-        boxShadow: softShadow(AppColors.accent),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Search the apps', style: AppText.title),
+          Text(
+            'Search the apps',
+            style: AppText.title.copyWith(color: palette.ink),
+          ),
           const SizedBox(height: Insets.xs),
           Text(
             'Opens a search for "$query recipe".',
-            style: AppText.caption.copyWith(color: AppColors.inkMuted),
+            style: AppText.caption.copyWith(color: palette.inkMuted),
           ),
           const SizedBox(height: Insets.lg),
           Row(
@@ -160,9 +153,6 @@ class _SearchAppsCard extends StatelessWidget {
                   ),
                   icon: const FaIcon(FontAwesomeIcons.youtube, size: 16),
                   label: const Text('YouTube'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                  ),
                 ),
               ),
               const SizedBox(width: Insets.md),
@@ -172,9 +162,11 @@ class _SearchAppsCard extends StatelessWidget {
                       onOpen('https://www.tiktok.com/search?q=$term'),
                   icon: const FaIcon(FontAwesomeIcons.tiktok, size: 16),
                   label: const Text('TikTok'),
+                  // TikTok's own black, so the two buttons read as two
+                  // destinations rather than one repeated action.
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.ink,
-                    minimumSize: const Size.fromHeight(48),
+                    backgroundColor: palette.ink,
+                    foregroundColor: palette.card,
                   ),
                 ),
               ),
@@ -191,30 +183,9 @@ class _NoResultsNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(Insets.lg),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(Radii.card),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          FaIcon(
-            FontAwesomeIcons.circleInfo,
-            size: 15,
-            color: AppColors.inkFaint,
-          ),
-          const SizedBox(width: Insets.md),
-          Expanded(
-            child: Text(
-              'No in-app results yet. These appear once a YouTube API key is '
-              'set on the backend — until then, use the buttons above.',
-              style: AppText.caption.copyWith(color: AppColors.inkMuted),
-            ),
-          ),
-        ],
-      ),
+    return const InlineNote(
+      message: 'No in-app results yet. These appear once a YouTube API key '
+          'is set on the backend — until then, use the buttons above.',
     );
   }
 }
@@ -236,51 +207,50 @@ class _ResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: Insets.md),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(Radii.card),
-        boxShadow: softShadow(AppColors.ink, opacity: 0.06),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(Radii.card),
-        child: Material(
-          color: Colors.transparent,
-          child: ListTile(
-            onTap: onOpen,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: Insets.md,
-              vertical: Insets.sm,
-            ),
-            leading: result.thumbnailUrl.isEmpty
-                ? const FaIcon(FontAwesomeIcons.play, size: 18)
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(Radii.chip),
-                    child: Image.network(
-                      result.thumbnailUrl,
-                      width: 72,
-                      height: 56,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          const FaIcon(FontAwesomeIcons.image, size: 18),
-                    ),
-                  ),
-            title: Text(result.title, style: AppText.body),
-            subtitle: Text(
-              result.source,
-              style: AppText.caption.copyWith(color: AppColors.inkMuted),
-            ),
-            trailing: canAttach
-                ? IconButton(
-                    icon: const FaIcon(FontAwesomeIcons.plus, size: 15),
-                    tooltip: mealName == null
-                        ? 'Attach to meal'
-                        : 'Attach to $mealName',
-                    onPressed: onAttach,
-                  )
-                : null,
+    final palette = context.palette;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Insets.md),
+      child: AppCard(
+        padding: null,
+        tint: palette.ink,
+        shadowOpacity: 0.06,
+        child: ListTile(
+          onTap: onOpen,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: Insets.md,
+            vertical: Insets.sm,
           ),
+          leading: result.thumbnailUrl.isEmpty
+              ? const FaIcon(FontAwesomeIcons.play, size: 18)
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(Radii.chip),
+                  child: Image.network(
+                    result.thumbnailUrl,
+                    width: 72,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const FaIcon(FontAwesomeIcons.image, size: 18),
+                  ),
+                ),
+          title: Text(
+            result.title,
+            style: AppText.body.copyWith(color: palette.ink),
+          ),
+          subtitle: Text(
+            result.source,
+            style: AppText.caption.copyWith(color: palette.inkMuted),
+          ),
+          trailing: canAttach
+              ? IconButton(
+                  icon: const FaIcon(FontAwesomeIcons.plus, size: 15),
+                  tooltip: mealName == null
+                      ? 'Attach to meal'
+                      : 'Attach to $mealName',
+                  onPressed: onAttach,
+                )
+              : null,
         ),
       ),
     );

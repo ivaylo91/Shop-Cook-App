@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import '../../core/design.dart';
 import '../../core/providers.dart';
+import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 import '../../data/remote/recipe_search_api.dart';
 
@@ -55,8 +57,10 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
           children: [
             TextField(
               controller: titleController,
+              textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(labelText: 'Title'),
             ),
+            const SizedBox(height: Insets.md),
             TextField(
               controller: urlController,
               autofocus: true,
@@ -102,7 +106,7 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(Insets.md),
             child: Row(
               children: [
                 Expanded(
@@ -110,8 +114,10 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
                     controller: _controller,
                     decoration: const InputDecoration(
                       hintText: 'Search YouTube & the web',
-                      prefixIcon: Icon(FontAwesomeIcons.magnifyingGlass, size: 16),
-                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(
+                        FontAwesomeIcons.magnifyingGlass,
+                        size: 16,
+                      ),
                     ),
                     onSubmitted: _runSearch,
                   ),
@@ -124,7 +130,6 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
               ],
             ),
           ),
-          if (_loading) const LinearProgressIndicator(),
           Expanded(child: _buildResults()),
         ],
       ),
@@ -132,45 +137,51 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
   }
 
   Widget _buildResults() {
-    if (!_loading && _searched && _results.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'No live results. This usually means the search API keys '
-              "haven't been configured on the backend yet.",
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: _attachManualLink,
-              icon: const FaIcon(FontAwesomeIcons.link, size: 18),
-              label: const Text('Attach a link manually instead'),
-            ),
-          ],
-        ),
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.all(Insets.lg),
+        child: SkeletonRows(count: 4),
       );
     }
+
+    if (_searched && _results.isEmpty) {
+      return EmptyState(
+        icon: Icons.travel_explore_outlined,
+        title: 'No live results',
+        message: 'This usually means the search API keys have not been set on '
+            'the backend yet. You can still paste a link yourself.',
+        actionLabel: 'Attach a link instead',
+        actionIcon: Icons.link_rounded,
+        onAction: _attachManualLink,
+      );
+    }
+
     return ListView.builder(
+      padding: const EdgeInsets.symmetric(
+        horizontal: Insets.md,
+        vertical: Insets.sm,
+      ),
       itemCount: _results.length,
       itemBuilder: (context, index) {
         final r = _results[index];
         return ListTile(
           leading: r.thumbnailUrl.isEmpty
-              ? Icon(
+              ? FaIcon(
                   r.type == RecipeResultType.video
                       ? FontAwesomeIcons.play
                       : FontAwesomeIcons.fileLines,
+                  size: 18,
                 )
-              : Image.network(
-                  r.thumbnailUrl,
-                  width: 64,
-                  height: 64,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      const FaIcon(FontAwesomeIcons.image, size: 18),
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(Radii.chip),
+                  child: Image.network(
+                    r.thumbnailUrl,
+                    width: 72,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const FaIcon(FontAwesomeIcons.image, size: 18),
+                  ),
                 ),
           title: Text(r.title),
           subtitle: Text(r.source),

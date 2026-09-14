@@ -8,6 +8,43 @@ A mobile shopping list app: build a list, group products into meals, and attach 
 - **Drift** (SQLite) for local, offline-first storage of lists/meals/products/recipes — v1 has no accounts or cross-device sync.
 - **Supabase Edge Function** (`supabase/functions/search-recipes`) proxies recipe search to the YouTube Data API and Google Custom Search, so those API keys stay server-side and never ship in the app.
 
+## Design system
+
+Everything visual comes from two files plus a widget kit, and no screen should
+reach past them for a colour or a spacing value.
+
+- **`lib/core/design.dart`** holds the tokens: `Insets` (an 8-point grid),
+  `Radii`, `AppText` (four sizes, two weights, deliberately no colour), and
+  `Motion` (three durations and the curves that go with them).
+- **`AppPalette`** in the same file is the colour set, as a `ThemeExtension`
+  with `light` and `dark` variants. Read it with `context.palette` — never as
+  a constant, so a widget does not have to know which mode it is in. It also
+  owns `aisle(category)` for the nine aisle hues and `shadow(tint)`, which
+  drops the tint in dark mode where a coloured shadow reads as a glow.
+- **`lib/core/theme.dart`** maps the palette onto Material. The scheme starts
+  from a seed so every slot is filled, then every slot the UI actually shows
+  is pinned to the palette, and `AppText` is mapped onto the `TextTheme` slots
+  Material widgets read. Component themes cover app bars, cards, dialogs,
+  inputs, list tiles, checkboxes, buttons, sheets, menus and snack bars — so a
+  plain `ListTile` or `AlertDialog` is already on the design system.
+- **`lib/core/ui/`** is the shared widget kit, imported as one barrel
+  (`core/ui/ui.dart`): `AppCard`, `AppCardList`, `ProductRow`, `CheckDot`,
+  `SectionLabel`, `CountPill`, `AppProgressBar`, `Skeleton`, `SkeletonRows`,
+  `EmptyState`, `ErrorState`, `InlineNote`, plus the `showAppSheet`,
+  `confirmAction` and `promptForText` helpers.
+
+Two rules worth keeping: build a screen from the kit before adding a widget to
+it, and put any new colour in `AppPalette` with both variants rather than
+inline. `flutter test test/theme_test.dart` checks the palette reaches the
+theme and that every aisle has a hue in both modes.
+
+### Dark mode
+
+Light, dark and match-the-phone, persisted with `shared_preferences` and read
+before the first frame in `main()` so the app does not open in the wrong theme
+and snap. The chooser is in the app bar on the lists screen until there is a
+settings screen to hold it.
+
 ## Running it
 
 ```bash
@@ -57,8 +94,8 @@ SMTP.
 
 ## Recipe ideas from a shopping item
 
-Any product has **Find recipes…** in its menu, which opens "Cook with
-&lt;item&gt;". That screen offers:
+Long-press any item (or tap its actions button) for **Find recipes**, which
+opens "Cook with &lt;item&gt;". That screen offers:
 
 - **YouTube results in-app**, via the `search-recipes` Edge Function. Needs
   `YOUTUBE_API_KEY` (see below); until it is set the section says so.
@@ -117,4 +154,11 @@ Until then, the recipe search screen still works end-to-end via **"Attach a link
 - **Offline lockout.** Because signing in is required, a session that
   expires while offline leaves the app unreachable until there is a
   connection. Persisted sessions make this rare, not impossible.
+- **A settings screen.** Theme mode is the only preference there is, and it
+  lives in the lists-screen app bar.
+- **Renaming a list or meal**, and undo on delete. Deleting a list asks for
+  confirmation but cannot be undone.
+- **A faster way to add an item.** It is still a three-field dialog; the plan
+  is one inline field parsed by `parseIngredient`, which already splits
+  "2 kg potatoes" for recipe imports.
 - Publishing/store builds (the release APK is signed with the debug key).

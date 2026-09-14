@@ -120,12 +120,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             minimumSize: const Size.fromHeight(52),
           ),
           child: _busy
-              ? const SizedBox(
+              ? SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: context.palette.onAccent,
                   ),
                 )
               : const Text('Sign in'),
@@ -136,7 +136,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           children: [
             Text(
               'No account yet?',
-              style: AppText.body.copyWith(color: AppColors.inkMuted),
+              style: AppText.body.copyWith(color: context.palette.inkMuted),
             ),
             TextButton(
               onPressed: _busy ? null : () => context.push('/register'),

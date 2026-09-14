@@ -11,13 +11,12 @@ import '../design.dart';
 /// it renders at 24px in an app bar or 96px on the login screen.
 class ShopCookLogo extends StatelessWidget {
   final double size;
-  final Color color;
 
-  const ShopCookLogo({
-    super.key,
-    this.size = 48,
-    this.color = AppColors.accent,
-  });
+  /// Defaults to the theme's accent, resolved at build rather than baked in
+  /// as a constant, so the mark lightens with the palette in dark mode.
+  final Color? color;
+
+  const ShopCookLogo({super.key, this.size = 48, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +24,7 @@ class ShopCookLogo extends StatelessWidget {
       width: size,
       height: size,
       child: CustomPaint(
-        painter: _ShopCookLogoPainter(color),
+        painter: _ShopCookLogoPainter(color ?? context.palette.accent),
         isComplex: false,
       ),
     );
@@ -36,26 +35,23 @@ class ShopCookLogo extends StatelessWidget {
 /// such as the login header or an about screen.
 class ShopCookLogoBadge extends StatelessWidget {
   final double size;
-  final Color color;
+  final Color? color;
 
-  const ShopCookLogoBadge({
-    super.key,
-    this.size = 56,
-    this.color = AppColors.accent,
-  });
+  const ShopCookLogoBadge({super.key, this.size = 56, this.color});
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final tint = color ?? palette.accent;
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: tint.withValues(alpha: palette.isDark ? 0.18 : 0.12),
         borderRadius: BorderRadius.circular(size * 0.28),
       ),
-      child: Center(
-        child: ShopCookLogo(size: size * 0.62, color: color),
-      ),
+      child: Center(child: ShopCookLogo(size: size * 0.62, color: tint)),
     );
   }
 }

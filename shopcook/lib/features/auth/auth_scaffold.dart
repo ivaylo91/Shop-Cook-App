@@ -18,8 +18,9 @@ class AuthScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return Scaffold(
-      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -33,11 +34,17 @@ class AuthScaffold extends StatelessWidget {
                 children: [
                   const _Brand(),
                   const SizedBox(height: Insets.xxl),
-                  Text(title, style: AppText.display.copyWith(fontSize: 26)),
+                  Text(
+                    title,
+                    style: AppText.display.copyWith(
+                      fontSize: 26,
+                      color: palette.ink,
+                    ),
+                  ),
                   const SizedBox(height: Insets.sm),
                   Text(
                     subtitle,
-                    style: AppText.body.copyWith(color: AppColors.inkMuted),
+                    style: AppText.body.copyWith(color: palette.inkMuted),
                   ),
                   const SizedBox(height: Insets.xl),
                   ...children,
@@ -60,7 +67,10 @@ class _Brand extends StatelessWidget {
       children: [
         const ShopCookLogoBadge(size: 52),
         const SizedBox(width: Insets.md),
-        Text('ShopCook', style: AppText.title),
+        Text(
+          'ShopCook',
+          style: AppText.title.copyWith(color: context.palette.ink),
+        ),
       ],
     );
   }
@@ -119,11 +129,9 @@ class AuthField extends StatelessWidget {
           // Focus(skipTraversal:) because IconButton builds its own focus
           // node underneath, which a skipped parent does not cover.
           suffixIcon: suffix == null ? null : ExcludeFocus(child: suffix!),
-          filled: true,
-          fillColor: AppColors.card,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(Radii.chip),
-          ),
+          // Fill, border and radius now come from the theme's
+          // inputDecorationTheme, so every field in the app matches without
+          // each one restating it.
         ),
       ),
     );
