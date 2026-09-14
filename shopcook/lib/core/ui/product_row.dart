@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../design.dart';
 
@@ -135,7 +136,11 @@ class CheckDot extends StatelessWidget {
             ),
           ),
           child: checked
-              ? Icon(Icons.check_rounded, size: 17, color: palette.onAccent)
+              ? FaIcon(
+                  FontAwesomeIcons.check,
+                  size: 13,
+                  color: palette.onAccent,
+                )
               : null,
         ),
       ),

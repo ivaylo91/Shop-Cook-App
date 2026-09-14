@@ -199,7 +199,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 class _Banner extends StatelessWidget {
   final String message;
   final Color color;
-  final IconData icon;
+  final FaIconData icon;
 
   const _Banner({
     required this.message,

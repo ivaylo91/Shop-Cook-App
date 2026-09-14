@@ -56,8 +56,9 @@ ThemeData buildAppTheme(Brightness brightness) {
     labelSmall: AppText.caption.copyWith(color: palette.inkFaint),
   );
 
+  // No useMaterial3 flag: Material 3 is the default, and the flag has been
+  // deprecated on its way out of ThemeData.
   final base = ThemeData(
-    useMaterial3: true,
     brightness: brightness,
     colorScheme: scheme,
     textTheme: textTheme,

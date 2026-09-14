@@ -38,7 +38,7 @@ class ShoppingModeScreen extends ConsumerWidget {
         data: (products) {
           if (products.isEmpty) {
             return EmptyState(
-              icon: Icons.shopping_cart_outlined,
+              icon: FontAwesomeIcons.cartShopping,
               title: 'Nothing to buy yet',
               message: 'Add ingredients to your meals and they will show up '
                   'here, grouped by aisle so you can shop straight down the '

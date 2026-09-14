@@ -42,7 +42,7 @@ class ListsScreen extends ConsumerWidget {
         data: (lists) {
           if (lists.isEmpty) {
             return EmptyState(
-              icon: Icons.receipt_long_outlined,
+              icon: FontAwesomeIcons.rectangleList,
               title: 'No shopping lists yet',
               message: 'A list holds the meals you are cooking and everything '
                   'you need to buy for them.',
@@ -154,7 +154,7 @@ class _ThemeModeButton extends ConsumerWidget {
     );
   }
 
-  IconData _iconFor(ThemeMode mode) => switch (mode) {
+  FaIconData _iconFor(ThemeMode mode) => switch (mode) {
     ThemeMode.system => FontAwesomeIcons.circleHalfStroke,
     ThemeMode.light => FontAwesomeIcons.sun,
     ThemeMode.dark => FontAwesomeIcons.moon,

@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 /// Aisles in the rough order you walk a supermarket.
@@ -16,7 +15,7 @@ enum ProductCategory {
   const ProductCategory(this.label, this.icon);
 
   final String label;
-  final IconData icon;
+  final FaIconData icon;
 }
 
 /// Keywords matched against the product name, lowercase.

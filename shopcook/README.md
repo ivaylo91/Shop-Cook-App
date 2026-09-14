@@ -58,17 +58,66 @@ If you change the Drift schema in `lib/data/local/database.dart`, regenerate the
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-### Android build notes (this dev environment)
+## Building an APK
 
-Gradle 8.12 (used by this Flutter version's Android build) doesn't support very new JDKs. If `flutter build apk` fails with a bare version-number error like `26.0.2.1`, point Flutter at an older JDK:
+```bash
+flutter build apk --release
+# -> build/app/outputs/flutter-apk/app-release.apk
+```
+
+Two things to know about the result:
+
+- **It is signed with the debug key.** `android/app/build.gradle.kts` still
+  points the release build type at `signingConfigs.debug`, so the APK
+  installs on a device for testing but cannot be uploaded to Play. A real
+  keystore is still outstanding.
+- **It is a fat APK (~60 MB)** carrying every ABI. `flutter build apk
+  --split-per-abi` produces per-architecture APKs roughly a third the size,
+  and `flutter build appbundle` is what Play actually wants.
+
+### Android toolchain floors
+
+Flutter validates these three versions before it will build, one at a time,
+and they are easy to trip when the Flutter SDK moves ahead of the project.
+Current minimums for Flutter 3.47 and what this project pins:
+
+| | Minimum | Pinned here | Where |
+|---|---|---|---|
+| Gradle | 8.14.0 | 8.14.3 | `android/gradle/wrapper/gradle-wrapper.properties` |
+| Android Gradle Plugin | 8.11.1 | 8.11.1 | `android/settings.gradle.kts` |
+| Kotlin (KGP) | 2.2.20 | 2.2.20 | `android/settings.gradle.kts` |
+
+The build also needs `compileSdk` 36, NDK `28.2.13676358` and a **JDK 17** —
+Android Studio's bundled JDK is far newer and Gradle rejects it. Point Flutter
+at a JDK 17 once and it is remembered:
 
 ```bash
 flutter config --jdk-dir="/path/to/jdk-17"
 ```
 
-### iOS
+Missing SDK pieces install with the `android` CLI in `cmdline-tools`. Note
+that `sdkmanager` is deprecated and mangles the old `platforms;android-36`
+syntax by splitting on the semicolon; the replacement uses slash paths:
 
-iOS platform files are generated (`ios/`), but building/running the iOS target requires Xcode on macOS — not possible from this Linux machine. Open the project in Xcode on a Mac to build for iOS.
+```bash
+android sdk install platforms/android-36
+android sdk install ndk/28.2.13676358
+android sdk list --all "*android-36*"   # to find an exact package id
+```
+
+**Staying on AGP 8.x is deliberate.** AGP 9+ reads only the new DSL interface,
+which the Flutter Gradle plugin does not yet apply cleanly against — hence the
+`android.newDsl=false` and `android.builtInKotlin=false` flags that Flutter's
+own migrator wrote into `android/gradle.properties`. Flutter warns that Gradle
+8.x support will be dropped in favour of 9.1.0+; that upgrade is a real
+migration, not a version bump.
+
+## iOS
+
+iOS platform files are generated (`ios/`), but building the iOS target needs
+Xcode on macOS. Open the project in Xcode on a Mac to build for iOS. Note that
+`flutter_launcher_icons` is configured with `ios: false`, so the iOS target has
+no app icon yet.
 
 ## Accounts
 

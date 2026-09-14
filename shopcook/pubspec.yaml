@@ -22,7 +22,10 @@ dependencies:
   url_launcher: ^6.3.1
   uuid: ^4.5.1
   intl: ^0.19.0
-  font_awesome_flutter: ^10.8.0
+  # 11.x is required from Flutter 3.47 on: IconData became a final class, and
+  # 10.x subclasses it (IconDataSolid, IconDataBrands, ...), so 10.x no longer
+  # compiles at all. The analyzer does not catch it — only the CFE does.
+  font_awesome_flutter: ^11.0.0
 
 dev_dependencies:
   flutter_test:

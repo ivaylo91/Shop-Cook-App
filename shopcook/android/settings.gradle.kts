@@ -19,8 +19,12 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    id("com.android.application") version "8.9.1" apply false
-    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    // Flutter 3.47 requires AGP 8.11.1 as a floor. Deliberately staying on the
+    // 8.x line: AGP 9+ reads only the new DSL, which the Flutter Gradle plugin
+    // does not yet apply cleanly against (hence android.newDsl=false in
+    // gradle.properties).
+    id("com.android.application") version "8.11.1" apply false
+    id("org.jetbrains.kotlin.android") version "2.2.20" apply false
 }
 
 include(":app")

@@ -114,9 +114,9 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
                     controller: _controller,
                     decoration: const InputDecoration(
                       hintText: 'Search YouTube & the web',
-                      prefixIcon: Icon(
+                      prefixIcon: FaIcon(
                         FontAwesomeIcons.magnifyingGlass,
-                        size: 16,
+                        size: 15,
                       ),
                     ),
                     onSubmitted: _runSearch,
@@ -146,12 +146,12 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
 
     if (_searched && _results.isEmpty) {
       return EmptyState(
-        icon: Icons.travel_explore_outlined,
+        icon: FontAwesomeIcons.magnifyingGlass,
         title: 'No live results',
         message: 'This usually means the search API keys have not been set on '
             'the backend yet. You can still paste a link yourself.',
         actionLabel: 'Attach a link instead',
-        actionIcon: Icons.link_rounded,
+        actionIcon: FontAwesomeIcons.link,
         onAction: _attachManualLink,
       );
     }

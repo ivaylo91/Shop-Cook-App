@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/brand/shopcook_logo.dart';
 import '../../core/design.dart';
 
@@ -80,7 +81,7 @@ class _Brand extends StatelessWidget {
 class AuthField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
-  final IconData icon;
+  final FaIconData icon;
   final bool obscure;
   final TextInputType keyboardType;
   final String? errorText;
@@ -122,7 +123,7 @@ class AuthField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           errorText: errorText,
-          prefixIcon: Icon(icon, size: 16),
+          prefixIcon: FaIcon(icon, size: 15),
           // Keep the show/hide toggle tappable, but out of the tab order:
           // pressing "Next" on the password field should reach the next
           // field, not the eye button. ExcludeFocus rather than

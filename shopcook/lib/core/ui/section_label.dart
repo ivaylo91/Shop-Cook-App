@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../design.dart';
 
@@ -7,7 +8,7 @@ import '../design.dart';
 /// [color] defaults to the palette's muted ink, so a plain section ("Other
 /// items") reads as quieter than a colour-coded one (an aisle).
 class SectionLabel extends StatelessWidget {
-  final IconData icon;
+  final FaIconData icon;
   final String label;
 
   /// How many items sit under this heading. Hidden when null, because "0" is
@@ -41,7 +42,7 @@ class SectionLabel extends StatelessWidget {
             color: tint.withValues(alpha: palette.isDark ? 0.18 : 0.12),
             borderRadius: BorderRadius.circular(Radii.chip),
           ),
-          child: Icon(icon, size: 16, color: tint),
+          child: FaIcon(icon, size: 16, color: tint),
         ),
         const SizedBox(width: Insets.md),
         Expanded(

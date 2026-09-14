@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../design.dart';
 
 /// Empty states are an opportunity: say what goes here and how to get there.
 class EmptyState extends StatelessWidget {
-  final IconData icon;
+  final FaIconData icon;
   final String title;
   final String message;
 
   /// The way out. An empty state without one is a dead end.
   final String? actionLabel;
   final VoidCallback? onAction;
-  final IconData? actionIcon;
+  final FaIconData? actionIcon;
 
   const EmptyState({
     super.key,
@@ -41,7 +42,7 @@ class EmptyState extends StatelessWidget {
                 ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 34, color: palette.accent),
+              child: FaIcon(icon, size: 32, color: palette.accent),
             ),
             const SizedBox(height: Insets.xl),
             Text(
@@ -63,7 +64,7 @@ class EmptyState extends StatelessWidget {
               const SizedBox(height: Insets.xl),
               FilledButton.icon(
                 onPressed: onAction,
-                icon: Icon(actionIcon ?? Icons.add_rounded, size: 18),
+                icon: FaIcon(actionIcon ?? FontAwesomeIcons.plus, size: 16),
                 label: Text(actionLabel!),
               ),
             ],
@@ -108,7 +109,11 @@ class ErrorState extends StatelessWidget {
                 color: error.withValues(alpha: 0.10),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.error_outline_rounded, size: 26, color: error),
+              child: FaIcon(
+                FontAwesomeIcons.circleExclamation,
+                size: 24,
+                color: error,
+              ),
             ),
             const SizedBox(height: Insets.lg),
             Text(
@@ -131,7 +136,7 @@ class ErrorState extends StatelessWidget {
               const SizedBox(height: Insets.lg),
               OutlinedButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
+                icon: const FaIcon(FontAwesomeIcons.arrowRotateRight, size: 15),
                 label: const Text('Try again'),
               ),
             ],
@@ -145,14 +150,14 @@ class ErrorState extends StatelessWidget {
 /// A compact inline note, for a section that has something to explain rather
 /// than a whole screen that failed.
 class InlineNote extends StatelessWidget {
-  final IconData icon;
+  final FaIconData icon;
   final String message;
   final Color? color;
 
   const InlineNote({
     super.key,
     required this.message,
-    this.icon = Icons.info_outline_rounded,
+    this.icon = FontAwesomeIcons.circleInfo,
     this.color,
   });
 
@@ -171,7 +176,7 @@ class InlineNote extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 17, color: tint),
+          FaIcon(icon, size: 15, color: tint),
           const SizedBox(width: Insets.md),
           Expanded(
             child: Text(
