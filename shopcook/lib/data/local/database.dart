@@ -21,6 +21,12 @@ class Meals extends Table {
   TextColumn get listId =>
       text().references(ShoppingLists, #id, onDelete: KeyAction.cascade)();
   TextColumn get name => text()();
+
+  /// The day this meal is meant to be cooked, or null while it is only an
+  /// idea. Date-only in intent: stored at midnight local time so two meals on
+  /// the same day compare equal.
+  DateTimeColumn get plannedFor => dateTime().nullable()();
+
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -68,14 +74,27 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
-  /// SQLite disables foreign keys per connection by default, which silently
-  /// makes every `onDelete: KeyAction.cascade` above a no-op — deleting a list
-  /// or meal would leave its products and recipes behind as unreachable rows
-  /// that still count toward the shopping progress. Turn them on at open.
+  /// The migration ladder. Every step has to be additive and idempotent in
+  /// order, because an install can be on any earlier version — a phone that
+  /// skipped a release upgrades straight from 1 to the current version by
+  /// running each step in turn.
+  ///
+  /// `beforeOpen` runs on every open, not just on upgrades: SQLite disables
+  /// foreign keys per connection by default, which silently makes every
+  /// `onDelete: KeyAction.cascade` above a no-op — deleting a list or meal
+  /// would leave its products and recipes behind as unreachable rows that
+  /// still count toward the shopping progress.
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      // v2: meals can be planned for a day.
+      if (from < 2) {
+        await m.addColumn(meals, meals.plannedFor);
+      }
+    },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },
@@ -126,6 +145,33 @@ class AppDatabase extends _$AppDatabase {
 
   Future<List<Meal>> mealsForList(String listId) =>
       (select(meals)..where((t) => t.listId.equals(listId))).get();
+
+  /// Every planned meal in a half-open date range, across all lists — the
+  /// week view is not scoped to one shopping list, because a week is not.
+  Stream<List<Meal>> watchMealsPlannedBetween(DateTime from, DateTime to) =>
+      (select(meals)
+            ..where(
+              (t) =>
+                  t.plannedFor.isBiggerOrEqualValue(from) &
+                  t.plannedFor.isSmallerThanValue(to),
+            )
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.plannedFor),
+              (t) => OrderingTerm.asc(t.createdAt),
+            ]))
+          .watch();
+
+  /// Meals that are still just ideas, newest first.
+  Stream<List<Meal>> watchUnplannedMeals() =>
+      (select(meals)
+            ..where((t) => t.plannedFor.isNull())
+            ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+          .watch();
+
+  Future<void> setMealPlannedFor(String id, DateTime? day) =>
+      (update(meals)..where((t) => t.id.equals(id))).write(
+        MealsCompanion(plannedFor: Value(day)),
+      );
 
   // Products
   Stream<List<Product>> watchProductsForList(String listId) =>

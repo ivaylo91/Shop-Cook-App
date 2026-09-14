@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/design.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
+import '../../data/repositories/shopping_list_repository.dart';
 import '../products/item_composer.dart';
 import '../recipes/import_ingredients_sheet.dart';
 import '../shopping/product_category.dart';
@@ -27,6 +29,18 @@ class MealDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(meal.name),
         actions: [
+          IconButton(
+            icon: FaIcon(
+              meal.plannedFor == null
+                  ? FontAwesomeIcons.calendarPlus
+                  : FontAwesomeIcons.calendarCheck,
+              size: 17,
+            ),
+            tooltip: meal.plannedFor == null
+                ? 'Plan a day for this meal'
+                : 'Planned for ${DateFormat('EEE d MMM').format(meal.plannedFor!)}',
+            onPressed: () => _plan(context, ref),
+          ),
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 17),
             tooltip: 'Find a recipe',
@@ -144,6 +158,56 @@ class MealDetailScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Gives the meal a day, or takes it off the plan.
+  ///
+  /// The screen is handed a snapshot of the meal, so the date it shows comes
+  /// from that snapshot; the Plan tab reads the live row.
+  Future<void> _plan(BuildContext context, WidgetRef ref) async {
+    final today = ShoppingListRepository.dayOf(DateTime.now());
+    final repository = ref.read(shoppingListRepositoryProvider);
+
+    if (meal.plannedFor != null) {
+      final action = await showAppSheet<String>(
+        context: context,
+        title: meal.name,
+        subtitle: 'Planned for '
+            '${DateFormat('EEEE d MMM').format(meal.plannedFor!)}',
+        builder: (context) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const FaIcon(FontAwesomeIcons.calendarDay, size: 16),
+              title: const Text('Move to another day'),
+              onTap: () => Navigator.pop(context, 'pick'),
+            ),
+            ListTile(
+              leading: const FaIcon(FontAwesomeIcons.calendarXmark, size: 16),
+              title: const Text('Take off the plan'),
+              onTap: () => Navigator.pop(context, 'clear'),
+            ),
+          ],
+        ),
+      );
+
+      if (action == null || !context.mounted) return;
+      if (action == 'clear') {
+        await repository.planMeal(meal.id, null);
+        return;
+      }
+    }
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: meal.plannedFor ?? today,
+      firstDate: DateTime(today.year, today.month, today.day - 30),
+      lastDate: DateTime(today.year + 1, today.month, today.day),
+      helpText: 'Cook ${meal.name} on',
+    );
+
+    if (picked == null) return;
+    await repository.planMeal(meal.id, picked);
   }
 
   Future<void> _itemActions(

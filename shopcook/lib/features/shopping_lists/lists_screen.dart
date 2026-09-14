@@ -5,7 +5,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/design.dart';
 import '../../core/providers.dart';
-import '../../core/settings.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 
@@ -17,17 +16,7 @@ class ListsScreen extends ConsumerWidget {
     final listsAsync = ref.watch(_listsStreamProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('ShopCook'),
-        actions: [
-          const _ThemeModeButton(),
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.rightFromBracket, size: 18),
-            tooltip: 'Sign out',
-            onPressed: () => _confirmSignOut(context, ref),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Lists')),
       body: listsAsync.when(
         loading: () => const Padding(
           padding: EdgeInsets.all(Insets.lg),
@@ -89,25 +78,6 @@ class ListsScreen extends ConsumerWidget {
         child: const FaIcon(FontAwesomeIcons.plus, size: 18),
       ),
     );
-  }
-
-  Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
-    final email = ref.read(authRepositoryProvider).currentUser?.email;
-
-    final confirmed = await confirmAction(
-      context,
-      title: 'Sign out?',
-      message: email == null
-          ? 'You will need to sign in again to get back in.'
-          : 'You are signed in as $email. You will need to sign in again to '
-                'get back in.',
-      confirmLabel: 'Sign out',
-    );
-
-    if (confirmed) {
-      await ref.read(authRepositoryProvider).signOut();
-      // The router redirect takes it from here.
-    }
   }
 
   Future<void> _createList(BuildContext context, WidgetRef ref) async {
@@ -235,37 +205,6 @@ class _ListCard extends ConsumerWidget {
 
     await ref.read(shoppingListRepositoryProvider).renameList(list.id, name);
   }
-}
-
-/// Light, dark, or whatever the phone is set to.
-///
-/// Lives in the app bar until there is a settings screen to hold it; a theme
-/// nobody can reach is not a feature.
-class _ThemeModeButton extends ConsumerWidget {
-  const _ThemeModeButton();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final mode = ref.watch(themeModeProvider);
-
-    return PopupMenuButton<ThemeMode>(
-      tooltip: 'Appearance',
-      icon: FaIcon(_iconFor(mode), size: 17),
-      initialValue: mode,
-      onSelected: (value) => ref.read(themeModeProvider.notifier).set(value),
-      itemBuilder: (context) => const [
-        PopupMenuItem(value: ThemeMode.system, child: Text('Match phone')),
-        PopupMenuItem(value: ThemeMode.light, child: Text('Light')),
-        PopupMenuItem(value: ThemeMode.dark, child: Text('Dark')),
-      ],
-    );
-  }
-
-  FaIconData _iconFor(ThemeMode mode) => switch (mode) {
-    ThemeMode.system => FontAwesomeIcons.circleHalfStroke,
-    ThemeMode.light => FontAwesomeIcons.sun,
-    ThemeMode.dark => FontAwesomeIcons.moon,
-  };
 }
 
 class _DeleteBackground extends StatelessWidget {

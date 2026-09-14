@@ -99,6 +99,29 @@ class ShoppingListRepository {
   Stream<List<ProductSuggestion>> watchSuggestions() =>
       _db.watchProductSuggestions();
 
+  /// Midnight on the given day, which is how planned days are stored so that
+  /// two meals on the same date compare equal.
+  static DateTime dayOf(DateTime moment) =>
+      DateTime(moment.year, moment.month, moment.day);
+
+  /// Planned meals for [days] days starting at [from], across every list.
+  ///
+  /// The range is built with calendar arithmetic rather than by adding a
+  /// Duration, so a clock change during the week does not shift the last day
+  /// out of the window.
+  Stream<List<Meal>> watchPlannedMeals(DateTime from, {int days = 7}) {
+    final start = dayOf(from);
+    final end = DateTime(start.year, start.month, start.day + days);
+    return _db.watchMealsPlannedBetween(start, end);
+  }
+
+  /// Meals with no day yet — ideas waiting to be scheduled.
+  Stream<List<Meal>> watchUnplannedMeals() => _db.watchUnplannedMeals();
+
+  /// Puts a meal on a day, or back in the ideas pile when [day] is null.
+  Future<void> planMeal(String mealId, DateTime? day) =>
+      _db.setMealPlannedFor(mealId, day == null ? null : dayOf(day));
+
   Stream<List<Product>> watchUnassignedProducts(String listId) =>
       _db.watchUnassignedProducts(listId);
 

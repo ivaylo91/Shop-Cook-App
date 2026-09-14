@@ -297,6 +297,17 @@ class $MealsTable extends Meals with TableInfo<$MealsTable, Meal> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _plannedForMeta = const VerificationMeta(
+    'plannedFor',
+  );
+  @override
+  late final GeneratedColumn<DateTime> plannedFor = GeneratedColumn<DateTime>(
+    'planned_for',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -309,7 +320,13 @@ class $MealsTable extends Meals with TableInfo<$MealsTable, Meal> {
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, listId, name, createdAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    listId,
+    name,
+    plannedFor,
+    createdAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -343,6 +360,12 @@ class $MealsTable extends Meals with TableInfo<$MealsTable, Meal> {
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
+    if (data.containsKey('planned_for')) {
+      context.handle(
+        _plannedForMeta,
+        plannedFor.isAcceptableOrUnknown(data['planned_for']!, _plannedForMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -372,6 +395,10 @@ class $MealsTable extends Meals with TableInfo<$MealsTable, Meal> {
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
+      plannedFor: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}planned_for'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -389,11 +416,17 @@ class Meal extends DataClass implements Insertable<Meal> {
   final String id;
   final String listId;
   final String name;
+
+  /// The day this meal is meant to be cooked, or null while it is only an
+  /// idea. Date-only in intent: stored at midnight local time so two meals on
+  /// the same day compare equal.
+  final DateTime? plannedFor;
   final DateTime createdAt;
   const Meal({
     required this.id,
     required this.listId,
     required this.name,
+    this.plannedFor,
     required this.createdAt,
   });
   @override
@@ -402,6 +435,9 @@ class Meal extends DataClass implements Insertable<Meal> {
     map['id'] = Variable<String>(id);
     map['list_id'] = Variable<String>(listId);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || plannedFor != null) {
+      map['planned_for'] = Variable<DateTime>(plannedFor);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -411,6 +447,9 @@ class Meal extends DataClass implements Insertable<Meal> {
       id: Value(id),
       listId: Value(listId),
       name: Value(name),
+      plannedFor: plannedFor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plannedFor),
       createdAt: Value(createdAt),
     );
   }
@@ -424,6 +463,7 @@ class Meal extends DataClass implements Insertable<Meal> {
       id: serializer.fromJson<String>(json['id']),
       listId: serializer.fromJson<String>(json['listId']),
       name: serializer.fromJson<String>(json['name']),
+      plannedFor: serializer.fromJson<DateTime?>(json['plannedFor']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -434,6 +474,7 @@ class Meal extends DataClass implements Insertable<Meal> {
       'id': serializer.toJson<String>(id),
       'listId': serializer.toJson<String>(listId),
       'name': serializer.toJson<String>(name),
+      'plannedFor': serializer.toJson<DateTime?>(plannedFor),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -442,11 +483,13 @@ class Meal extends DataClass implements Insertable<Meal> {
     String? id,
     String? listId,
     String? name,
+    Value<DateTime?> plannedFor = const Value.absent(),
     DateTime? createdAt,
   }) => Meal(
     id: id ?? this.id,
     listId: listId ?? this.listId,
     name: name ?? this.name,
+    plannedFor: plannedFor.present ? plannedFor.value : this.plannedFor,
     createdAt: createdAt ?? this.createdAt,
   );
   Meal copyWithCompanion(MealsCompanion data) {
@@ -454,6 +497,9 @@ class Meal extends DataClass implements Insertable<Meal> {
       id: data.id.present ? data.id.value : this.id,
       listId: data.listId.present ? data.listId.value : this.listId,
       name: data.name.present ? data.name.value : this.name,
+      plannedFor: data.plannedFor.present
+          ? data.plannedFor.value
+          : this.plannedFor,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -464,13 +510,14 @@ class Meal extends DataClass implements Insertable<Meal> {
           ..write('id: $id, ')
           ..write('listId: $listId, ')
           ..write('name: $name, ')
+          ..write('plannedFor: $plannedFor, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, listId, name, createdAt);
+  int get hashCode => Object.hash(id, listId, name, plannedFor, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -478,6 +525,7 @@ class Meal extends DataClass implements Insertable<Meal> {
           other.id == this.id &&
           other.listId == this.listId &&
           other.name == this.name &&
+          other.plannedFor == this.plannedFor &&
           other.createdAt == this.createdAt);
 }
 
@@ -485,12 +533,14 @@ class MealsCompanion extends UpdateCompanion<Meal> {
   final Value<String> id;
   final Value<String> listId;
   final Value<String> name;
+  final Value<DateTime?> plannedFor;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const MealsCompanion({
     this.id = const Value.absent(),
     this.listId = const Value.absent(),
     this.name = const Value.absent(),
+    this.plannedFor = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -498,6 +548,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
     required String id,
     required String listId,
     required String name,
+    this.plannedFor = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -508,6 +559,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
     Expression<String>? id,
     Expression<String>? listId,
     Expression<String>? name,
+    Expression<DateTime>? plannedFor,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -515,6 +567,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
       if (id != null) 'id': id,
       if (listId != null) 'list_id': listId,
       if (name != null) 'name': name,
+      if (plannedFor != null) 'planned_for': plannedFor,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -524,6 +577,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
     Value<String>? id,
     Value<String>? listId,
     Value<String>? name,
+    Value<DateTime?>? plannedFor,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -531,6 +585,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
       id: id ?? this.id,
       listId: listId ?? this.listId,
       name: name ?? this.name,
+      plannedFor: plannedFor ?? this.plannedFor,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -548,6 +603,9 @@ class MealsCompanion extends UpdateCompanion<Meal> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
+    if (plannedFor.present) {
+      map['planned_for'] = Variable<DateTime>(plannedFor.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -563,6 +621,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
           ..write('id: $id, ')
           ..write('listId: $listId, ')
           ..write('name: $name, ')
+          ..write('plannedFor: $plannedFor, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -1965,6 +2024,7 @@ typedef $$MealsTableCreateCompanionBuilder =
       required String id,
       required String listId,
       required String name,
+      Value<DateTime?> plannedFor,
       required DateTime createdAt,
       Value<int> rowid,
     });
@@ -1973,6 +2033,7 @@ typedef $$MealsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> listId,
       Value<String> name,
+      Value<DateTime?> plannedFor,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -2052,6 +2113,11 @@ class $$MealsTableFilterComposer extends Composer<_$AppDatabase, $MealsTable> {
 
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get plannedFor => $composableBuilder(
+    column: $table.plannedFor,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2153,6 +2219,11 @@ class $$MealsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get plannedFor => $composableBuilder(
+    column: $table.plannedFor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -2196,6 +2267,11 @@ class $$MealsTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get plannedFor => $composableBuilder(
+    column: $table.plannedFor,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -2309,12 +2385,14 @@ class $$MealsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> listId = const Value.absent(),
                 Value<String> name = const Value.absent(),
+                Value<DateTime?> plannedFor = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MealsCompanion(
                 id: id,
                 listId: listId,
                 name: name,
+                plannedFor: plannedFor,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -2323,12 +2401,14 @@ class $$MealsTableTableManager
                 required String id,
                 required String listId,
                 required String name,
+                Value<DateTime?> plannedFor = const Value.absent(),
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => MealsCompanion.insert(
                 id: id,
                 listId: listId,
                 name: name,
+                plannedFor: plannedFor,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

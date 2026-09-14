@@ -30,6 +30,11 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Used by test/migration_test.dart to build a database at an older schema
+  # version by hand, so the migration ladder is tested against what is
+  # actually installed on a phone. Kept in step with the version
+  # sqlite3_flutter_libs resolves to.
+  sqlite3: ^2.9.4
   flutter_launcher_icons: ^0.14.4
   flutter_lints: ^5.0.0
   drift_dev: ^2.22.1

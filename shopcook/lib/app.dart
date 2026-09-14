@@ -11,6 +11,9 @@ import 'data/local/database.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
 import 'features/meals/meal_detail_screen.dart';
+import 'features/plan/plan_screen.dart';
+import 'features/settings/settings_screen.dart';
+import 'features/shell/app_shell.dart';
 import 'features/recipes/ingredient_recipes_screen.dart';
 import 'features/recipes/recipe_search_screen.dart';
 import 'features/recipes/recipe_view_screen.dart';
@@ -26,7 +29,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/lists',
     refreshListenable: refresh,
     redirect: (context, state) {
       // The session is restored from local storage at startup, so a
@@ -35,7 +38,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final headingToAuth = _authRoutes.contains(state.matchedLocation);
 
       if (!signedIn) return headingToAuth ? null : '/login';
-      if (headingToAuth) return '/';
+      if (headingToAuth) return '/lists';
       return null;
     },
     routes: [
@@ -44,7 +47,37 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
       ),
-      GoRoute(path: '/', builder: (context, state) => const ListsScreen()),
+      // The three tabs. Each branch keeps its own navigator, so switching
+      // tabs does not throw away where you were.
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, shell) => AppShell(shell: shell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/lists',
+                builder: (context, state) => const ListsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/plan',
+                builder: (context, state) => const PlanScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/settings',
+                builder: (context, state) => const SettingsScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
       GoRoute(
         path: '/list/:listId',
         builder: (context, state) =>

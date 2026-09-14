@@ -42,8 +42,7 @@ theme and that every aisle has a hue in both modes.
 
 Light, dark and match-the-phone, persisted with `shared_preferences` and read
 before the first frame in `main()` so the app does not open in the wrong theme
-and snap. The chooser is in the app bar on the lists screen until there is a
-settings screen to hold it.
+and snap. The chooser lives in **Settings → Appearance**.
 
 ## Adding items
 
@@ -88,6 +87,62 @@ delete cascades through its meals, products and recipes, so the rows are read
 before the delete and re-inserted in foreign-key order if you undo — which is
 why this needs no soft-delete column. Long-press a list to rename it; long-press
 a meal for rename and delete.
+
+## Getting around
+
+Three tabs in a persistent bottom bar, each with its own navigator via
+`StatefulShellRoute.indexedStack`, so switching tabs does not throw away where
+you were:
+
+- **Lists** — the shopping lists, and everything under them.
+- **Plan** — the week ahead.
+- **Settings** — appearance, account.
+
+Detail screens (a list, a meal, shopping mode, a recipe) sit *outside* the
+shell and cover it. A list detail already has the item composer pinned to its
+bottom edge, and a nav bar underneath would fight it for the thumb.
+
+## Planning the week
+
+`Plan` shows the next seven days and which meal is cooked on each. Meals
+already existed as a first-class thing with their own ingredients and recipe,
+so this is largely a second view of data that was already there — what it adds
+is a reason to open the app on a day you are not in a supermarket.
+
+- A meal with no day sits under **Not yet planned**. Give it one from the `+`
+  on any day, or from the calendar button in the meal's own app bar.
+- Each planned meal shows how far through its shopping you are.
+- The week is across *all* lists, because a week is.
+
+Days are stored at midnight local time so two meals on the same date compare
+equal, and the range is built with calendar arithmetic rather than by adding a
+`Duration`, so a clock change during the week cannot shift the last day out of
+the window.
+
+## Database migrations
+
+`schemaVersion` is **2**. The ladder is in `lib/data/local/database.dart`:
+
+| Version | Change |
+|---|---|
+| 1 | Initial: lists, meals, products, recipes |
+| 2 | `meals.planned_for` — the day a meal is cooked |
+
+Every step must be additive and applied in order, because an install can be on
+any earlier version: a phone that skipped a release upgrades straight from 1 to
+current by running each step in turn.
+
+`test/migration_test.dart` builds a database at the **v1 schema by hand** with
+raw SQL, seeds it with a list, meal, product and recipe, then opens it through
+`AppDatabase` and checks the upgrade ran, every row survived, the new column
+reads null on existing rows, and the foreign-key cascade still works
+afterwards. Writing the old schema out by hand is deliberate — it keeps
+describing what is actually installed on a phone rather than whatever the
+current code generates.
+
+When adding a column: add it to the table, add an `if (from < n)` step, bump
+`schemaVersion`, regenerate with
+`dart run build_runner build`, and add a case to the migration test.
 
 ## Running it
 
@@ -247,6 +302,4 @@ Until then, the recipe search screen still works end-to-end via **"Attach a link
 - **Offline lockout.** Because signing in is required, a session that
   expires while offline leaves the app unreachable until there is a
   connection. Persisted sessions make this rare, not impossible.
-- **A settings screen.** Theme mode is the only preference there is, and it
-  lives in the lists-screen app bar.
 - Publishing/store builds (the release APK is signed with the debug key).
