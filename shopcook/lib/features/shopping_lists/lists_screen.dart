@@ -50,8 +50,15 @@ class ListsScreen extends ConsumerWidget {
               onAction: () => _createList(context, ref),
             );
           }
-          return ListView.builder(
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(
+              Insets.lg,
+              Insets.lg,
+              Insets.lg,
+              96,
+            ),
             itemCount: lists.length,
+            separatorBuilder: (_, __) => const SizedBox(height: Insets.md),
             itemBuilder: (context, index) {
               final list = lists[index];
               return Dismissible(
@@ -59,32 +66,18 @@ class ListsScreen extends ConsumerWidget {
                 direction: DismissDirection.endToStart,
                 background: const _DeleteBackground(),
                 // Deleting a list cascades to every meal, product and recipe
-                // under it, so it asks first. Undo arrives with the
-                // soft-delete column in the next phase.
+                // under it, so it both asks first and offers an undo.
                 confirmDismiss: (_) => confirmAction(
                   context,
                   title: 'Delete "${list.name}"?',
-                  message: 'This also removes its meals, items and recipes. '
-                      'That cannot be undone yet.',
+                  message:
+                      'This also removes its meals, items and recipes. You '
+                      'can undo it straight afterwards.',
                   confirmLabel: 'Delete',
                   destructive: true,
                 ),
-                onDismissed: (_) => ref
-                    .read(shoppingListRepositoryProvider)
-                    .deleteList(list.id),
-                child: ListTile(
-                  leading: const FaIcon(
-                    FontAwesomeIcons.rectangleList,
-                    size: 20,
-                  ),
-                  title: Text(list.name),
-                  subtitle: _ListProgress(listId: list.id),
-                  trailing: const FaIcon(
-                    FontAwesomeIcons.chevronRight,
-                    size: 14,
-                  ),
-                  onTap: () => context.push('/list/${list.id}', extra: list),
-                ),
+                onDismissed: (_) => _deleteWithUndo(context, ref, list),
+                child: _ListCard(list: list),
               );
             },
           );
@@ -127,6 +120,120 @@ class ListsScreen extends ConsumerWidget {
     if (name == null) return;
 
     await ref.read(shoppingListRepositoryProvider).createList(name);
+  }
+
+  /// Deletes the list but keeps its rows in hand, so the snackbar can put the
+  /// whole subtree back rather than only the list itself.
+  Future<void> _deleteWithUndo(
+    BuildContext context,
+    WidgetRef ref,
+    ShoppingList list,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final repository = ref.read(shoppingListRepositoryProvider);
+    final deleted = await repository.deleteListWithUndo(list.id);
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Deleted "${list.name}"'),
+        duration: const Duration(seconds: 6),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => repository.undoDelete(deleted),
+        ),
+      ),
+    );
+  }
+}
+
+/// One list, with how far through it you are.
+class _ListCard extends ConsumerWidget {
+  final ShoppingList list;
+
+  const _ListCard({required this.list});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final products =
+        ref.watch(_listProductsProvider(list.id)).valueOrNull ?? const [];
+    final checked = products.where((p) => p.isChecked).length;
+    final done = products.isNotEmpty && checked == products.length;
+
+    return AppCard(
+      padding: const EdgeInsets.all(Insets.lg),
+      shadowOpacity: 0.07,
+      onTap: () => context.push('/list/${list.id}', extra: list),
+      onLongPress: () => _rename(context, ref),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(Insets.sm),
+                decoration: BoxDecoration(
+                  color: palette.accent.withValues(
+                    alpha: palette.isDark ? 0.18 : 0.12,
+                  ),
+                  borderRadius: BorderRadius.circular(Radii.chip),
+                ),
+                child: FaIcon(
+                  done
+                      ? FontAwesomeIcons.circleCheck
+                      : FontAwesomeIcons.rectangleList,
+                  size: 15,
+                  color: palette.accent,
+                ),
+              ),
+              const SizedBox(width: Insets.md),
+              Expanded(
+                child: Text(
+                  list.name,
+                  style: AppText.title.copyWith(color: palette.ink),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (products.isNotEmpty)
+                CountPill(label: '$checked/${products.length}'),
+              const SizedBox(width: Insets.xs),
+              FaIcon(
+                FontAwesomeIcons.chevronRight,
+                size: 13,
+                color: palette.inkFaint,
+              ),
+            ],
+          ),
+          const SizedBox(height: Insets.md),
+          if (products.isEmpty)
+            Text(
+              'Empty — open it to add meals and items.',
+              style: AppText.caption.copyWith(color: palette.inkMuted),
+            )
+          else ...[
+            AppProgressBar(done: checked, total: products.length, height: 6),
+            const SizedBox(height: Insets.sm),
+            Text(
+              done
+                  ? 'Everything picked up'
+                  : '${products.length - checked} left to buy',
+              style: AppText.caption.copyWith(color: palette.inkFaint),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _rename(BuildContext context, WidgetRef ref) async {
+    final name = await promptForText(
+      context,
+      title: 'Rename list',
+      initialValue: list.name,
+    );
+    if (name == null) return;
+
+    await ref.read(shoppingListRepositoryProvider).renameList(list.id, name);
   }
 }
 
@@ -191,23 +298,6 @@ class _DeleteBackground extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-/// Shopping progress for one list, e.g. "2 of 5 checked".
-class _ListProgress extends ConsumerWidget {
-  final String listId;
-
-  const _ListProgress({required this.listId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final products =
-        ref.watch(_listProductsProvider(listId)).valueOrNull ?? const [];
-    if (products.isEmpty) return const Text('Empty');
-
-    final checked = products.where((p) => p.isChecked).length;
-    return Text('$checked of ${products.length} checked');
   }
 }
 

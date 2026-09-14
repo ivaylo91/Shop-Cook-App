@@ -6,6 +6,7 @@ import '../../core/design.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
+import '../products/item_composer.dart';
 import 'product_category.dart';
 
 /// Everything to buy across every meal in one flat, aisle-ordered checklist —
@@ -17,14 +18,32 @@ class ShoppingModeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final palette = context.palette;
     final productsAsync = ref.watch(_shopProductsProvider(list.id));
     final meals = ref.watch(_shopMealsProvider(list.id)).valueOrNull ?? const [];
     final mealNames = {for (final meal in meals) meal.id: meal.name};
 
     return Scaffold(
       appBar: AppBar(title: Text(list.name)),
-      body: productsAsync.when(
+      // The composer stays reachable while shopping: remembering something
+      // mid-aisle should not mean backing out of the view you are using.
+      body: Column(
+        children: [
+          Expanded(child: _body(context, ref, productsAsync, mealNames)),
+          ItemComposer(listId: list.id, hintText: 'Remembered something?'),
+        ],
+      ),
+    );
+  }
+
+  Widget _body(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<Product>> productsAsync,
+    Map<String, String> mealNames,
+  ) {
+    final palette = context.palette;
+
+    return productsAsync.when(
         loading: () => const Padding(
           padding: EdgeInsets.all(Insets.lg),
           child: SkeletonRows(count: 4),
@@ -89,7 +108,6 @@ class ShoppingModeScreen extends ConsumerWidget {
             ],
           );
         },
-      ),
     );
   }
 

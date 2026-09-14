@@ -7,7 +7,7 @@ import '../../core/design.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
-import '../products/add_product_dialog.dart';
+import '../products/item_composer.dart';
 
 class ListDetailScreen extends ConsumerWidget {
   final ShoppingList list;
@@ -25,122 +25,106 @@ class ListDetailScreen extends ConsumerWidget {
         title: Text(list.name),
         actions: [
           IconButton(
+            icon: const FaIcon(FontAwesomeIcons.utensils, size: 17),
+            tooltip: 'New meal',
+            onPressed: () => _createMeal(context, ref),
+          ),
+          IconButton(
             icon: const FaIcon(FontAwesomeIcons.cartShopping, size: 18),
             tooltip: 'Shopping mode',
             onPressed: () => context.push('/list/${list.id}/shop', extra: list),
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          Insets.lg,
-          Insets.lg,
-          Insets.lg,
-          // Room for the two floating actions.
-          96,
-        ),
+      body: Column(
         children: [
-          mealsAsync.when(
-            loading: () => const SkeletonRows(count: 2),
-            error: (_, __) => ErrorState(
-              title: 'Could not load the meals',
-              onRetry: () => ref.invalidate(_mealsProvider(list.id)),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                Insets.lg,
+                Insets.lg,
+                Insets.lg,
+                Insets.xl,
+              ),
+              children: [
+                mealsAsync.when(
+                  loading: () => const SkeletonRows(count: 2),
+                  error: (_, __) => ErrorState(
+                    title: 'Could not load the meals',
+                    onRetry: () => ref.invalidate(_mealsProvider(list.id)),
+                  ),
+                  data: (meals) {
+                    if (meals.isEmpty) return const SizedBox.shrink();
+                    return Column(
+                      children: [
+                        for (final meal in meals) ...[
+                          _MealCard(list: list, meal: meal),
+                          const SizedBox(height: Insets.md),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: Insets.sm),
+                SectionLabel(
+                  icon: FontAwesomeIcons.basketShopping,
+                  label: 'Other items',
+                  color: palette.inkMuted,
+                ),
+                const SizedBox(height: Insets.md),
+                unassignedAsync.when(
+                  loading: () => const SkeletonRows(count: 2),
+                  error: (_, __) => ErrorState(
+                    title: 'Could not load the items',
+                    onRetry: () =>
+                        ref.invalidate(_unassignedProductsProvider(list.id)),
+                  ),
+                  data: (products) {
+                    if (products.isEmpty) {
+                      return const InlineNote(
+                        message: 'Anything you add without picking a meal lands '
+                            'here — the milk and the washing-up liquid.',
+                      );
+                    }
+                    return AppCardList(
+                      tint: palette.inkMuted,
+                      children: [
+                        for (final product in products)
+                          ProductRow(
+                            name: product.name,
+                            details: '${product.quantity} ${product.unit}'.trim(),
+                            checked: product.isChecked,
+                            onToggle: (value) => ref
+                                .read(shoppingListRepositoryProvider)
+                                .toggleProductChecked(product.id, value),
+                            onLongPress: () => _itemActions(
+                              context,
+                              ref,
+                              product,
+                              mealsAsync.valueOrNull ?? const [],
+                            ),
+                            trailing: IconButton(
+                              icon: const FaIcon(
+                                FontAwesomeIcons.ellipsisVertical,
+                                size: 16,
+                              ),
+                              tooltip: 'Item actions',
+                              onPressed: () => _itemActions(
+                                context,
+                                ref,
+                                product,
+                                mealsAsync.valueOrNull ?? const [],
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ],
             ),
-            data: (meals) {
-              if (meals.isEmpty) return const SizedBox.shrink();
-              return Column(
-                children: [
-                  for (final meal in meals) ...[
-                    _MealCard(list: list, meal: meal),
-                    const SizedBox(height: Insets.md),
-                  ],
-                ],
-              );
-            },
           ),
-          const SizedBox(height: Insets.sm),
-          SectionLabel(
-            icon: FontAwesomeIcons.basketShopping,
-            label: 'Other items',
-            color: palette.inkMuted,
-          ),
-          const SizedBox(height: Insets.md),
-          unassignedAsync.when(
-            loading: () => const SkeletonRows(count: 2),
-            error: (_, __) => ErrorState(
-              title: 'Could not load the items',
-              onRetry: () =>
-                  ref.invalidate(_unassignedProductsProvider(list.id)),
-            ),
-            data: (products) {
-              if (products.isEmpty) {
-                return const InlineNote(
-                  message: 'Anything you add without picking a meal lands '
-                      'here — the milk and the washing-up liquid.',
-                );
-              }
-              return AppCardList(
-                tint: palette.inkMuted,
-                children: [
-                  for (final product in products)
-                    ProductRow(
-                      name: product.name,
-                      details: '${product.quantity} ${product.unit}'.trim(),
-                      checked: product.isChecked,
-                      onToggle: (value) => ref
-                          .read(shoppingListRepositoryProvider)
-                          .toggleProductChecked(product.id, value),
-                      onLongPress: () => _itemActions(
-                        context,
-                        ref,
-                        product,
-                        mealsAsync.valueOrNull ?? const [],
-                      ),
-                      trailing: IconButton(
-                        icon: const FaIcon(
-                          FontAwesomeIcons.ellipsisVertical,
-                          size: 16,
-                        ),
-                        tooltip: 'Item actions',
-                        onPressed: () => _itemActions(
-                          context,
-                          ref,
-                          product,
-                          mealsAsync.valueOrNull ?? const [],
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'add-meal',
-            onPressed: () => _createMeal(context, ref),
-            icon: const FaIcon(FontAwesomeIcons.utensils, size: 16),
-            label: const Text('Meal'),
-          ),
-          const SizedBox(width: Insets.md),
-          FloatingActionButton.extended(
-            heroTag: 'add-product',
-            onPressed: () async {
-              final result = await showAddProductDialog(context);
-              if (result == null) return;
-              await ref.read(shoppingListRepositoryProvider).addProduct(
-                listId: list.id,
-                name: result.name,
-                quantity: result.quantity,
-                unit: result.unit,
-              );
-            },
-            icon: const FaIcon(FontAwesomeIcons.cartPlus, size: 16),
-            label: const Text('Item'),
-          ),
+          ItemComposer(listId: list.id),
         ],
       ),
     );
@@ -208,12 +192,30 @@ class ListDetailScreen extends ConsumerWidget {
           extra: (product: product, mealName: null),
         );
       case 'delete':
-        await ref.read(shoppingListRepositoryProvider).deleteProduct(
-          product.id,
-        );
+        await _deleteItemWithUndo(context, ref, product);
       case 'move':
         await _moveToMeal(context, ref, product, meals);
     }
+  }
+
+  Future<void> _deleteItemWithUndo(
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final repository = ref.read(shoppingListRepositoryProvider);
+    final deleted = await repository.deleteProductWithUndo(product.id);
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Removed ${product.name}'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => repository.undoDelete(deleted),
+        ),
+      ),
+    );
   }
 
   Future<void> _moveToMeal(
@@ -273,7 +275,7 @@ class _MealCard extends ConsumerWidget {
       shadowOpacity: 0.07,
       onTap: () =>
           context.push('/list/${list.id}/meal/${meal.id}', extra: meal),
-      onLongPress: () => _confirmDelete(context, ref),
+      onLongPress: () => _mealActions(context, ref),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -326,17 +328,63 @@ class _MealCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await confirmAction(
-      context,
-      title: 'Delete "${meal.name}"?',
-      message: 'Its ingredients and attached recipe will be deleted too.',
-      confirmLabel: 'Delete',
-      destructive: true,
+  /// Rename or delete, in a sheet — a long-press with only one outcome is
+  /// hard to discover and easy to trigger by accident.
+  Future<void> _mealActions(BuildContext context, WidgetRef ref) async {
+    final action = await showAppSheet<String>(
+      context: context,
+      title: meal.name,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const FaIcon(FontAwesomeIcons.pen, size: 16),
+            title: const Text('Rename'),
+            onTap: () => Navigator.pop(context, 'rename'),
+          ),
+          ListTile(
+            leading: FaIcon(
+              FontAwesomeIcons.trashCan,
+              size: 17,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            title: Text(
+              'Delete meal',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+            onTap: () => Navigator.pop(context, 'delete'),
+          ),
+        ],
+      ),
     );
-    if (confirmed) {
-      await ref.read(shoppingListRepositoryProvider).deleteMeal(meal.id);
+
+    if (action == null || !context.mounted) return;
+
+    if (action == 'rename') {
+      final name = await promptForText(
+        context,
+        title: 'Rename meal',
+        initialValue: meal.name,
+      );
+      if (name == null) return;
+      await ref.read(shoppingListRepositoryProvider).renameMeal(meal.id, name);
+      return;
     }
+
+    final messenger = ScaffoldMessenger.of(context);
+    final repository = ref.read(shoppingListRepositoryProvider);
+    final deleted = await repository.deleteMealWithUndo(meal.id);
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Deleted "${meal.name}"'),
+        duration: const Duration(seconds: 6),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => repository.undoDelete(deleted),
+        ),
+      ),
+    );
   }
 }
 

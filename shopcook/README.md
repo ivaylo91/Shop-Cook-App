@@ -45,6 +45,50 @@ before the first frame in `main()` so the app does not open in the wrong theme
 and snap. The chooser is in the app bar on the lists screen until there is a
 settings screen to hold it.
 
+## Adding items
+
+One field at the bottom of every list, not a dialog. Adding an item is the most
+frequent action in the app, so it is the one thing that must not cost a modal
+and three taps.
+
+The text runs through the same `parseIngredient` used for recipe imports, so a
+single line fills all three fields:
+
+| You type | name | quantity | unit |
+|---|---|---|---|
+| `2 kg potatoes` | Potatoes | 2 | kg |
+| `500g beef mince` | Beef mince | 500 | g |
+| `milk` | Milk | | |
+
+The parse is shown above the field before you commit it, because guessing
+wrong silently would be worse than not guessing. Names you have added before
+appear as one-tap chips, ranked by how often you have used them — a weekly shop
+is mostly the same things, and those counts are derived from the rows already
+on your lists rather than from a separate history table.
+
+The composer is also on the shopping-mode screen, so remembering something
+mid-aisle does not mean backing out of the view you are using.
+
+### Duplicates are topped up, not stacked
+
+Adding something already on the list unchecked adds to it instead of creating a
+second row — two recipes both wanting onions used to produce two lines, and
+shopping mode showed both.
+
+It only does the arithmetic when that is unambiguous: same name, same unit,
+both amounts plain numbers. A range (`2-3`), a pack multiplier (`2 × 400g`), a
+fraction, or mismatched units (`2 tbsp` onto `500 g`) all stay as two honest
+rows rather than becoming one wrong number. Ticked items are never topped up
+either, since you have already bought those.
+
+### Undo
+
+Deleting a list, a meal or an item offers an undo in the snackbar. A list
+delete cascades through its meals, products and recipes, so the rows are read
+before the delete and re-inserted in foreign-key order if you undo — which is
+why this needs no soft-delete column. Long-press a list to rename it; long-press
+a meal for rename and delete.
+
 ## Running it
 
 ```bash
@@ -205,9 +249,4 @@ Until then, the recipe search screen still works end-to-end via **"Attach a link
   connection. Persisted sessions make this rare, not impossible.
 - **A settings screen.** Theme mode is the only preference there is, and it
   lives in the lists-screen app bar.
-- **Renaming a list or meal**, and undo on delete. Deleting a list asks for
-  confirmation but cannot be undone.
-- **A faster way to add an item.** It is still a three-field dialog; the plan
-  is one inline field parsed by `parseIngredient`, which already splits
-  "2 kg potatoes" for recipe imports.
 - Publishing/store builds (the release APK is signed with the debug key).

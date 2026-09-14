@@ -7,7 +7,7 @@ import '../../core/design.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
-import '../products/add_product_dialog.dart';
+import '../products/item_composer.dart';
 import '../recipes/import_ingredients_sheet.dart';
 import '../shopping/product_category.dart';
 
@@ -24,120 +24,122 @@ class MealDetailScreen extends ConsumerWidget {
     final recipesAsync = ref.watch(_mealRecipesProvider(meal.id));
 
     return Scaffold(
-      appBar: AppBar(title: Text(meal.name)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(Insets.lg, Insets.lg, Insets.lg, 96),
-        children: [
-          SectionLabel(
-            icon: FontAwesomeIcons.carrot,
-            label: 'Ingredients',
-            count: productsAsync.valueOrNull?.length,
-            color: palette.accent,
-          ),
-          const SizedBox(height: Insets.md),
-          productsAsync.when(
-            loading: () => const SkeletonRows(count: 3),
-            error: (_, __) => ErrorState(
-              title: 'Could not load the ingredients',
-              onRetry: () => ref.invalidate(_mealProductsProvider(meal.id)),
-            ),
-            data: (products) {
-              if (products.isEmpty) {
-                return const InlineNote(
-                  message: 'No ingredients yet. Add them by hand, or find a '
-                      'recipe and import its list in one go.',
-                );
-              }
-              return AppCardList(
-                tint: palette.accent,
-                children: [
-                  for (final product in products)
-                    ProductRow(
-                      name: product.name,
-                      details: '${product.quantity} ${product.unit}'.trim(),
-                      checked: product.isChecked,
-                      onToggle: (value) => ref
-                          .read(shoppingListRepositoryProvider)
-                          .toggleProductChecked(product.id, value),
-                      onLongPress: () =>
-                          _itemActions(context, ref, product),
-                      trailing: IconButton(
-                        icon: const FaIcon(
-                          FontAwesomeIcons.ellipsisVertical,
-                          size: 16,
-                        ),
-                        tooltip: 'Item actions',
-                        onPressed: () => _itemActions(context, ref, product),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: Insets.xl),
-          SectionLabel(
-            icon: FontAwesomeIcons.bookOpen,
-            label: 'Recipe',
-            color: palette.aisle(_recipeSectionHue),
-          ),
-          const SizedBox(height: Insets.md),
-          recipesAsync.when(
-            loading: () => const SkeletonRows(count: 1),
-            error: (_, __) => ErrorState(
-              title: 'Could not load the recipe',
-              onRetry: () => ref.invalidate(_mealRecipesProvider(meal.id)),
-            ),
-            data: (recipes) {
-              if (recipes.isEmpty) {
-                return const InlineNote(
-                  message: 'No recipe attached yet. Find one and its '
-                      'ingredients can be imported straight onto this meal.',
-                );
-              }
-              return Column(
-                children: [
-                  for (final recipe in recipes) ...[
-                    _RecipeCard(
-                      recipe: recipe,
-                      listId: listId,
-                      mealId: meal.id,
-                    ),
-                    const SizedBox(height: Insets.md),
-                  ],
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'find-recipe',
+      appBar: AppBar(
+        title: Text(meal.name),
+        actions: [
+          IconButton(
+            icon: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 17),
+            tooltip: 'Find a recipe',
             onPressed: () => context.push(
               '/list/$listId/meal/${meal.id}/search',
               extra: meal,
             ),
-            icon: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 16),
-            label: const Text('Find recipe'),
           ),
-          const SizedBox(width: Insets.md),
-          FloatingActionButton.extended(
-            heroTag: 'add-ingredient',
-            onPressed: () async {
-              final result = await showAddProductDialog(context);
-              if (result == null) return;
-              await ref.read(shoppingListRepositoryProvider).addProduct(
-                listId: listId,
-                mealId: meal.id,
-                name: result.name,
-                quantity: result.quantity,
-                unit: result.unit,
-              );
-            },
-            icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
-            label: const Text('Ingredient'),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                Insets.lg,
+                Insets.lg,
+                Insets.lg,
+                Insets.xl,
+              ),
+              children: [
+                SectionLabel(
+                  icon: FontAwesomeIcons.carrot,
+                  label: 'Ingredients',
+                  // Null rather than 0: a bare "0" beside a heading whose
+                  // own empty state already says so is just noise.
+                  count: switch (productsAsync.valueOrNull?.length) {
+                    null || 0 => null,
+                    final count => count,
+                  },
+                  color: palette.accent,
+                ),
+                const SizedBox(height: Insets.md),
+                productsAsync.when(
+                  loading: () => const SkeletonRows(count: 3),
+                  error: (_, __) => ErrorState(
+                    title: 'Could not load the ingredients',
+                    onRetry: () => ref.invalidate(_mealProductsProvider(meal.id)),
+                  ),
+                  data: (products) {
+                    if (products.isEmpty) {
+                      return const InlineNote(
+                        message: 'No ingredients yet. Add them by hand, or find a '
+                            'recipe and import its list in one go.',
+                      );
+                    }
+                    return AppCardList(
+                      tint: palette.accent,
+                      children: [
+                        for (final product in products)
+                          ProductRow(
+                            name: product.name,
+                            details: '${product.quantity} ${product.unit}'.trim(),
+                            checked: product.isChecked,
+                            onToggle: (value) => ref
+                                .read(shoppingListRepositoryProvider)
+                                .toggleProductChecked(product.id, value),
+                            onLongPress: () =>
+                                _itemActions(context, ref, product),
+                            trailing: IconButton(
+                              icon: const FaIcon(
+                                FontAwesomeIcons.ellipsisVertical,
+                                size: 16,
+                              ),
+                              tooltip: 'Item actions',
+                              onPressed: () => _itemActions(context, ref, product),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: Insets.xl),
+                SectionLabel(
+                  icon: FontAwesomeIcons.bookOpen,
+                  label: 'Recipe',
+                  color: palette.aisle(_recipeSectionHue),
+                ),
+                const SizedBox(height: Insets.md),
+                recipesAsync.when(
+                  loading: () => const SkeletonRows(count: 1),
+                  error: (_, __) => ErrorState(
+                    title: 'Could not load the recipe',
+                    onRetry: () => ref.invalidate(_mealRecipesProvider(meal.id)),
+                  ),
+                  data: (recipes) {
+                    if (recipes.isEmpty) {
+                      return const InlineNote(
+                        message: 'No recipe attached yet. Find one and its '
+                            'ingredients can be imported straight onto this meal.',
+                      );
+                    }
+                    return Column(
+                      children: [
+                        for (final recipe in recipes) ...[
+                          _RecipeCard(
+                            recipe: recipe,
+                            listId: listId,
+                            mealId: meal.id,
+                          ),
+                          const SizedBox(height: Insets.md),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          ItemComposer(
+            listId: listId,
+            mealId: meal.id,
+            hintText: 'Add an ingredient',
           ),
         ],
       ),
@@ -180,7 +182,19 @@ class MealDetailScreen extends ConsumerWidget {
     if (action == null || !context.mounted) return;
 
     if (action == 'delete') {
-      await ref.read(shoppingListRepositoryProvider).deleteProduct(product.id);
+      final messenger = ScaffoldMessenger.of(context);
+      final repository = ref.read(shoppingListRepositoryProvider);
+      final deleted = await repository.deleteProductWithUndo(product.id);
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Removed ${product.name}'),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => repository.undoDelete(deleted),
+          ),
+        ),
+      );
     } else {
       context.push(
         '/ingredient-recipes',
