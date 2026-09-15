@@ -308,5 +308,9 @@ class _Suggestions extends ConsumerWidget {
 
 final productSuggestionsProvider =
     StreamProvider<List<ProductSuggestion>>((ref) {
-      return ref.watch(shoppingListRepositoryProvider).watchSuggestions();
+      final userId = ref.watch(currentUserIdProvider);
+      if (userId == null) return const Stream.empty();
+      return ref
+          .watch(shoppingListRepositoryProvider)
+          .watchSuggestions(userId);
     });

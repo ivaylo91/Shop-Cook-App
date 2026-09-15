@@ -88,9 +88,12 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase.opened(raw));
     addTearDown(db.close);
 
-    // Opening runs the ladder; the first query is what forces it.
-    final lists = await db.watchLists().first;
+    // Opening runs the ladder; the first query is what forces it. A v1 list
+    // has no owner, so it is only visible once claimed.
+    final claimed = await db.claimUnownedLists('user-1');
+    final lists = await db.watchLists('user-1').first;
 
+    expect(claimed, 1);
     expect(lists.single.name, 'Weekly groceries');
     expect(raw.userVersion, db.schemaVersion);
   });
@@ -141,6 +144,21 @@ void main() {
     expect(await db.watchMealsForList('list-1').first, isEmpty);
   });
 
+  test('a v1 list arrives unowned, not owned by nobody-in-particular',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.opened(seedV1()));
+    addTearDown(db.close);
+
+    // The migration cannot know who the user is, so it must not guess.
+    expect(await db.watchLists('user-1').first, isEmpty);
+    expect(await db.watchLists('user-2').first, isEmpty);
+
+    await db.claimUnownedLists('user-1');
+
+    expect((await db.watchLists('user-1').first).single.id, 'list-1');
+    expect(await db.watchLists('user-2').first, isEmpty);
+  });
+
   test('a fresh database is created at the current version', () async {
     final raw = sqlite3.openInMemory();
     final db = AppDatabase.forTesting(NativeDatabase.opened(raw));
@@ -150,6 +168,7 @@ void main() {
       ShoppingListsCompanion.insert(
         id: 'l',
         name: 'New',
+        userId: const Value('user-1'),
         createdAt: DateTime(2026, 1, 1),
       ),
     );

@@ -12,6 +12,21 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(Supabase.instance.client);
 });
 
+/// Re-emits whenever Supabase reports a sign-in, sign-out or token refresh.
+final authStateProvider = StreamProvider<AuthState>((ref) {
+  return ref.watch(authRepositoryProvider).authStateChanges;
+});
+
+/// The signed-in user's id, or null. Everything stored locally is scoped by
+/// this, so two people signing in on one phone no longer see each other's
+/// lists.
+final currentUserIdProvider = Provider<String?>((ref) {
+  // Watched only to rebuild when auth changes; the id itself is read from the
+  // client, which is the authority and is already restored at startup.
+  ref.watch(authStateProvider);
+  return ref.watch(authRepositoryProvider).currentUser?.id;
+});
+
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
   ref.onDispose(db.close);

@@ -10,6 +10,18 @@ part 'database.g.dart';
 class ShoppingLists extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
+
+  /// Which signed-in user owns this list.
+  ///
+  /// Only lists carry an owner: meals, products and recipes are reachable
+  /// only through a list, and every query for them is already scoped by a
+  /// list id, so scoping lists scopes the whole tree.
+  ///
+  /// Nullable because rows written before this column existed have no owner
+  /// yet. They are claimed by the first user to sign in after upgrading —
+  /// see `claimUnownedLists`. A fresh row always has one.
+  TextColumn get userId => text().nullable()();
+
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -74,7 +86,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   /// The migration ladder. Every step has to be additive and idempotent in
   /// order, because an install can be on any earlier version — a phone that
@@ -94,6 +106,12 @@ class AppDatabase extends _$AppDatabase {
       if (from < 2) {
         await m.addColumn(meals, meals.plannedFor);
       }
+      // v3: lists belong to a user. Existing rows stay unowned here and are
+      // claimed once someone signs in — the migration has no idea who that
+      // is, and guessing would hand one user's lists to another.
+      if (from < 3) {
+        await m.addColumn(shoppingLists, shoppingLists.userId);
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -101,9 +119,23 @@ class AppDatabase extends _$AppDatabase {
   );
 
   // ShoppingLists
-  Stream<List<ShoppingList>> watchLists() =>
+  Stream<List<ShoppingList>> watchLists(String userId) =>
       (select(shoppingLists)
-        ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).watch();
+            ..where((t) => t.userId.equals(userId))
+            ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+          .watch();
+
+  /// Hands every ownerless list to [userId], and reports how many moved.
+  ///
+  /// Rows written before the owner column existed belong to whoever was using
+  /// the device, which in practice is the first person to sign in after the
+  /// upgrade. Doing it at sign-in rather than in the migration is what makes
+  /// that safe: the migration cannot know who the user is.
+  Future<int> claimUnownedLists(String userId) {
+    return (update(shoppingLists)..where((t) => t.userId.isNull())).write(
+      ShoppingListsCompanion(userId: Value(userId)),
+    );
+  }
 
   Future<void> insertList(ShoppingListsCompanion entry) =>
       into(shoppingLists).insert(entry);
@@ -238,14 +270,24 @@ class AppDatabase extends _$AppDatabase {
   /// Derived from the rows already on the lists rather than from a separate
   /// history table: the data is the history, and a second table would only
   /// have to be kept in sync with it.
-  Stream<List<ProductSuggestion>> watchProductSuggestions({int limit = 60}) {
+  ///
+  /// Joined through to the owning list, because this is the one query that
+  /// reads across every list at once — without the join it would offer one
+  /// user's shopping habits to another as suggestions.
+  Stream<List<ProductSuggestion>> watchProductSuggestions(
+    String userId, {
+    int limit = 60,
+  }) {
     return customSelect(
-      'SELECT name, COUNT(*) AS uses FROM products '
-      'GROUP BY name COLLATE NOCASE '
-      'ORDER BY uses DESC, MAX(created_at) DESC '
+      'SELECT p.name AS name, COUNT(*) AS uses '
+      'FROM products p '
+      'JOIN shopping_lists l ON l.id = p.list_id '
+      'WHERE l.user_id = ? '
+      'GROUP BY p.name COLLATE NOCASE '
+      'ORDER BY uses DESC, MAX(p.created_at) DESC '
       'LIMIT ?',
-      variables: [Variable.withInt(limit)],
-      readsFrom: {products},
+      variables: [Variable.withString(userId), Variable.withInt(limit)],
+      readsFrom: {products, shoppingLists},
     ).watch().map(
       (rows) => rows
           .map(

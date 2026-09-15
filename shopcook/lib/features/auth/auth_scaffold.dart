@@ -123,7 +123,13 @@ class AuthField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           errorText: errorText,
-          prefixIcon: FaIcon(icon, size: 15),
+          // Centred explicitly: InputDecoration drops the prefix icon into a
+          // 48x48 minimum box, and FaIcon has no box of its own to centre
+          // within it, so a bare FaIcon sits hard against the left edge.
+          prefixIcon: SizedBox(
+            width: 48,
+            child: Center(child: FaIcon(icon, size: 15)),
+          ),
           // Keep the show/hide toggle tappable, but out of the tab order:
           // pressing "Next" on the password field should reach the next
           // field, not the eye button. ExcludeFocus rather than

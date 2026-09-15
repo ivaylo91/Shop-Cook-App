@@ -27,6 +27,15 @@ class $ShoppingListsTable extends ShoppingLists
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -39,7 +48,7 @@ class $ShoppingListsTable extends ShoppingLists
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, name, createdAt];
+  List<GeneratedColumn> get $columns => [id, name, userId, createdAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -64,6 +73,12 @@ class $ShoppingListsTable extends ShoppingLists
       );
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
     }
     if (data.containsKey('created_at')) {
       context.handle(
@@ -90,6 +105,10 @@ class $ShoppingListsTable extends ShoppingLists
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -106,10 +125,22 @@ class $ShoppingListsTable extends ShoppingLists
 class ShoppingList extends DataClass implements Insertable<ShoppingList> {
   final String id;
   final String name;
+
+  /// Which signed-in user owns this list.
+  ///
+  /// Only lists carry an owner: meals, products and recipes are reachable
+  /// only through a list, and every query for them is already scoped by a
+  /// list id, so scoping lists scopes the whole tree.
+  ///
+  /// Nullable because rows written before this column existed have no owner
+  /// yet. They are claimed by the first user to sign in after upgrading —
+  /// see `claimUnownedLists`. A fresh row always has one.
+  final String? userId;
   final DateTime createdAt;
   const ShoppingList({
     required this.id,
     required this.name,
+    this.userId,
     required this.createdAt,
   });
   @override
@@ -117,6 +148,9 @@ class ShoppingList extends DataClass implements Insertable<ShoppingList> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -125,6 +159,9 @@ class ShoppingList extends DataClass implements Insertable<ShoppingList> {
     return ShoppingListsCompanion(
       id: Value(id),
       name: Value(name),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
       createdAt: Value(createdAt),
     );
   }
@@ -137,6 +174,7 @@ class ShoppingList extends DataClass implements Insertable<ShoppingList> {
     return ShoppingList(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      userId: serializer.fromJson<String?>(json['userId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -146,20 +184,27 @@ class ShoppingList extends DataClass implements Insertable<ShoppingList> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
+      'userId': serializer.toJson<String?>(userId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
 
-  ShoppingList copyWith({String? id, String? name, DateTime? createdAt}) =>
-      ShoppingList(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        createdAt: createdAt ?? this.createdAt,
-      );
+  ShoppingList copyWith({
+    String? id,
+    String? name,
+    Value<String?> userId = const Value.absent(),
+    DateTime? createdAt,
+  }) => ShoppingList(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    userId: userId.present ? userId.value : this.userId,
+    createdAt: createdAt ?? this.createdAt,
+  );
   ShoppingList copyWithCompanion(ShoppingListsCompanion data) {
     return ShoppingList(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      userId: data.userId.present ? data.userId.value : this.userId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -169,36 +214,41 @@ class ShoppingList extends DataClass implements Insertable<ShoppingList> {
     return (StringBuffer('ShoppingList(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('userId: $userId, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, createdAt);
+  int get hashCode => Object.hash(id, name, userId, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ShoppingList &&
           other.id == this.id &&
           other.name == this.name &&
+          other.userId == this.userId &&
           other.createdAt == this.createdAt);
 }
 
 class ShoppingListsCompanion extends UpdateCompanion<ShoppingList> {
   final Value<String> id;
   final Value<String> name;
+  final Value<String?> userId;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const ShoppingListsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.userId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ShoppingListsCompanion.insert({
     required String id,
     required String name,
+    this.userId = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -207,12 +257,14 @@ class ShoppingListsCompanion extends UpdateCompanion<ShoppingList> {
   static Insertable<ShoppingList> custom({
     Expression<String>? id,
     Expression<String>? name,
+    Expression<String>? userId,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (userId != null) 'user_id': userId,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -221,12 +273,14 @@ class ShoppingListsCompanion extends UpdateCompanion<ShoppingList> {
   ShoppingListsCompanion copyWith({
     Value<String>? id,
     Value<String>? name,
+    Value<String?>? userId,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
     return ShoppingListsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      userId: userId ?? this.userId,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -240,6 +294,9 @@ class ShoppingListsCompanion extends UpdateCompanion<ShoppingList> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -255,6 +312,7 @@ class ShoppingListsCompanion extends UpdateCompanion<ShoppingList> {
     return (StringBuffer('ShoppingListsCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('userId: $userId, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -1664,6 +1722,7 @@ typedef $$ShoppingListsTableCreateCompanionBuilder =
     ShoppingListsCompanion Function({
       required String id,
       required String name,
+      Value<String?> userId,
       required DateTime createdAt,
       Value<int> rowid,
     });
@@ -1671,6 +1730,7 @@ typedef $$ShoppingListsTableUpdateCompanionBuilder =
     ShoppingListsCompanion Function({
       Value<String> id,
       Value<String> name,
+      Value<String?> userId,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -1738,6 +1798,11 @@ class $$ShoppingListsTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1816,6 +1881,11 @@ class $$ShoppingListsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -1836,6 +1906,9 @@ class $$ShoppingListsTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -1921,11 +1994,13 @@ class $$ShoppingListsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ShoppingListsCompanion(
                 id: id,
                 name: name,
+                userId: userId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -1933,11 +2008,13 @@ class $$ShoppingListsTableTableManager
               ({
                 required String id,
                 required String name,
+                Value<String?> userId = const Value.absent(),
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => ShoppingListsCompanion.insert(
                 id: id,
                 name: name,
+                userId: userId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

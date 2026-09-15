@@ -10,13 +10,21 @@ class ShoppingListRepository {
 
   ShoppingListRepository(this._db);
 
-  Stream<List<ShoppingList>> watchLists() => _db.watchLists();
+  Stream<List<ShoppingList>> watchLists(String userId) =>
+      _db.watchLists(userId);
 
-  Future<void> createList(String name) {
+  /// Hands any list written before lists had owners to [userId].
+  ///
+  /// Returns how many were claimed, which is only interesting the first time.
+  Future<int> claimUnownedLists(String userId) =>
+      _db.claimUnownedLists(userId);
+
+  Future<void> createList(String name, {required String userId}) {
     return _db.insertList(
       ShoppingListsCompanion.insert(
         id: _uuid.v4(),
         name: name,
+        userId: Value(userId),
         createdAt: DateTime.now(),
       ),
     );
@@ -95,9 +103,9 @@ class ShoppingListRepository {
   Future<void> renameMeal(String id, String name) =>
       _db.renameMeal(id, name.trim());
 
-  /// Names the user has added before, most-used first.
-  Stream<List<ProductSuggestion>> watchSuggestions() =>
-      _db.watchProductSuggestions();
+  /// Names this user has added before, most-used first.
+  Stream<List<ProductSuggestion>> watchSuggestions(String userId) =>
+      _db.watchProductSuggestions(userId);
 
   /// Midnight on the given day, which is how planned days are stored so that
   /// two meals on the same date compare equal.

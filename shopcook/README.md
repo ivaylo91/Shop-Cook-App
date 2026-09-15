@@ -35,7 +35,15 @@ reach past them for a colour or a spacing value.
 
 Two rules worth keeping: build a screen from the kit before adding a widget to
 it, and put any new colour in `AppPalette` with both variants rather than
-inline. `flutter test test/theme_test.dart` checks the palette reaches the
+inline.
+
+**One trap worth knowing:** `FaIcon` (font_awesome_flutter 11+) renders a bare
+`RichText` with no box of its own, unlike Material's `Icon`, which centres its
+glyph internally. Dropping a `FaIcon` into a **fixed-size** parent with no
+`alignment` gives it tight constraints and it lays out top-left. Either give
+the parent `alignment: Alignment.center` or wrap the icon in a `Center`. This
+is deliberate in the package — non-square Font Awesome glyphs clip when forced
+into a square box — so the fix belongs at the call site. `flutter test test/theme_test.dart` checks the palette reaches the
 theme and that every aisle has a hue in both modes.
 
 ### Dark mode
@@ -119,14 +127,32 @@ equal, and the range is built with calendar arithmetic rather than by adding a
 `Duration`, so a clock change during the week cannot shift the last day out of
 the window.
 
+## Whose data is whose
+
+Everything stored locally is scoped to the signed-in user. Only
+`shopping_lists` carries a `user_id`: meals, products and recipes are
+reachable only through a list, and every query for them is already scoped by
+a list id, so scoping lists scopes the whole tree. The one exception is the
+composer's suggestion query, which reads across every list at once — it joins
+through to the owning list, or it would offer one user's shopping habits to
+another.
+
+`user_id` is nullable, because rows written before the column existed have no
+owner. The migration deliberately does **not** guess who they belong to — it
+cannot know, and guessing would hand one person's lists to another. Instead
+they are claimed by the first user to sign in after the upgrade
+(`claimUnownedLists`), which runs before the list stream is read so an
+upgraded device shows its existing lists rather than looking wiped.
+
 ## Database migrations
 
-`schemaVersion` is **2**. The ladder is in `lib/data/local/database.dart`:
+`schemaVersion` is **3**. The ladder is in `lib/data/local/database.dart`:
 
 | Version | Change |
 |---|---|
 | 1 | Initial: lists, meals, products, recipes |
 | 2 | `meals.planned_for` — the day a meal is cooked |
+| 3 | `shopping_lists.user_id` — which signed-in user owns a list |
 
 Every step must be additive and applied in order, because an install can be on
 any earlier version: a phone that skipped a release upgrades straight from 1 to
@@ -294,11 +320,10 @@ Until then, the recipe search screen still works end-to-end via **"Attach a link
 
 ## Not built yet
 
-- **Cloud sync.** Lists live only on the device. Two consequences worth
-  knowing while this is true:
-  - Signing in on a second phone shows an empty app.
-  - Local data is not scoped per user, so if two people sign in on the same
-    device they see the same lists.
+- **Cloud sync.** Lists live only on the device, so signing in on a second
+  phone shows an empty app. Local data *is* now scoped per user, so two
+  people on one device no longer see each other's lists — but neither of them
+  gets their data on another device.
 - **Offline lockout.** Because signing in is required, a session that
   expires while offline leaves the app unreachable until there is a
   connection. Persisted sessions make this rare, not impossible.

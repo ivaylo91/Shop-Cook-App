@@ -89,7 +89,12 @@ class ListsScreen extends ConsumerWidget {
     );
     if (name == null) return;
 
-    await ref.read(shoppingListRepositoryProvider).createList(name);
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+
+    await ref
+        .read(shoppingListRepositoryProvider)
+        .createList(name, userId: userId);
   }
 
   /// Deletes the list but keeps its rows in hand, so the snackbar can put the
@@ -240,8 +245,18 @@ class _DeleteBackground extends StatelessWidget {
   }
 }
 
-final _listsStreamProvider = StreamProvider<List<ShoppingList>>((ref) {
-  return ref.watch(shoppingListRepositoryProvider).watchLists();
+final _listsStreamProvider = StreamProvider<List<ShoppingList>>((ref) async* {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) {
+    yield const [];
+    return;
+  }
+
+  final repository = ref.watch(shoppingListRepositoryProvider);
+  // Claim before reading, so a device upgrading from an ownerless schema
+  // shows its existing lists rather than looking wiped.
+  await repository.claimUnownedLists(userId);
+  yield* repository.watchLists(userId);
 });
 
 final _listProductsProvider = StreamProvider.family<List<Product>, String>((

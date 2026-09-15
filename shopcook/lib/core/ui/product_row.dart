@@ -125,6 +125,11 @@ class CheckDot extends StatelessWidget {
           curve: Motion.enter,
           width: 26,
           height: 26,
+          // FaIcon renders a bare RichText with no box of its own — unlike
+          // Material's Icon, which centres its glyph internally. Without an
+          // alignment here the tick gets tight 26x26 constraints and lays
+          // out top-left, hanging out of the circle.
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: checked ? palette.accent : Colors.transparent,
             shape: BoxShape.circle,
