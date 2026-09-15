@@ -144,6 +144,42 @@ they are claimed by the first user to sign in after the upgrade
 (`claimUnownedLists`), which runs before the list stream is read so an
 upgraded device shows its existing lists rather than looking wiped.
 
+## Cloud schema (sync groundwork)
+
+The server half of sync exists. `supabase/migrations/` holds the applied SQL,
+version-controlled so the cloud schema is reproducible rather than something
+that only lives in a dashboard:
+
+| Migration | What it does |
+|---|---|
+| `20260915103345_create_shopcook_sync_tables` | Mirrors the four Drift tables, with RLS |
+| `20260915103405_enable_realtime_on_shopcook_tables` | Adds them to the `supabase_realtime` publication |
+
+Applied against project `wqidsbhicyfufncxyqww`. Re-apply elsewhere with
+`supabase db push`, or `supabase link` then run them in order.
+
+Design notes worth keeping:
+
+- **Ids come from the device.** `uuid` primary keys with no server default, so
+  a row created offline keeps its identity when it finally reaches the server.
+- **`updated_at` is server-maintained** by a `before update` trigger. It is
+  the delta cursor for pulls, and the client's clock is not trusted with it.
+- **`deleted_at` is a tombstone.** A hard delete leaves no trace, so another
+  device would never learn a row went away and would cheerfully push it back.
+- **`user_id` is denormalised onto all four tables** rather than resolved
+  through the parent list. RLS runs per row, and an `EXISTS` subquery up the
+  tree on every read of every product is a cost paid forever to avoid one
+  column.
+- **Policies are `to authenticated`** with `(select auth.uid())`, which keeps
+  the anon key out entirely and lets the planner evaluate the uid once per
+  statement instead of once per row.
+
+**The client sync service is not written yet.** These tables are in place and
+empty; nothing reads or writes them, and the app is still device-only. What is
+still needed: `updated_at`/`deleted_at` on the local Drift schema, soft
+deletes with tombstone filtering on every query, a push/pull reconciliation
+with last-write-wins, and a Realtime subscription.
+
 ## Database migrations
 
 `schemaVersion` is **3**. The ladder is in `lib/data/local/database.dart`:
