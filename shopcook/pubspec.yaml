@@ -28,6 +28,7 @@ dependencies:
   # 10.x subclasses it (IconDataSolid, IconDataBrands, ...), so 10.x no longer
   # compiles at all. The analyzer does not catch it — only the CFE does.
   font_awesome_flutter: ^11.0.0
+  share_plus: ^13.3.0
 
 dev_dependencies:
   flutter_test:

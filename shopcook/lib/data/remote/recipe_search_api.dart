@@ -39,11 +39,17 @@ class RecipeSearchApi {
 
   RecipeSearchApi(this._client);
 
-  Future<List<RecipeSearchResult>> search(String query) async {
+  /// [locale] biases the results toward the reader's language and tells the
+  /// function which word for "recipe" to search with — without it a Bulgarian
+  /// query became "пиле recipe" and came back part Ukrainian, part Czech.
+  Future<List<RecipeSearchResult>> search(
+    String query, {
+    String locale = 'en',
+  }) async {
     try {
       final response = await _client.functions.invoke(
         'search-recipes',
-        body: {'query': query},
+        body: {'query': query, 'locale': locale},
       );
       final data = response.data;
       if (data is! Map || data['results'] is! List) return [];

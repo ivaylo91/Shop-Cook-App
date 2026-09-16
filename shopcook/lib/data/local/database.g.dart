@@ -771,6 +771,41 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _priceMeta = const VerificationMeta('price');
+  @override
+  late final GeneratedColumn<double> price = GeneratedColumn<double>(
+    'price',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _categoryOverrideMeta = const VerificationMeta(
+    'categoryOverride',
+  );
+  @override
+  late final GeneratedColumn<String> categoryOverride = GeneratedColumn<String>(
+    'category_override',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isStapleMeta = const VerificationMeta(
+    'isStaple',
+  );
+  @override
+  late final GeneratedColumn<bool> isStaple = GeneratedColumn<bool>(
+    'is_staple',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_staple" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -791,6 +826,9 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     quantity,
     unit,
     isChecked,
+    price,
+    categoryOverride,
+    isStaple,
     createdAt,
   ];
   @override
@@ -850,6 +888,27 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         isChecked.isAcceptableOrUnknown(data['is_checked']!, _isCheckedMeta),
       );
     }
+    if (data.containsKey('price')) {
+      context.handle(
+        _priceMeta,
+        price.isAcceptableOrUnknown(data['price']!, _priceMeta),
+      );
+    }
+    if (data.containsKey('category_override')) {
+      context.handle(
+        _categoryOverrideMeta,
+        categoryOverride.isAcceptableOrUnknown(
+          data['category_override']!,
+          _categoryOverrideMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_staple')) {
+      context.handle(
+        _isStapleMeta,
+        isStaple.isAcceptableOrUnknown(data['is_staple']!, _isStapleMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -895,6 +954,18 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_checked'],
       )!,
+      price: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}price'],
+      ),
+      categoryOverride: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_override'],
+      ),
+      isStaple: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_staple'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -916,6 +987,19 @@ class Product extends DataClass implements Insertable<Product> {
   final String quantity;
   final String unit;
   final bool isChecked;
+
+  /// What this costs, in the user's own currency. Null means unpriced, which
+  /// is different from free — a list total has to be able to say "so far".
+  final double? price;
+
+  /// An aisle the user put this in by hand, overriding the keyword guess.
+  ///
+  /// Stored as the enum's name rather than its index, so reordering
+  /// [ProductCategory] cannot silently re-file everyone's groceries.
+  final String? categoryOverride;
+
+  /// Something you re-buy routinely, offered by the restock action.
+  final bool isStaple;
   final DateTime createdAt;
   const Product({
     required this.id,
@@ -925,6 +1009,9 @@ class Product extends DataClass implements Insertable<Product> {
     required this.quantity,
     required this.unit,
     required this.isChecked,
+    this.price,
+    this.categoryOverride,
+    required this.isStaple,
     required this.createdAt,
   });
   @override
@@ -939,6 +1026,13 @@ class Product extends DataClass implements Insertable<Product> {
     map['quantity'] = Variable<String>(quantity);
     map['unit'] = Variable<String>(unit);
     map['is_checked'] = Variable<bool>(isChecked);
+    if (!nullToAbsent || price != null) {
+      map['price'] = Variable<double>(price);
+    }
+    if (!nullToAbsent || categoryOverride != null) {
+      map['category_override'] = Variable<String>(categoryOverride);
+    }
+    map['is_staple'] = Variable<bool>(isStaple);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -954,6 +1048,13 @@ class Product extends DataClass implements Insertable<Product> {
       quantity: Value(quantity),
       unit: Value(unit),
       isChecked: Value(isChecked),
+      price: price == null && nullToAbsent
+          ? const Value.absent()
+          : Value(price),
+      categoryOverride: categoryOverride == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryOverride),
+      isStaple: Value(isStaple),
       createdAt: Value(createdAt),
     );
   }
@@ -971,6 +1072,9 @@ class Product extends DataClass implements Insertable<Product> {
       quantity: serializer.fromJson<String>(json['quantity']),
       unit: serializer.fromJson<String>(json['unit']),
       isChecked: serializer.fromJson<bool>(json['isChecked']),
+      price: serializer.fromJson<double?>(json['price']),
+      categoryOverride: serializer.fromJson<String?>(json['categoryOverride']),
+      isStaple: serializer.fromJson<bool>(json['isStaple']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -985,6 +1089,9 @@ class Product extends DataClass implements Insertable<Product> {
       'quantity': serializer.toJson<String>(quantity),
       'unit': serializer.toJson<String>(unit),
       'isChecked': serializer.toJson<bool>(isChecked),
+      'price': serializer.toJson<double?>(price),
+      'categoryOverride': serializer.toJson<String?>(categoryOverride),
+      'isStaple': serializer.toJson<bool>(isStaple),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -997,6 +1104,9 @@ class Product extends DataClass implements Insertable<Product> {
     String? quantity,
     String? unit,
     bool? isChecked,
+    Value<double?> price = const Value.absent(),
+    Value<String?> categoryOverride = const Value.absent(),
+    bool? isStaple,
     DateTime? createdAt,
   }) => Product(
     id: id ?? this.id,
@@ -1006,6 +1116,11 @@ class Product extends DataClass implements Insertable<Product> {
     quantity: quantity ?? this.quantity,
     unit: unit ?? this.unit,
     isChecked: isChecked ?? this.isChecked,
+    price: price.present ? price.value : this.price,
+    categoryOverride: categoryOverride.present
+        ? categoryOverride.value
+        : this.categoryOverride,
+    isStaple: isStaple ?? this.isStaple,
     createdAt: createdAt ?? this.createdAt,
   );
   Product copyWithCompanion(ProductsCompanion data) {
@@ -1017,6 +1132,11 @@ class Product extends DataClass implements Insertable<Product> {
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
       unit: data.unit.present ? data.unit.value : this.unit,
       isChecked: data.isChecked.present ? data.isChecked.value : this.isChecked,
+      price: data.price.present ? data.price.value : this.price,
+      categoryOverride: data.categoryOverride.present
+          ? data.categoryOverride.value
+          : this.categoryOverride,
+      isStaple: data.isStaple.present ? data.isStaple.value : this.isStaple,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -1031,6 +1151,9 @@ class Product extends DataClass implements Insertable<Product> {
           ..write('quantity: $quantity, ')
           ..write('unit: $unit, ')
           ..write('isChecked: $isChecked, ')
+          ..write('price: $price, ')
+          ..write('categoryOverride: $categoryOverride, ')
+          ..write('isStaple: $isStaple, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -1045,6 +1168,9 @@ class Product extends DataClass implements Insertable<Product> {
     quantity,
     unit,
     isChecked,
+    price,
+    categoryOverride,
+    isStaple,
     createdAt,
   );
   @override
@@ -1058,6 +1184,9 @@ class Product extends DataClass implements Insertable<Product> {
           other.quantity == this.quantity &&
           other.unit == this.unit &&
           other.isChecked == this.isChecked &&
+          other.price == this.price &&
+          other.categoryOverride == this.categoryOverride &&
+          other.isStaple == this.isStaple &&
           other.createdAt == this.createdAt);
 }
 
@@ -1069,6 +1198,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<String> quantity;
   final Value<String> unit;
   final Value<bool> isChecked;
+  final Value<double?> price;
+  final Value<String?> categoryOverride;
+  final Value<bool> isStaple;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const ProductsCompanion({
@@ -1079,6 +1211,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.quantity = const Value.absent(),
     this.unit = const Value.absent(),
     this.isChecked = const Value.absent(),
+    this.price = const Value.absent(),
+    this.categoryOverride = const Value.absent(),
+    this.isStaple = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1090,6 +1225,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.quantity = const Value.absent(),
     this.unit = const Value.absent(),
     this.isChecked = const Value.absent(),
+    this.price = const Value.absent(),
+    this.categoryOverride = const Value.absent(),
+    this.isStaple = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1104,6 +1242,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Expression<String>? quantity,
     Expression<String>? unit,
     Expression<bool>? isChecked,
+    Expression<double>? price,
+    Expression<String>? categoryOverride,
+    Expression<bool>? isStaple,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -1115,6 +1256,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       if (quantity != null) 'quantity': quantity,
       if (unit != null) 'unit': unit,
       if (isChecked != null) 'is_checked': isChecked,
+      if (price != null) 'price': price,
+      if (categoryOverride != null) 'category_override': categoryOverride,
+      if (isStaple != null) 'is_staple': isStaple,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1128,6 +1272,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Value<String>? quantity,
     Value<String>? unit,
     Value<bool>? isChecked,
+    Value<double?>? price,
+    Value<String?>? categoryOverride,
+    Value<bool>? isStaple,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -1139,6 +1286,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
       isChecked: isChecked ?? this.isChecked,
+      price: price ?? this.price,
+      categoryOverride: categoryOverride ?? this.categoryOverride,
+      isStaple: isStaple ?? this.isStaple,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -1168,6 +1318,15 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     if (isChecked.present) {
       map['is_checked'] = Variable<bool>(isChecked.value);
     }
+    if (price.present) {
+      map['price'] = Variable<double>(price.value);
+    }
+    if (categoryOverride.present) {
+      map['category_override'] = Variable<String>(categoryOverride.value);
+    }
+    if (isStaple.present) {
+      map['is_staple'] = Variable<bool>(isStaple.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1187,6 +1346,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
           ..write('quantity: $quantity, ')
           ..write('unit: $unit, ')
           ..write('isChecked: $isChecked, ')
+          ..write('price: $price, ')
+          ..write('categoryOverride: $categoryOverride, ')
+          ..write('isStaple: $isStaple, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -1668,6 +1830,320 @@ class RecipesCompanion extends UpdateCompanion<Recipe> {
   }
 }
 
+class $RecipeSearchesTable extends RecipeSearches
+    with TableInfo<$RecipeSearchesTable, CachedSearch> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RecipeSearchesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _queryMeta = const VerificationMeta('query');
+  @override
+  late final GeneratedColumn<String> query = GeneratedColumn<String>(
+    'query',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localeMeta = const VerificationMeta('locale');
+  @override
+  late final GeneratedColumn<String> locale = GeneratedColumn<String>(
+    'locale',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fetchedAtMeta = const VerificationMeta(
+    'fetchedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fetchedAt = GeneratedColumn<DateTime>(
+    'fetched_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [query, locale, payload, fetchedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'recipe_searches';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CachedSearch> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('query')) {
+      context.handle(
+        _queryMeta,
+        query.isAcceptableOrUnknown(data['query']!, _queryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_queryMeta);
+    }
+    if (data.containsKey('locale')) {
+      context.handle(
+        _localeMeta,
+        locale.isAcceptableOrUnknown(data['locale']!, _localeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localeMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('fetched_at')) {
+      context.handle(
+        _fetchedAtMeta,
+        fetchedAt.isAcceptableOrUnknown(data['fetched_at']!, _fetchedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fetchedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {query, locale};
+  @override
+  CachedSearch map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CachedSearch(
+      query: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}query'],
+      )!,
+      locale: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}locale'],
+      )!,
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload'],
+      )!,
+      fetchedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fetched_at'],
+      )!,
+    );
+  }
+
+  @override
+  $RecipeSearchesTable createAlias(String alias) {
+    return $RecipeSearchesTable(attachedDatabase, alias);
+  }
+}
+
+class CachedSearch extends DataClass implements Insertable<CachedSearch> {
+  /// Normalised: trimmed and lowercased by the repository.
+  final String query;
+  final String locale;
+
+  /// The results as JSON, in the shape the search API returns them.
+  final String payload;
+  final DateTime fetchedAt;
+  const CachedSearch({
+    required this.query,
+    required this.locale,
+    required this.payload,
+    required this.fetchedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['query'] = Variable<String>(query);
+    map['locale'] = Variable<String>(locale);
+    map['payload'] = Variable<String>(payload);
+    map['fetched_at'] = Variable<DateTime>(fetchedAt);
+    return map;
+  }
+
+  RecipeSearchesCompanion toCompanion(bool nullToAbsent) {
+    return RecipeSearchesCompanion(
+      query: Value(query),
+      locale: Value(locale),
+      payload: Value(payload),
+      fetchedAt: Value(fetchedAt),
+    );
+  }
+
+  factory CachedSearch.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CachedSearch(
+      query: serializer.fromJson<String>(json['query']),
+      locale: serializer.fromJson<String>(json['locale']),
+      payload: serializer.fromJson<String>(json['payload']),
+      fetchedAt: serializer.fromJson<DateTime>(json['fetchedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'query': serializer.toJson<String>(query),
+      'locale': serializer.toJson<String>(locale),
+      'payload': serializer.toJson<String>(payload),
+      'fetchedAt': serializer.toJson<DateTime>(fetchedAt),
+    };
+  }
+
+  CachedSearch copyWith({
+    String? query,
+    String? locale,
+    String? payload,
+    DateTime? fetchedAt,
+  }) => CachedSearch(
+    query: query ?? this.query,
+    locale: locale ?? this.locale,
+    payload: payload ?? this.payload,
+    fetchedAt: fetchedAt ?? this.fetchedAt,
+  );
+  CachedSearch copyWithCompanion(RecipeSearchesCompanion data) {
+    return CachedSearch(
+      query: data.query.present ? data.query.value : this.query,
+      locale: data.locale.present ? data.locale.value : this.locale,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      fetchedAt: data.fetchedAt.present ? data.fetchedAt.value : this.fetchedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedSearch(')
+          ..write('query: $query, ')
+          ..write('locale: $locale, ')
+          ..write('payload: $payload, ')
+          ..write('fetchedAt: $fetchedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(query, locale, payload, fetchedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CachedSearch &&
+          other.query == this.query &&
+          other.locale == this.locale &&
+          other.payload == this.payload &&
+          other.fetchedAt == this.fetchedAt);
+}
+
+class RecipeSearchesCompanion extends UpdateCompanion<CachedSearch> {
+  final Value<String> query;
+  final Value<String> locale;
+  final Value<String> payload;
+  final Value<DateTime> fetchedAt;
+  final Value<int> rowid;
+  const RecipeSearchesCompanion({
+    this.query = const Value.absent(),
+    this.locale = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.fetchedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RecipeSearchesCompanion.insert({
+    required String query,
+    required String locale,
+    required String payload,
+    required DateTime fetchedAt,
+    this.rowid = const Value.absent(),
+  }) : query = Value(query),
+       locale = Value(locale),
+       payload = Value(payload),
+       fetchedAt = Value(fetchedAt);
+  static Insertable<CachedSearch> custom({
+    Expression<String>? query,
+    Expression<String>? locale,
+    Expression<String>? payload,
+    Expression<DateTime>? fetchedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (query != null) 'query': query,
+      if (locale != null) 'locale': locale,
+      if (payload != null) 'payload': payload,
+      if (fetchedAt != null) 'fetched_at': fetchedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RecipeSearchesCompanion copyWith({
+    Value<String>? query,
+    Value<String>? locale,
+    Value<String>? payload,
+    Value<DateTime>? fetchedAt,
+    Value<int>? rowid,
+  }) {
+    return RecipeSearchesCompanion(
+      query: query ?? this.query,
+      locale: locale ?? this.locale,
+      payload: payload ?? this.payload,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (query.present) {
+      map['query'] = Variable<String>(query.value);
+    }
+    if (locale.present) {
+      map['locale'] = Variable<String>(locale.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (fetchedAt.present) {
+      map['fetched_at'] = Variable<DateTime>(fetchedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecipeSearchesCompanion(')
+          ..write('query: $query, ')
+          ..write('locale: $locale, ')
+          ..write('payload: $payload, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1675,6 +2151,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MealsTable meals = $MealsTable(this);
   late final $ProductsTable products = $ProductsTable(this);
   late final $RecipesTable recipes = $RecipesTable(this);
+  late final $RecipeSearchesTable recipeSearches = $RecipeSearchesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1684,6 +2161,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     meals,
     products,
     recipes,
+    recipeSearches,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2598,6 +3076,9 @@ typedef $$ProductsTableCreateCompanionBuilder =
       Value<String> quantity,
       Value<String> unit,
       Value<bool> isChecked,
+      Value<double?> price,
+      Value<String?> categoryOverride,
+      Value<bool> isStaple,
       required DateTime createdAt,
       Value<int> rowid,
     });
@@ -2610,6 +3091,9 @@ typedef $$ProductsTableUpdateCompanionBuilder =
       Value<String> quantity,
       Value<String> unit,
       Value<bool> isChecked,
+      Value<double?> price,
+      Value<String?> categoryOverride,
+      Value<bool> isStaple,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -2687,6 +3171,21 @@ class $$ProductsTableFilterComposer
 
   ColumnFilters<bool> get isChecked => $composableBuilder(
     column: $table.isChecked,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get price => $composableBuilder(
+    column: $table.price,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoryOverride => $composableBuilder(
+    column: $table.categoryOverride,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isStaple => $composableBuilder(
+    column: $table.isStaple,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2776,6 +3275,21 @@ class $$ProductsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get price => $composableBuilder(
+    column: $table.price,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get categoryOverride => $composableBuilder(
+    column: $table.categoryOverride,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isStaple => $composableBuilder(
+    column: $table.isStaple,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -2851,6 +3365,17 @@ class $$ProductsTableAnnotationComposer
 
   GeneratedColumn<bool> get isChecked =>
       $composableBuilder(column: $table.isChecked, builder: (column) => column);
+
+  GeneratedColumn<double> get price =>
+      $composableBuilder(column: $table.price, builder: (column) => column);
+
+  GeneratedColumn<String> get categoryOverride => $composableBuilder(
+    column: $table.categoryOverride,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isStaple =>
+      $composableBuilder(column: $table.isStaple, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -2937,6 +3462,9 @@ class $$ProductsTableTableManager
                 Value<String> quantity = const Value.absent(),
                 Value<String> unit = const Value.absent(),
                 Value<bool> isChecked = const Value.absent(),
+                Value<double?> price = const Value.absent(),
+                Value<String?> categoryOverride = const Value.absent(),
+                Value<bool> isStaple = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProductsCompanion(
@@ -2947,6 +3475,9 @@ class $$ProductsTableTableManager
                 quantity: quantity,
                 unit: unit,
                 isChecked: isChecked,
+                price: price,
+                categoryOverride: categoryOverride,
+                isStaple: isStaple,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -2959,6 +3490,9 @@ class $$ProductsTableTableManager
                 Value<String> quantity = const Value.absent(),
                 Value<String> unit = const Value.absent(),
                 Value<bool> isChecked = const Value.absent(),
+                Value<double?> price = const Value.absent(),
+                Value<String?> categoryOverride = const Value.absent(),
+                Value<bool> isStaple = const Value.absent(),
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => ProductsCompanion.insert(
@@ -2969,6 +3503,9 @@ class $$ProductsTableTableManager
                 quantity: quantity,
                 unit: unit,
                 isChecked: isChecked,
+                price: price,
+                categoryOverride: categoryOverride,
+                isStaple: isStaple,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -3414,6 +3951,189 @@ typedef $$RecipesTableProcessedTableManager =
       Recipe,
       PrefetchHooks Function({bool mealId})
     >;
+typedef $$RecipeSearchesTableCreateCompanionBuilder =
+    RecipeSearchesCompanion Function({
+      required String query,
+      required String locale,
+      required String payload,
+      required DateTime fetchedAt,
+      Value<int> rowid,
+    });
+typedef $$RecipeSearchesTableUpdateCompanionBuilder =
+    RecipeSearchesCompanion Function({
+      Value<String> query,
+      Value<String> locale,
+      Value<String> payload,
+      Value<DateTime> fetchedAt,
+      Value<int> rowid,
+    });
+
+class $$RecipeSearchesTableFilterComposer
+    extends Composer<_$AppDatabase, $RecipeSearchesTable> {
+  $$RecipeSearchesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get query => $composableBuilder(
+    column: $table.query,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get locale => $composableBuilder(
+    column: $table.locale,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$RecipeSearchesTableOrderingComposer
+    extends Composer<_$AppDatabase, $RecipeSearchesTable> {
+  $$RecipeSearchesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get query => $composableBuilder(
+    column: $table.query,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get locale => $composableBuilder(
+    column: $table.locale,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$RecipeSearchesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RecipeSearchesTable> {
+  $$RecipeSearchesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get query =>
+      $composableBuilder(column: $table.query, builder: (column) => column);
+
+  GeneratedColumn<String> get locale =>
+      $composableBuilder(column: $table.locale, builder: (column) => column);
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fetchedAt =>
+      $composableBuilder(column: $table.fetchedAt, builder: (column) => column);
+}
+
+class $$RecipeSearchesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RecipeSearchesTable,
+          CachedSearch,
+          $$RecipeSearchesTableFilterComposer,
+          $$RecipeSearchesTableOrderingComposer,
+          $$RecipeSearchesTableAnnotationComposer,
+          $$RecipeSearchesTableCreateCompanionBuilder,
+          $$RecipeSearchesTableUpdateCompanionBuilder,
+          (
+            CachedSearch,
+            BaseReferences<_$AppDatabase, $RecipeSearchesTable, CachedSearch>,
+          ),
+          CachedSearch,
+          PrefetchHooks Function()
+        > {
+  $$RecipeSearchesTableTableManager(
+    _$AppDatabase db,
+    $RecipeSearchesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RecipeSearchesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RecipeSearchesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RecipeSearchesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> query = const Value.absent(),
+                Value<String> locale = const Value.absent(),
+                Value<String> payload = const Value.absent(),
+                Value<DateTime> fetchedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecipeSearchesCompanion(
+                query: query,
+                locale: locale,
+                payload: payload,
+                fetchedAt: fetchedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String query,
+                required String locale,
+                required String payload,
+                required DateTime fetchedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => RecipeSearchesCompanion.insert(
+                query: query,
+                locale: locale,
+                payload: payload,
+                fetchedAt: fetchedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$RecipeSearchesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RecipeSearchesTable,
+      CachedSearch,
+      $$RecipeSearchesTableFilterComposer,
+      $$RecipeSearchesTableOrderingComposer,
+      $$RecipeSearchesTableAnnotationComposer,
+      $$RecipeSearchesTableCreateCompanionBuilder,
+      $$RecipeSearchesTableUpdateCompanionBuilder,
+      (
+        CachedSearch,
+        BaseReferences<_$AppDatabase, $RecipeSearchesTable, CachedSearch>,
+      ),
+      CachedSearch,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3426,4 +4146,6 @@ class $AppDatabaseManager {
       $$ProductsTableTableManager(_db, _db.products);
   $$RecipesTableTableManager get recipes =>
       $$RecipesTableTableManager(_db, _db.recipes);
+  $$RecipeSearchesTableTableManager get recipeSearches =>
+      $$RecipeSearchesTableTableManager(_db, _db.recipeSearches);
 }

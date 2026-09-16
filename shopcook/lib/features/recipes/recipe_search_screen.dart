@@ -25,10 +25,21 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
   bool _loading = false;
   bool _searched = false;
 
+  bool _started = false;
+
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.meal.name);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The locale lives in an inherited widget, so the first search has to
+    // wait until dependencies are resolved.
+    if (_started) return;
+    _started = true;
     _runSearch(widget.meal.name);
   }
 
@@ -38,7 +49,10 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
       _loading = true;
       _searched = true;
     });
-    final results = await ref.read(recipeRepositoryProvider).search(query.trim());
+    final locale = Localizations.localeOf(context).languageCode;
+    final results = await ref
+        .read(recipeRepositoryProvider)
+        .search(query.trim(), locale: locale);
     if (!mounted) return;
     setState(() {
       _results = results;

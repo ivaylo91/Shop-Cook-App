@@ -42,14 +42,26 @@ class _IngredientRecipesScreenState
 
   String get _query => widget.product.name;
 
+  bool _started = false;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Not initState: the locale comes from an inherited widget, which is not
+    // reachable until dependencies are resolved.
+    if (_started) return;
+    _started = true;
     _search();
   }
 
-  Future<void> _search() async {
-    final results = await ref.read(recipeRepositoryProvider).search(_query);
+  Future<void> _search({bool forceRefresh = false}) async {
+    final locale = Localizations.localeOf(context).languageCode;
+    setState(() => _loading = true);
+
+    final results = await ref
+        .read(recipeRepositoryProvider)
+        .search(_query, locale: locale, forceRefresh: forceRefresh);
+
     if (!mounted) return;
     setState(() {
       _results = results;

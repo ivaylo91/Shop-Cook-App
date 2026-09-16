@@ -55,6 +55,20 @@ class Products extends Table {
   TextColumn get quantity => text().withDefault(const Constant(''))();
   TextColumn get unit => text().withDefault(const Constant(''))();
   BoolColumn get isChecked => boolean().withDefault(const Constant(false))();
+
+  /// What this costs, in the user's own currency. Null means unpriced, which
+  /// is different from free — a list total has to be able to say "so far".
+  RealColumn get price => real().nullable()();
+
+  /// An aisle the user put this in by hand, overriding the keyword guess.
+  ///
+  /// Stored as the enum's name rather than its index, so reordering
+  /// [ProductCategory] cannot silently re-file everyone's groceries.
+  TextColumn get categoryOverride => text().nullable()();
+
+  /// Something you re-buy routinely, offered by the restock action.
+  BoolColumn get isStaple => boolean().withDefault(const Constant(false))();
+
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -80,13 +94,39 @@ class Recipes extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [ShoppingLists, Meals, Products, Recipes])
+/// Cached recipe-search results.
+///
+/// A YouTube `search.list` call costs 100 of a 10,000-unit daily quota, and
+/// both recipe screens search as soon as they open — so without this, merely
+/// reopening the same item a hundred times in a day exhausts the key and
+/// results stop coming back with no error to explain why.
+///
+/// Keyed by locale as well as query, because the search phrase is localised
+/// and "пиле рецепта" and "chicken recipe" are not the same search.
+@DataClassName('CachedSearch')
+class RecipeSearches extends Table {
+  /// Normalised: trimmed and lowercased by the repository.
+  TextColumn get query => text()();
+  TextColumn get locale => text()();
+
+  /// The results as JSON, in the shape the search API returns them.
+  TextColumn get payload => text()();
+
+  DateTimeColumn get fetchedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {query, locale};
+}
+
+@DriftDatabase(
+  tables: [ShoppingLists, Meals, Products, Recipes, RecipeSearches],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   /// The migration ladder. Every step has to be additive and idempotent in
   /// order, because an install can be on any earlier version — a phone that
@@ -111,6 +151,13 @@ class AppDatabase extends _$AppDatabase {
       // is, and guessing would hand one user's lists to another.
       if (from < 3) {
         await m.addColumn(shoppingLists, shoppingLists.userId);
+      }
+      // v4: prices, a hand-set aisle, staples, and the search cache.
+      if (from < 4) {
+        await m.addColumn(products, products.price);
+        await m.addColumn(products, products.categoryOverride);
+        await m.addColumn(products, products.isStaple);
+        await m.createTable(recipeSearches);
       }
     },
     beforeOpen: (details) async {
@@ -265,6 +312,46 @@ class AppDatabase extends _$AppDatabase {
         ProductsCompanion(quantity: Value(quantity)),
       );
 
+  /// Sets or clears the price. Null clears it, which is why the companion
+  /// takes an explicit Value rather than relying on absence.
+  Future<void> setProductPrice(String id, double? price) =>
+      (update(products)..where((t) => t.id.equals(id))).write(
+        ProductsCompanion(price: Value(price)),
+      );
+
+  /// Files the product in [category] by hand, or clears the override so the
+  /// keyword guess applies again.
+  Future<void> setProductCategoryOverride(String id, String? category) =>
+      (update(products)..where((t) => t.id.equals(id))).write(
+        ProductsCompanion(categoryOverride: Value(category)),
+      );
+
+  Future<void> setProductStaple(String id, bool value) =>
+      (update(products)..where((t) => t.id.equals(id))).write(
+        ProductsCompanion(isStaple: Value(value)),
+      );
+
+  /// Every name the user has ever marked a staple, most recent first.
+  ///
+  /// Distinct by name, because a staple is a habit rather than one row: milk
+  /// bought every week is many rows and one staple.
+  Stream<List<StapleName>> watchStaples(String userId) {
+    return customSelect(
+      'SELECT p.name AS name, MAX(p.created_at) AS last_used '
+      'FROM products p '
+      'JOIN shopping_lists l ON l.id = p.list_id '
+      'WHERE l.user_id = ? AND p.is_staple = 1 '
+      'GROUP BY p.name COLLATE NOCASE '
+      'ORDER BY last_used DESC',
+      variables: [Variable.withString(userId)],
+      readsFrom: {products, shoppingLists},
+    ).watch().map(
+      (rows) => rows
+          .map((row) => StapleName(name: row.read<String>('name')))
+          .toList(),
+    );
+  }
+
   /// Product names the user has added before, most-used first.
   ///
   /// Derived from the rows already on the lists rather than from a separate
@@ -331,6 +418,23 @@ class AppDatabase extends _$AppDatabase {
     return (select(recipes)..where((t) => t.mealId.isIn(mealIds))).get();
   }
 
+  // RecipeSearches
+  Future<CachedSearch?> cachedSearch(String query, String locale) =>
+      (select(recipeSearches)
+            ..where((t) => t.query.equals(query) & t.locale.equals(locale)))
+          .getSingleOrNull();
+
+  Future<void> cacheSearch(RecipeSearchesCompanion entry) =>
+      into(recipeSearches).insertOnConflictUpdate(entry);
+
+  /// Drops cache rows older than [cutoff]. Called opportunistically rather
+  /// than on a timer: there is no background work in this app, and a stale
+  /// row costs nothing until someone asks for that query again.
+  Future<int> pruneSearchCache(DateTime cutoff) =>
+      (delete(recipeSearches)
+            ..where((t) => t.fetchedAt.isSmallerThanValue(cutoff)))
+          .go();
+
   /// Re-inserts a whole deleted subtree in foreign-key order, as one
   /// transaction so a failure part-way cannot leave orphans behind.
   Future<void> restoreTree({
@@ -361,6 +465,13 @@ class ProductSuggestion {
   final int uses;
 
   const ProductSuggestion({required this.name, required this.uses});
+}
+
+/// A staple, identified by name rather than by row.
+class StapleName {
+  final String name;
+
+  const StapleName({required this.name});
 }
 
 LazyDatabase _openConnection() {
