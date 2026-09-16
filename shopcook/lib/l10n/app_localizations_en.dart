@@ -567,11 +567,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cookFromYouTube => 'From YouTube';
 
   @override
-  String get cookSearchApps => 'Search the apps';
+  String get cookOpenYouTube => 'Open in YouTube';
 
   @override
-  String cookSearchAppsSubtitle(String query) {
-    return 'Opens a search for \"$query recipe\".';
+  String cookOpenYouTubeSubtitle(String query) {
+    return 'Searches YouTube for \"$query recipe\" — the full result list, not just the ten above.';
   }
 
   @override

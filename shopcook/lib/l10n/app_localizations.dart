@@ -1064,17 +1064,17 @@ abstract class AppLocalizations {
   /// **'From YouTube'**
   String get cookFromYouTube;
 
-  /// No description provided for @cookSearchApps.
+  /// No description provided for @cookOpenYouTube.
   ///
   /// In en, this message translates to:
-  /// **'Search the apps'**
-  String get cookSearchApps;
+  /// **'Open in YouTube'**
+  String get cookOpenYouTube;
 
-  /// No description provided for @cookSearchAppsSubtitle.
+  /// No description provided for @cookOpenYouTubeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Opens a search for \"{query} recipe\".'**
-  String cookSearchAppsSubtitle(String query);
+  /// **'Searches YouTube for \"{query} recipe\" — the full result list, not just the ten above.'**
+  String cookOpenYouTubeSubtitle(String query);
 
   /// No description provided for @cookSearchQuery.
   ///

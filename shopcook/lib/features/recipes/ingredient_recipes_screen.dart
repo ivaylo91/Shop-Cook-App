@@ -12,11 +12,11 @@ import '../../data/remote/recipe_search_api.dart';
 
 /// "What can I cook with this?" for a single shopping item.
 ///
-/// YouTube results come back in-app through the search Edge Function once an
-/// API key is configured. TikTok has no public search API — the Display API
-/// only reaches the signed-in user's own videos and the Research API needs
-/// approval — so TikTok is offered as a one-tap search in its own app, which
-/// needs no key and works today.
+/// Results come back in-app through the search Edge Function. The card at the
+/// top also hands the same search to the YouTube app, which is worth keeping
+/// even now that in-app results work: the API returns ten videos and spends
+/// quota doing it, whereas the app gives the full result list, playback and
+/// comments for free.
 class IngredientRecipesScreen extends ConsumerStatefulWidget {
   final Product product;
 
@@ -126,7 +126,7 @@ class _IngredientRecipesScreenState
   }
 }
 
-/// Straight into the YouTube and TikTok apps, pre-searched for this item.
+/// Straight into the YouTube app, pre-searched for this item.
 class _SearchAppsCard extends StatelessWidget {
   final String query;
   final Future<void> Function(String url) onOpen;
@@ -146,42 +146,24 @@ class _SearchAppsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.cookSearchApps,
+            l10n.cookOpenYouTube,
             style: AppText.title.copyWith(color: palette.ink),
           ),
           const SizedBox(height: Insets.xs),
           Text(
-            l10n.cookSearchAppsSubtitle(query),
+            l10n.cookOpenYouTubeSubtitle(query),
             style: AppText.caption.copyWith(color: palette.inkMuted),
           ),
           const SizedBox(height: Insets.lg),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () => onOpen(
-                    'https://www.youtube.com/results?search_query=$term',
-                  ),
-                  icon: const FaIcon(FontAwesomeIcons.youtube, size: 16),
-                  label: const Text('YouTube'),
-                ),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => onOpen(
+                'https://www.youtube.com/results?search_query=$term',
               ),
-              const SizedBox(width: Insets.md),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () =>
-                      onOpen('https://www.tiktok.com/search?q=$term'),
-                  icon: const FaIcon(FontAwesomeIcons.tiktok, size: 16),
-                  label: const Text('TikTok'),
-                  // TikTok's own black, so the two buttons read as two
-                  // destinations rather than one repeated action.
-                  style: FilledButton.styleFrom(
-                    backgroundColor: palette.ink,
-                    foregroundColor: palette.card,
-                  ),
-                ),
-              ),
-            ],
+              icon: const FaIcon(FontAwesomeIcons.youtube, size: 16),
+              label: const Text('YouTube'),
+            ),
           ),
         ],
       ),

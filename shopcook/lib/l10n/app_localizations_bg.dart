@@ -567,11 +567,11 @@ class AppLocalizationsBg extends AppLocalizations {
   String get cookFromYouTube => 'От YouTube';
 
   @override
-  String get cookSearchApps => 'Търси в приложенията';
+  String get cookOpenYouTube => 'Отвори в YouTube';
 
   @override
-  String cookSearchAppsSubtitle(String query) {
-    return 'Отваря търсене за „$query рецепта“.';
+  String cookOpenYouTubeSubtitle(String query) {
+    return 'Търси в YouTube за „$query рецепта“ — целия списък, не само десетте отгоре.';
   }
 
   @override

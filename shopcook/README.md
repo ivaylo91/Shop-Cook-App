@@ -361,15 +361,16 @@ opens "Cook with &lt;item&gt;". That screen offers:
 - **YouTube results in-app**, via the `search-recipes` Edge Function. Needs
   `YOUTUBE_API_KEY` (see below); until it is set the section says so.
   When the item belongs to a meal, a result can be attached to that meal.
-- **One-tap search in the YouTube and TikTok apps**, pre-filled with
-  "&lt;item&gt; recipe". Needs no keys and works today. Android routes the
-  link to the installed app, falling back to the browser.
+- **One-tap search in the YouTube app**, pre-filled with the localised
+  "&lt;item&gt; recipe" phrase. Needs no keys. Android routes the link to the
+  installed app, falling back to the browser. Worth keeping even with in-app
+  results working: the API returns ten videos and spends quota doing it, while
+  the app gives the full list, playback and comments for nothing.
 
-**Why TikTok is a deep link rather than in-app results:** TikTok has no
-public search API. The Display API only reaches the signed-in user's own
-videos, and the Research API requires approval and is limited to academic
-use. Pulling TikTok results into the app would mean a paid third-party
-scraping service, so the app opens TikTok's own search instead.
+TikTok was offered here too and has been removed. It has no public search API
+— the Display API only reaches the signed-in user's own videos and the
+Research API needs approval — so it could only ever be a deep link out, never
+results in the app.
 
 ## Importing ingredients from a recipe
 
