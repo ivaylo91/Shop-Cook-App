@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../core/settings.dart';
 import '../../core/ui/ui.dart';
 import '../../l10n/app_localizations.dart';
+import '../shopping/category_label.dart';
 
 /// Appearance, language and account, in the place people look for them.
 ///
@@ -112,6 +113,19 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           ),
+          const SizedBox(height: Insets.xl),
+          SectionLabel(
+            icon: FontAwesomeIcons.arrowDownUpAcrossLine,
+            label: l10n.settingsAisleOrder,
+            color: palette.accent,
+          ),
+          const SizedBox(height: Insets.sm),
+          Text(
+            l10n.settingsAisleOrderNote,
+            style: AppText.caption.copyWith(color: palette.inkMuted),
+          ),
+          const SizedBox(height: Insets.md),
+          const _AisleOrderCard(),
           const SizedBox(height: Insets.xl),
           SectionLabel(
             icon: FontAwesomeIcons.user,
@@ -220,5 +234,77 @@ class SettingsScreen extends ConsumerWidget {
       await ref.read(authRepositoryProvider).signOut();
       // The router redirect takes it from here.
     }
+  }
+}
+
+/// The nine aisles, draggable into the order of the reader's own shop.
+class _AisleOrderCard extends ConsumerWidget {
+  const _AisleOrderCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final palette = context.palette;
+    final order = ref.watch(aisleOrderProvider);
+
+    return AppCard(
+      padding: const EdgeInsets.symmetric(vertical: Insets.sm),
+      shadowOpacity: 0.07,
+      child: Column(
+        children: [
+          ReorderableListView(
+            shrinkWrap: true,
+            // The card scrolls with the page; a nested scroll view would
+            // fight it for the drag.
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            // onReorderItem rather than the deprecated onReorder: it hands
+            // back a newIndex already adjusted for the removed item, so the
+            // controller must not adjust it a second time.
+            onReorderItem: (oldIndex, newIndex) => ref
+                .read(aisleOrderProvider.notifier)
+                .reorder(oldIndex, newIndex),
+            children: [
+              for (final (index, category) in order.indexed)
+                ListTile(
+                  key: ValueKey(category.name),
+                  leading: FaIcon(
+                    category.icon,
+                    size: 16,
+                    color: palette.aisle(category),
+                  ),
+                  title: Text(category.label(l10n)),
+                  trailing: ReorderableDragStartListener(
+                    index: index,
+                    child: FaIcon(
+                      FontAwesomeIcons.gripLines,
+                      size: 15,
+                      color: palette.inkFaint,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: Insets.lg,
+                  ),
+                ),
+            ],
+          ),
+          const Divider(height: 1),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(
+                right: Insets.sm,
+                top: Insets.xs,
+              ),
+              child: TextButton(
+                onPressed: () =>
+                    ref.read(aisleOrderProvider.notifier).reset(),
+                child: Text(l10n.settingsAisleOrderReset),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

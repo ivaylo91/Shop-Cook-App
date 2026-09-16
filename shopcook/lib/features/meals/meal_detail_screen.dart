@@ -10,7 +10,9 @@ import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/shopping_list_repository.dart';
+import '../../core/money.dart';
 import '../products/item_composer.dart';
+import '../products/item_sheet.dart';
 import '../recipes/import_ingredients_sheet.dart';
 import '../shopping/product_category.dart';
 
@@ -97,20 +99,25 @@ class MealDetailScreen extends ConsumerWidget {
                         for (final product in products)
                           ProductRow(
                             name: product.name,
-                            details: '${product.quantity} ${product.unit}'.trim(),
+                            details: [
+                              '${product.quantity} ${product.unit}'.trim(),
+                              if (product.price != null)
+                                context.money(product.price!),
+                            ].where((part) => part.isNotEmpty).join(' · '),
                             checked: product.isChecked,
                             onToggle: (value) => ref
                                 .read(shoppingListRepositoryProvider)
                                 .toggleProductChecked(product.id, value),
                             onLongPress: () =>
-                                _itemActions(context, ref, product),
+                                _openItemSheet(context, ref, product),
                             trailing: IconButton(
                               icon: const FaIcon(
                                 FontAwesomeIcons.ellipsisVertical,
                                 size: 16,
                               ),
                               tooltip: l10n.itemActions,
-                              onPressed: () => _itemActions(context, ref, product),
+                              onPressed: () =>
+                                  _openItemSheet(context, ref, product),
                             ),
                           ),
                       ],
@@ -214,62 +221,40 @@ class MealDetailScreen extends ConsumerWidget {
     await repository.planMeal(meal.id, picked);
   }
 
-  Future<void> _itemActions(
+  /// The shared item sheet. From a meal there is no other meal to move to,
+  /// so only recipes and delete are offered alongside the item-level actions.
+  void _openItemSheet(BuildContext context, WidgetRef ref, Product product) {
+    showItemSheet(
+      context,
+      ref,
+      product,
+      onFindRecipes: () => context.push(
+        '/ingredient-recipes',
+        extra: (product: product, mealName: meal.name),
+      ),
+      onDelete: () => _deleteItemWithUndo(context, ref, product),
+    );
+  }
+
+  Future<void> _deleteItemWithUndo(
     BuildContext context,
     WidgetRef ref,
     Product product,
   ) async {
     final l10n = context.l10n;
-    final action = await showAppSheet<String>(
-      context: context,
-      title: product.name,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 17),
-            title: Text(l10n.itemFindRecipes),
-            subtitle: Text(l10n.itemFindRecipesFromMeal),
-            onTap: () => Navigator.pop(context, 'recipes'),
-          ),
-          ListTile(
-            leading: FaIcon(
-              FontAwesomeIcons.trashCan,
-              size: 17,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            title: Text(
-              l10n.actionDelete,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-            onTap: () => Navigator.pop(context, 'delete'),
-          ),
-        ],
+    final messenger = ScaffoldMessenger.of(context);
+    final repository = ref.read(shoppingListRepositoryProvider);
+    final deleted = await repository.deleteProductWithUndo(product.id);
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(l10n.itemRemoved(product.name)),
+        action: SnackBarAction(
+          label: l10n.actionUndo,
+          onPressed: () => repository.undoDelete(deleted),
+        ),
       ),
     );
-
-    if (action == null || !context.mounted) return;
-
-    if (action == 'delete') {
-      final messenger = ScaffoldMessenger.of(context);
-      final repository = ref.read(shoppingListRepositoryProvider);
-      final deleted = await repository.deleteProductWithUndo(product.id);
-
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(l10n.itemRemoved(product.name)),
-          action: SnackBarAction(
-            label: l10n.actionUndo,
-            onPressed: () => repository.undoDelete(deleted),
-          ),
-        ),
-      );
-    } else {
-      context.push(
-        '/ingredient-recipes',
-        extra: (product: product, mealName: meal.name),
-      );
-    }
   }
 }
 

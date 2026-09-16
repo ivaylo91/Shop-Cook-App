@@ -603,6 +603,106 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cookOpenFailed => 'Could not open that link.';
 
   @override
+  String get itemSetPrice => 'Set price';
+
+  @override
+  String get itemClearPrice => 'Clear price';
+
+  @override
+  String itemPriceTitle(String name) {
+    return 'Price of $name';
+  }
+
+  @override
+  String get itemPriceHint => 'e.g. 2.40';
+
+  @override
+  String priceSoFar(String total) {
+    return '$total so far';
+  }
+
+  @override
+  String priceInBasket(String total) {
+    return '$total in the basket';
+  }
+
+  @override
+  String priceUnpriced(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items have no price',
+      one: '1 item has no price',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get itemMoveToAisle => 'Move to another aisle';
+
+  @override
+  String get itemAisleAuto => 'Sort it automatically';
+
+  @override
+  String get itemAisleAutoSubtitle => 'Guess the aisle from the name';
+
+  @override
+  String itemAisleTitle(String name) {
+    return 'Aisle for $name';
+  }
+
+  @override
+  String get settingsAisleOrder => 'Aisle order';
+
+  @override
+  String get settingsAisleOrderNote =>
+      'Drag to match the shop you actually walk. Shopping mode follows this order.';
+
+  @override
+  String get settingsAisleOrderReset => 'Reset to default';
+
+  @override
+  String get shareList => 'Share list';
+
+  @override
+  String shareListSubject(String name) {
+    return 'Shopping list: $name';
+  }
+
+  @override
+  String get shareNothing => 'Nothing to share yet.';
+
+  @override
+  String get staplesTitle => 'Staples';
+
+  @override
+  String get itemMarkStaple => 'Mark as a staple';
+
+  @override
+  String get itemUnmarkStaple => 'Not a staple';
+
+  @override
+  String get staplesRestock => 'Restock staples';
+
+  @override
+  String get staplesNone =>
+      'No staples yet. Mark something you buy every week and it will be offered here.';
+
+  @override
+  String staplesAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Added $count staples',
+      one: 'Added 1 staple',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get staplesAllPresent => 'Every staple is already on the list.';
+
+  @override
   String get importReading => 'Reading the recipe…';
 
   @override

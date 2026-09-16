@@ -603,6 +603,106 @@ class AppLocalizationsBg extends AppLocalizations {
   String get cookOpenFailed => 'Линкът не се отвори.';
 
   @override
+  String get itemSetPrice => 'Задай цена';
+
+  @override
+  String get itemClearPrice => 'Изчисти цената';
+
+  @override
+  String itemPriceTitle(String name) {
+    return 'Цена на $name';
+  }
+
+  @override
+  String get itemPriceHint => 'напр. 2,40';
+
+  @override
+  String priceSoFar(String total) {
+    return '$total досега';
+  }
+
+  @override
+  String priceInBasket(String total) {
+    return '$total в кошницата';
+  }
+
+  @override
+  String priceUnpriced(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count продукта са без цена',
+      one: '1 продукт е без цена',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get itemMoveToAisle => 'Премести в друг щанд';
+
+  @override
+  String get itemAisleAuto => 'Подреди автоматично';
+
+  @override
+  String get itemAisleAutoSubtitle => 'Познай щанда по името';
+
+  @override
+  String itemAisleTitle(String name) {
+    return 'Щанд за $name';
+  }
+
+  @override
+  String get settingsAisleOrder => 'Ред на щандовете';
+
+  @override
+  String get settingsAisleOrderNote =>
+      'Подреди ги както е в твоя магазин. Режим пазаруване следва този ред.';
+
+  @override
+  String get settingsAisleOrderReset => 'Върни по подразбиране';
+
+  @override
+  String get shareList => 'Изпрати списъка';
+
+  @override
+  String shareListSubject(String name) {
+    return 'Списък за пазаруване: $name';
+  }
+
+  @override
+  String get shareNothing => 'Още няма какво да се изпрати.';
+
+  @override
+  String get staplesTitle => 'Основни продукти';
+
+  @override
+  String get itemMarkStaple => 'Отбележи като основен';
+
+  @override
+  String get itemUnmarkStaple => 'Не е основен';
+
+  @override
+  String get staplesRestock => 'Добави основните';
+
+  @override
+  String get staplesNone =>
+      'Още няма основни продукти. Отбележи нещо, което купуваш всяка седмица, и ще се появи тук.';
+
+  @override
+  String staplesAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Добавени са $count основни продукта',
+      one: 'Добавен е 1 основен продукт',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get staplesAllPresent => 'Всички основни продукти вече са в списъка.';
+
+  @override
   String get importReading => 'Четене на рецептата…';
 
   @override

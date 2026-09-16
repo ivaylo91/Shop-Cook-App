@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../features/shopping/product_category.dart';
 import '../local/database.dart';
 
 const _uuid = Uuid();
@@ -146,7 +147,15 @@ class ShoppingListRepository {
     required String name,
     String quantity = '',
     String unit = '',
-  }) {
+
+    /// When given, a previous hand-filed aisle for this name is carried over,
+    /// so a correction made last week still holds this week.
+    String? userId,
+  }) async {
+    final remembered = userId == null
+        ? null
+        : await _db.rememberedCategory(userId: userId, name: name);
+
     return _db.insertProduct(
       ProductsCompanion.insert(
         id: _uuid.v4(),
@@ -155,6 +164,7 @@ class ShoppingListRepository {
         name: name,
         quantity: Value(quantity),
         unit: Value(unit),
+        categoryOverride: Value(remembered),
         createdAt: DateTime.now(),
       ),
     );
@@ -192,6 +202,7 @@ class ShoppingListRepository {
     required String name,
     String quantity = '',
     String unit = '',
+    String? userId,
   }) async {
     final existing = await _db.findMergeTarget(
       listId: listId,
@@ -206,6 +217,7 @@ class ShoppingListRepository {
         name: name,
         quantity: quantity,
         unit: unit,
+        userId: userId,
       );
       return const AddOutcome.added();
     }
@@ -226,6 +238,7 @@ class ShoppingListRepository {
         name: name,
         quantity: quantity,
         unit: unit,
+        userId: userId,
       );
       return const AddOutcome.added();
     }
@@ -273,6 +286,70 @@ class ShoppingListRepository {
 
   Future<void> toggleProductChecked(String id, bool value) =>
       _db.toggleChecked(id, value);
+
+  Future<void> setPrice(String id, double? price) =>
+      _db.setProductPrice(id, price);
+
+  Future<void> setStaple(String id, bool value) =>
+      _db.setProductStaple(id, value);
+
+  Stream<List<StapleName>> watchStaples(String userId) =>
+      _db.watchStaples(userId);
+
+  /// Files [name] in [category] everywhere, or clears the override so the
+  /// keyword guess applies again.
+  Future<void> setAisle({
+    required String userId,
+    required String name,
+    required ProductCategory? category,
+  }) {
+    return _db.setCategoryOverrideByName(
+      userId: userId,
+      name: name,
+      category: category?.name,
+    );
+  }
+
+  /// Adds every staple that is not already on the list unchecked.
+  ///
+  /// Returns how many were added; zero means they were all there, which is
+  /// worth saying rather than leaving the tap looking broken.
+  Future<int> restockStaples({
+    required String listId,
+    required String userId,
+  }) async {
+    final staples = await _db.watchStaples(userId).first;
+    var added = 0;
+
+    for (final staple in staples) {
+      final existing = await _db.findMergeTarget(
+        listId: listId,
+        mealId: null,
+        name: staple.name,
+      );
+      if (existing != null) continue;
+
+      await addProduct(listId: listId, name: staple.name);
+      added++;
+    }
+
+    return added;
+  }
+
+  /// The aisle a product belongs in: the user's correction if there is one,
+  /// otherwise the keyword guess.
+  ///
+  /// Reads the stored name rather than the index, so reordering the enum
+  /// cannot re-file anyone's groceries.
+  static ProductCategory aisleOf(Product product) {
+    final override = product.categoryOverride;
+    if (override != null) {
+      for (final candidate in ProductCategory.values) {
+        if (candidate.name == override) return candidate;
+      }
+    }
+    return categorize(product.name);
+  }
 
   Future<void> moveProductToMeal(String productId, String? mealId) =>
       _db.setProductMeal(productId, mealId);

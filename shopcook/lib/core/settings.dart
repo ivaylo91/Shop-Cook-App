@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../features/shopping/product_category.dart';
+
 /// Overridden in `main()` with an instance loaded before the first frame, so
 /// the app opens in the theme the user chose instead of rendering the default
 /// and then snapping to it.
@@ -76,3 +78,66 @@ class LocaleController extends Notifier<Locale?> {
 final localeProvider = NotifierProvider<LocaleController, Locale?>(
   LocaleController.new,
 );
+
+const _aisleOrderKey = 'aisleOrder';
+
+/// The order aisles appear in while shopping.
+///
+/// Stored as enum names, not indices: a release that adds or reorders
+/// [ProductCategory] would otherwise silently shuffle everyone's saved order.
+/// Unknown names are dropped and missing ones appended, so a saved order
+/// written by an older or newer build still resolves to something sensible
+/// rather than losing aisles.
+class AisleOrderController extends Notifier<List<ProductCategory>> {
+  @override
+  List<ProductCategory> build() {
+    final stored = ref.watch(sharedPreferencesProvider)
+        .getStringList(_aisleOrderKey);
+    return _resolve(stored);
+  }
+
+  static List<ProductCategory> _resolve(List<String>? names) {
+    if (names == null || names.isEmpty) return ProductCategory.values;
+
+    final byName = {for (final c in ProductCategory.values) c.name: c};
+    final ordered = [
+      for (final name in names)
+        if (byName[name] != null) byName[name]!,
+    ];
+    // Anything the saved order does not mention still has to appear.
+    for (final category in ProductCategory.values) {
+      if (!ordered.contains(category)) ordered.add(category);
+    }
+    return ordered;
+  }
+
+  Future<void> set(List<ProductCategory> order) async {
+    state = _resolve([for (final c in order) c.name]);
+    await ref.read(sharedPreferencesProvider).setStringList(
+      _aisleOrderKey,
+      [for (final c in state) c.name],
+    );
+  }
+
+  Future<void> reset() async {
+    state = ProductCategory.values;
+    await ref.read(sharedPreferencesProvider).remove(_aisleOrderKey);
+  }
+
+  /// Moves one aisle.
+  ///
+  /// Takes `onReorderItem` semantics: [newIndex] is already the destination
+  /// after the item has been lifted out, so there is no off-by-one to correct
+  /// here. The deprecated `onReorder` needed that correction; doing it in both
+  /// places would move the item one slot too far.
+  Future<void> reorder(int oldIndex, int newIndex) {
+    final next = [...state];
+    next.insert(newIndex, next.removeAt(oldIndex));
+    return set(next);
+  }
+}
+
+final aisleOrderProvider =
+    NotifierProvider<AisleOrderController, List<ProductCategory>>(
+      AisleOrderController.new,
+    );

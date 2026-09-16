@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../design.dart';
 import '../localization.dart';
+import '../money.dart';
 
 /// A modal bottom sheet on the app's terms: the palette's ground, a rounded
 /// top, a drag handle, and a title that does not have to be hand-built at
@@ -154,4 +155,61 @@ Future<String?> promptForText(
 
   final trimmed = value?.trim() ?? '';
   return trimmed.isEmpty ? null : trimmed;
+}
+
+/// Numeric prompt for a price, pre-filled with whatever it is now.
+///
+/// Returns a [PriceEntry] so a caller can tell "cleared" from "cancelled":
+/// clearing a price and backing out of the dialog are different intentions
+/// and a bare `double?` cannot express both.
+Future<PriceEntry?> promptForPrice(
+  BuildContext context, {
+  required String title,
+  double? initialValue,
+}) async {
+  final l10n = context.l10n;
+  final controller = TextEditingController(
+    text: initialValue == null ? '' : initialValue.toString(),
+  );
+
+  return showDialog<PriceEntry>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(title),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        // Both separators reach the parser, so either keyboard is fine.
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(hintText: l10n.itemPriceHint),
+        onSubmitted: (v) =>
+            Navigator.pop(context, PriceEntry(parsePrice(v))),
+      ),
+      actions: [
+        if (initialValue != null)
+          TextButton(
+            onPressed: () => Navigator.pop(context, const PriceEntry(null)),
+            child: Text(l10n.itemClearPrice),
+          ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.actionCancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(
+            context,
+            PriceEntry(parsePrice(controller.text)),
+          ),
+          child: Text(l10n.actionSave),
+        ),
+      ],
+    ),
+  );
+}
+
+/// A price the user committed to, which may deliberately be none.
+class PriceEntry {
+  final double? value;
+
+  const PriceEntry(this.value);
 }

@@ -1118,6 +1118,150 @@ abstract class AppLocalizations {
   /// **'Could not open that link.'**
   String get cookOpenFailed;
 
+  /// No description provided for @itemSetPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Set price'**
+  String get itemSetPrice;
+
+  /// No description provided for @itemClearPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear price'**
+  String get itemClearPrice;
+
+  /// No description provided for @itemPriceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Price of {name}'**
+  String itemPriceTitle(String name);
+
+  /// No description provided for @itemPriceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 2.40'**
+  String get itemPriceHint;
+
+  /// No description provided for @priceSoFar.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} so far'**
+  String priceSoFar(String total);
+
+  /// No description provided for @priceInBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} in the basket'**
+  String priceInBasket(String total);
+
+  /// No description provided for @priceUnpriced.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item has no price} other{{count} items have no price}}'**
+  String priceUnpriced(int count);
+
+  /// No description provided for @itemMoveToAisle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to another aisle'**
+  String get itemMoveToAisle;
+
+  /// No description provided for @itemAisleAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort it automatically'**
+  String get itemAisleAuto;
+
+  /// No description provided for @itemAisleAutoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guess the aisle from the name'**
+  String get itemAisleAutoSubtitle;
+
+  /// No description provided for @itemAisleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Aisle for {name}'**
+  String itemAisleTitle(String name);
+
+  /// No description provided for @settingsAisleOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Aisle order'**
+  String get settingsAisleOrder;
+
+  /// No description provided for @settingsAisleOrderNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to match the shop you actually walk. Shopping mode follows this order.'**
+  String get settingsAisleOrderNote;
+
+  /// No description provided for @settingsAisleOrderReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to default'**
+  String get settingsAisleOrderReset;
+
+  /// No description provided for @shareList.
+  ///
+  /// In en, this message translates to:
+  /// **'Share list'**
+  String get shareList;
+
+  /// No description provided for @shareListSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping list: {name}'**
+  String shareListSubject(String name);
+
+  /// No description provided for @shareNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to share yet.'**
+  String get shareNothing;
+
+  /// No description provided for @staplesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Staples'**
+  String get staplesTitle;
+
+  /// No description provided for @itemMarkStaple.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as a staple'**
+  String get itemMarkStaple;
+
+  /// No description provided for @itemUnmarkStaple.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a staple'**
+  String get itemUnmarkStaple;
+
+  /// No description provided for @staplesRestock.
+  ///
+  /// In en, this message translates to:
+  /// **'Restock staples'**
+  String get staplesRestock;
+
+  /// No description provided for @staplesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No staples yet. Mark something you buy every week and it will be offered here.'**
+  String get staplesNone;
+
+  /// No description provided for @staplesAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Added 1 staple} other{Added {count} staples}}'**
+  String staplesAdded(int count);
+
+  /// No description provided for @staplesAllPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'Every staple is already on the list.'**
+  String get staplesAllPresent;
+
   /// No description provided for @importReading.
   ///
   /// In en, this message translates to:

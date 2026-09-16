@@ -4,10 +4,14 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/design.dart';
 import '../../core/localization.dart';
+import '../../core/money.dart';
 import '../../core/providers.dart';
+import '../../core/settings.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
+import '../../data/repositories/shopping_list_repository.dart';
 import '../products/item_composer.dart';
+import '../products/item_sheet.dart';
 import 'category_label.dart';
 import 'product_category.dart';
 
@@ -81,12 +85,20 @@ class ShoppingModeScreen extends ConsumerWidget {
               Insets.xxl,
             ),
             children: [
-              _ProgressHero(picked: picked.length, total: products.length),
+              _ProgressHero(
+                picked: picked.length,
+                total: products.length,
+                pickedSpend: _sum(picked),
+                listSpend: _sum(products),
+                unpriced: products.where((p) => p.price == null).length,
+              ),
               if (remaining.isEmpty) ...[
                 const SizedBox(height: Insets.xl),
                 _DonePeak(total: products.length),
               ],
-              for (final category in ProductCategory.values)
+              // The user's own aisle order, so the list matches the shop
+              // they actually walk rather than the enum's declaration order.
+              for (final category in ref.watch(aisleOrderProvider))
                 ..._aisle(context, ref, category, remaining, mealNames),
               if (picked.isNotEmpty) ...[
                 const SizedBox(height: Insets.xl),
@@ -123,7 +135,7 @@ class ShoppingModeScreen extends ConsumerWidget {
     Map<String, String> mealNames,
   ) {
     final items = remaining
-        .where((p) => categorize(p.name) == category)
+        .where((p) => ShoppingListRepository.aisleOf(p) == category)
         .toList();
     if (items.isEmpty) return const [];
 
@@ -146,6 +158,13 @@ class ShoppingModeScreen extends ConsumerWidget {
     ];
   }
 
+  /// Total of the priced rows only. Unpriced items are not zero — they are
+  /// unknown — which is why the hero also says how many are missing.
+  static double _sum(List<Product> products) => products.fold(
+    0,
+    (total, product) => total + (product.price ?? 0),
+  );
+
   void _toggle(WidgetRef ref, Product product, bool value) {
     ref
         .read(shoppingListRepositoryProvider)
@@ -157,8 +176,17 @@ class ShoppingModeScreen extends ConsumerWidget {
 class _ProgressHero extends StatelessWidget {
   final int picked;
   final int total;
+  final double pickedSpend;
+  final double listSpend;
+  final int unpriced;
 
-  const _ProgressHero({required this.picked, required this.total});
+  const _ProgressHero({
+    required this.picked,
+    required this.total,
+    required this.pickedSpend,
+    required this.listSpend,
+    required this.unpriced,
+  });
 
   String _encouragement(BuildContext context) {
     final l10n = context.l10n;
@@ -198,6 +226,41 @@ class _ProgressHero extends StatelessWidget {
             _encouragement(context),
             style: AppText.caption.copyWith(color: palette.inkFaint),
           ),
+          if (listSpend > 0) ...[
+            const SizedBox(height: Insets.md),
+            Divider(height: 1, color: palette.divider),
+            const SizedBox(height: Insets.md),
+            Row(
+              children: [
+                FaIcon(
+                  FontAwesomeIcons.receipt,
+                  size: 13,
+                  color: palette.inkFaint,
+                ),
+                const SizedBox(width: Insets.sm),
+                Expanded(
+                  child: Text(
+                    l10n.priceInBasket(context.money(pickedSpend)),
+                    style: AppText.caption.copyWith(color: palette.inkMuted),
+                  ),
+                ),
+                Text(
+                  l10n.priceSoFar(context.money(listSpend)),
+                  style: AppText.caption.copyWith(
+                    color: palette.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            if (unpriced > 0) ...[
+              const SizedBox(height: Insets.xs),
+              Text(
+                l10n.priceUnpriced(unpriced),
+                style: AppText.caption.copyWith(color: palette.inkFaint),
+              ),
+            ],
+          ],
         ],
       ),
     );
@@ -268,7 +331,7 @@ class _DonePeak extends StatelessWidget {
 }
 
 /// Rows for one aisle, grouped into a single card so the list has rhythm.
-class _ItemGroup extends StatelessWidget {
+class _ItemGroup extends ConsumerWidget {
   final Color tint;
   final List<Product> products;
   final Map<String, String> mealNames;
@@ -282,20 +345,23 @@ class _ItemGroup extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AppCardList(
       tint: tint,
       children: [
         for (final product in products)
           ProductRow(
             name: product.name,
-            // Why it's on the list: how much, and which meal wants it.
+            // Why it's on the list: how much, which meal wants it, what it
+            // cost.
             details: [
               '${product.quantity} ${product.unit}'.trim(),
+              if (product.price != null) context.money(product.price!),
               if (product.mealId != null) mealNames[product.mealId] ?? '',
             ].where((part) => part.isNotEmpty).join(' · '),
             checked: product.isChecked,
             onToggle: (value) => onToggle(product, value),
+            onLongPress: () => showItemSheet(context, ref, product),
           ),
       ],
     );

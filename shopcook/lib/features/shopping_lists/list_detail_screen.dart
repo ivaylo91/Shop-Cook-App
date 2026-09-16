@@ -8,7 +8,11 @@ import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
+import '../../core/money.dart';
+import '../../core/settings.dart';
 import '../products/item_composer.dart';
+import '../products/item_sheet.dart';
+import 'share_list.dart';
 
 class ListDetailScreen extends ConsumerWidget {
   final ShoppingList list;
@@ -26,6 +30,16 @@ class ListDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(list.name),
         actions: [
+          IconButton(
+            icon: const FaIcon(FontAwesomeIcons.shareNodes, size: 17),
+            tooltip: l10n.shareList,
+            onPressed: () => _share(context, ref),
+          ),
+          IconButton(
+            icon: const FaIcon(FontAwesomeIcons.star, size: 16),
+            tooltip: l10n.staplesRestock,
+            onPressed: () => _restock(context, ref),
+          ),
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.utensils, size: 17),
             tooltip: l10n.mealNewTitle,
@@ -93,12 +107,16 @@ class ListDetailScreen extends ConsumerWidget {
                         for (final product in products)
                           ProductRow(
                             name: product.name,
-                            details: '${product.quantity} ${product.unit}'.trim(),
+                            details: [
+                              '${product.quantity} ${product.unit}'.trim(),
+                              if (product.price != null)
+                                context.money(product.price!),
+                            ].where((part) => part.isNotEmpty).join(' · '),
                             checked: product.isChecked,
                             onToggle: (value) => ref
                                 .read(shoppingListRepositoryProvider)
                                 .toggleProductChecked(product.id, value),
-                            onLongPress: () => _itemActions(
+                            onLongPress: () => _openItemSheet(
                               context,
                               ref,
                               product,
@@ -110,7 +128,7 @@ class ListDetailScreen extends ConsumerWidget {
                                 size: 16,
                               ),
                               tooltip: l10n.itemActions,
-                              onPressed: () => _itemActions(
+                              onPressed: () => _openItemSheet(
                                 context,
                                 ref,
                                 product,
@@ -134,6 +152,71 @@ class ListDetailScreen extends ConsumerWidget {
     );
   }
 
+  /// The shared item sheet, plus the three actions that only make sense from
+  /// a list: finding a recipe, moving into a meal, and deleting.
+  void _openItemSheet(
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+    List<Meal> meals,
+  ) {
+    showItemSheet(
+      context,
+      ref,
+      product,
+      onFindRecipes: () => context.push(
+        '/ingredient-recipes',
+        extra: (product: product, mealName: null),
+      ),
+      onMoveToMeal: () => _moveToMeal(context, ref, product, meals),
+      onDelete: () => _deleteItemWithUndo(context, ref, product),
+    );
+  }
+
+  Future<void> _share(BuildContext context, WidgetRef ref) async {
+    final products = await ref
+        .read(shoppingListRepositoryProvider)
+        .watchAllProducts(list.id)
+        .first;
+    if (!context.mounted) return;
+
+    await shareList(
+      context,
+      list: list,
+      products: products,
+      aisleOrder: ref.read(aisleOrderProvider),
+    );
+  }
+
+  /// Adds every staple that is not already on the list.
+  Future<void> _restock(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+
+    final repository = ref.read(shoppingListRepositoryProvider);
+    final staples = await repository.watchStaples(userId).first;
+
+    if (staples.isEmpty) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.staplesNone)));
+      return;
+    }
+
+    final added = await repository.restockStaples(
+      listId: list.id,
+      userId: userId,
+    );
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          added == 0 ? l10n.staplesAllPresent : l10n.staplesAdded(added),
+        ),
+      ),
+    );
+  }
+
   Future<void> _createMeal(BuildContext context, WidgetRef ref) async {
     final name = await promptForText(
       context,
@@ -144,63 +227,6 @@ class ListDetailScreen extends ConsumerWidget {
     if (name == null) return;
 
     await ref.read(shoppingListRepositoryProvider).createMeal(list.id, name);
-  }
-
-  /// Everything you can do to one item, in a sheet rather than a menu — it is
-  /// reachable with a thumb and has room for labels that explain themselves.
-  Future<void> _itemActions(
-    BuildContext context,
-    WidgetRef ref,
-    Product product,
-    List<Meal> meals,
-  ) async {
-    final l10n = context.l10n;
-    final action = await showAppSheet<String>(
-      context: context,
-      title: product.name,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 17),
-            title: Text(l10n.itemFindRecipes),
-            subtitle: Text(l10n.itemFindRecipesFromList),
-            onTap: () => Navigator.pop(context, 'recipes'),
-          ),
-          ListTile(
-            leading: const FaIcon(FontAwesomeIcons.utensils, size: 17),
-            title: Text(l10n.itemMoveToMeal),
-            onTap: () => Navigator.pop(context, 'move'),
-          ),
-          ListTile(
-            leading: FaIcon(
-              FontAwesomeIcons.trashCan,
-              size: 17,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            title: Text(
-              l10n.actionDelete,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-            onTap: () => Navigator.pop(context, 'delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (action == null || !context.mounted) return;
-
-    switch (action) {
-      case 'recipes':
-        context.push(
-          '/ingredient-recipes',
-          extra: (product: product, mealName: null),
-        );
-      case 'delete':
-        await _deleteItemWithUndo(context, ref, product);
-      case 'move':
-        await _moveToMeal(context, ref, product, meals);
-    }
   }
 
   Future<void> _deleteItemWithUndo(

@@ -278,6 +278,24 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteProduct(String id) =>
       (delete(products)..where((t) => t.id.equals(id))).go();
 
+  /// Every product belonging to [userId], across all their lists.
+  ///
+  /// The basis for the queries that have to reason across lists — suggestions
+  /// and staples — which then group in Dart so case folding is correct for
+  /// non-ASCII names.
+  Stream<List<Product>> watchAllProductsForUser(String userId) {
+    final query = select(products).join([
+      innerJoin(shoppingLists, shoppingLists.id.equalsExp(products.listId)),
+    ])..where(shoppingLists.userId.equals(userId));
+
+    return query.watch().map(
+      (rows) => rows.map((row) => row.readTable(products)).toList(),
+    );
+  }
+
+  Future<List<Product>> productsForUser(String userId) =>
+      watchAllProductsForUser(userId).first;
+
   Future<List<Product>> productsForList(String listId) =>
       (select(products)..where((t) => t.listId.equals(listId))).get();
 
@@ -294,17 +312,22 @@ class AppDatabase extends _$AppDatabase {
     required String listId,
     required String? mealId,
     required String name,
-  }) {
-    final query = select(products)
-      ..where(
-        (t) =>
-            t.listId.equals(listId) &
-            (mealId == null ? t.mealId.isNull() : t.mealId.equals(mealId)) &
-            t.isChecked.equals(false) &
-            t.name.lower().equals(name.toLowerCase().trim()),
-      )
-      ..limit(1);
-    return query.getSingleOrNull();
+  }) async {
+    // Narrowed in SQL, matched in Dart: `lower()` in SQLite would leave a
+    // Cyrillic name untouched while the bound parameter arrived folded, so
+    // nothing would ever match and every add would duplicate.
+    final candidates = await (select(products)..where(
+      (t) =>
+          t.listId.equals(listId) &
+          (mealId == null ? t.mealId.isNull() : t.mealId.equals(mealId)) &
+          t.isChecked.equals(false),
+    )).get();
+
+    final needle = foldName(name);
+    for (final candidate in candidates) {
+      if (foldName(candidate.name) == needle) return candidate;
+    }
+    return null;
   }
 
   Future<void> setProductQuantity(String id, String quantity) =>
@@ -326,6 +349,51 @@ class AppDatabase extends _$AppDatabase {
         ProductsCompanion(categoryOverride: Value(category)),
       );
 
+  /// The aisle this user last filed [name] in by hand, if ever.
+  ///
+  /// Corrections are remembered by name rather than by row, so fixing
+  /// "halloumi" once fixes it for every future shop instead of only for the
+  /// row in front of you.
+  Future<String?> rememberedCategory({
+    required String userId,
+    required String name,
+  }) async {
+    final needle = foldName(name);
+    if (needle.isEmpty) return null;
+
+    final matches =
+        (await productsForUser(userId))
+            .where((p) => p.categoryOverride != null)
+            .where((p) => foldName(p.name) == needle)
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return matches.isEmpty ? null : matches.first.categoryOverride;
+  }
+
+  /// Applies an aisle to every row with this name, so a correction is not
+  /// only about the one in front of you.
+  Future<int> setCategoryOverrideByName({
+    required String userId,
+    required String name,
+    required String? category,
+  }) async {
+    final needle = foldName(name);
+    if (needle.isEmpty) return 0;
+
+    final ids = [
+      for (final product in await productsForUser(userId))
+        if (foldName(product.name) == needle) product.id,
+    ];
+    if (ids.isEmpty) return 0;
+
+    await (update(products)..where((t) => t.id.isIn(ids))).write(
+      ProductsCompanion(categoryOverride: Value(category)),
+    );
+
+    return ids.length;
+  }
+
   Future<void> setProductStaple(String id, bool value) =>
       (update(products)..where((t) => t.id.equals(id))).write(
         ProductsCompanion(isStaple: Value(value)),
@@ -336,20 +404,26 @@ class AppDatabase extends _$AppDatabase {
   /// Distinct by name, because a staple is a habit rather than one row: milk
   /// bought every week is many rows and one staple.
   Stream<List<StapleName>> watchStaples(String userId) {
-    return customSelect(
-      'SELECT p.name AS name, MAX(p.created_at) AS last_used '
-      'FROM products p '
-      'JOIN shopping_lists l ON l.id = p.list_id '
-      'WHERE l.user_id = ? AND p.is_staple = 1 '
-      'GROUP BY p.name COLLATE NOCASE '
-      'ORDER BY last_used DESC',
-      variables: [Variable.withString(userId)],
-      readsFrom: {products, shoppingLists},
-    ).watch().map(
-      (rows) => rows
-          .map((row) => StapleName(name: row.read<String>('name')))
-          .toList(),
-    );
+    return watchAllProductsForUser(userId).map((rows) {
+      final lastUsed = <String, DateTime>{};
+      final display = <String, String>{};
+
+      for (final product in rows.where((p) => p.isStaple)) {
+        final key = foldName(product.name);
+        if (key.isEmpty) continue;
+
+        final seen = lastUsed[key];
+        if (seen == null || product.createdAt.isAfter(seen)) {
+          lastUsed[key] = product.createdAt;
+          display[key] = product.name;
+        }
+      }
+
+      final keys = lastUsed.keys.toList()
+        ..sort((a, b) => lastUsed[b]!.compareTo(lastUsed[a]!));
+
+      return [for (final key in keys) StapleName(name: display[key]!)];
+    });
   }
 
   /// Product names the user has added before, most-used first.
@@ -365,26 +439,39 @@ class AppDatabase extends _$AppDatabase {
     String userId, {
     int limit = 60,
   }) {
-    return customSelect(
-      'SELECT p.name AS name, COUNT(*) AS uses '
-      'FROM products p '
-      'JOIN shopping_lists l ON l.id = p.list_id '
-      'WHERE l.user_id = ? '
-      'GROUP BY p.name COLLATE NOCASE '
-      'ORDER BY uses DESC, MAX(p.created_at) DESC '
-      'LIMIT ?',
-      variables: [Variable.withString(userId), Variable.withInt(limit)],
-      readsFrom: {products, shoppingLists},
-    ).watch().map(
-      (rows) => rows
-          .map(
-            (row) => ProductSuggestion(
-              name: row.read<String>('name'),
-              uses: row.read<int>('uses'),
-            ),
-          )
-          .toList(),
-    );
+    return watchAllProductsForUser(userId).map((rows) {
+      // Grouped in Dart rather than with GROUP BY ... COLLATE NOCASE, which
+      // would list "Мляко" and "мляко" as two different habits.
+      final uses = <String, int>{};
+      final lastUsed = <String, DateTime>{};
+      final display = <String, String>{};
+
+      for (final product in rows) {
+        final key = foldName(product.name);
+        if (key.isEmpty) continue;
+
+        uses[key] = (uses[key] ?? 0) + 1;
+        final seen = lastUsed[key];
+        if (seen == null || product.createdAt.isAfter(seen)) {
+          lastUsed[key] = product.createdAt;
+          // Show the most recent spelling, which is the one the user last
+          // chose to type.
+          display[key] = product.name;
+        }
+      }
+
+      final keys = uses.keys.toList()
+        ..sort((a, b) {
+          final byUses = uses[b]!.compareTo(uses[a]!);
+          if (byUses != 0) return byUses;
+          return lastUsed[b]!.compareTo(lastUsed[a]!);
+        });
+
+      return [
+        for (final key in keys.take(limit))
+          ProductSuggestion(name: display[key]!, uses: uses[key]!),
+      ];
+    });
   }
 
   /// Moves a product into [mealId], or back onto the list itself when null.
@@ -457,6 +544,14 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 }
+
+/// Case-insensitive key for a product name.
+///
+/// Folding happens in Dart, not SQL. SQLite's `NOCASE` collation and `lower()`
+/// only fold ASCII A-Z, so "Халуми" and "халуми" compare as different strings
+/// and "Мляко" appears twice in the suggestions. Every case-insensitive
+/// comparison on names goes through this.
+String foldName(String name) => name.trim().toLowerCase();
 
 /// A name the user has typed before, with how often, for the composer's
 /// suggestions.
