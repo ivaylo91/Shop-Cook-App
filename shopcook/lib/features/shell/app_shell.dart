@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design.dart';
+import '../../core/localization.dart';
 
 /// The persistent bottom navigation.
 ///
@@ -40,18 +41,18 @@ class AppShell extends StatelessWidget {
         ),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: FaIcon(FontAwesomeIcons.rectangleList, size: 18),
-            label: 'Lists',
+            icon: const FaIcon(FontAwesomeIcons.rectangleList, size: 18),
+            label: context.l10n.navLists,
           ),
           NavigationDestination(
-            icon: FaIcon(FontAwesomeIcons.calendarDays, size: 18),
-            label: 'Plan',
+            icon: const FaIcon(FontAwesomeIcons.calendarDays, size: 18),
+            label: context.l10n.navPlan,
           ),
           NavigationDestination(
-            icon: FaIcon(FontAwesomeIcons.gear, size: 18),
-            label: 'Settings',
+            icon: const FaIcon(FontAwesomeIcons.gear, size: 18),
+            label: context.l10n.navSettings,
           ),
         ],
       ),

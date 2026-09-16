@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/design.dart';
+import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../data/local/database.dart';
 import '../recipes/ingredient_parser.dart';
@@ -25,13 +26,14 @@ class ItemComposer extends ConsumerStatefulWidget {
   /// The meal this adds to, or null to add loose to the list.
   final String? mealId;
 
-  final String hintText;
+  /// Null takes the generic hint; screens with a narrower job pass their own.
+  final String? hintText;
 
   const ItemComposer({
     super.key,
     required this.listId,
     this.mealId,
-    this.hintText = 'Add an item — try "2 kg potatoes"',
+    this.hintText,
   });
 
   @override
@@ -105,8 +107,16 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
     HapticFeedback.selectionClick();
 
     if (outcome.didMerge) {
+      final l10n = context.l10n;
+      final name = outcome.name ?? '';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(outcome.mergeMessage)),
+        SnackBar(
+          content: Text(
+            outcome.amount.isEmpty
+                ? l10n.composerMergedPlain(name)
+                : l10n.composerMergedAmount(name, outcome.amount),
+          ),
+        ),
       );
     }
   }
@@ -147,7 +157,8 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) => _submit(),
                       decoration: InputDecoration(
-                        hintText: widget.hintText,
+                        hintText:
+                            widget.hintText ?? context.l10n.listDetailComposerHint,
                         filled: false,
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
@@ -160,7 +171,7 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
                   ),
                   IconButton(
                     onPressed: _busy ? null : () => _submit(),
-                    tooltip: 'Add',
+                    tooltip: context.l10n.composerAdd,
                     icon: _busy
                         ? SizedBox(
                             width: 16,

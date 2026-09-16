@@ -4,7 +4,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design.dart';
+import '../../core/localization.dart';
 import '../../core/providers.dart';
+import '../../data/repositories/auth_repository.dart';
 import 'auth_scaffold.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -34,16 +36,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// Catch the obvious mistakes locally rather than spending a round trip
   /// to be told the email is blank.
   bool _validate() {
+    final l10n = context.l10n;
     final email = _email.text.trim();
     final password = _password.text;
 
     setState(() {
       _emailError = email.isEmpty
-          ? 'Enter your email'
+          ? l10n.authEnterEmail
           : (!email.contains('@') || !email.contains('.'))
-          ? 'That does not look like an email'
+          ? l10n.authInvalidEmail
           : null;
-      _passwordError = password.isEmpty ? 'Enter your password' : null;
+      _passwordError = password.isEmpty ? l10n.authEnterPassword : null;
       _formError = null;
     });
 
@@ -71,22 +74,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         .signIn(email: _email.text, password: _password.text);
 
     if (!mounted) return;
+    final l10n = context.l10n;
     setState(() {
       _busy = false;
-      _formError = result.success ? null : result.message;
+      _formError = switch (result.outcome) {
+        AuthOutcome.offline => l10n.authNetworkError,
+        // Supabase answers in English whatever the phone's language is;
+        // showing its wording beats inventing a vaguer local one.
+        AuthOutcome.rejected => result.serverMessage,
+        _ => null,
+      };
     });
     // On success the router's redirect moves us to the lists screen.
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return AuthScaffold(
-      title: 'Welcome back',
-      subtitle: 'Sign in to get to your shopping lists.',
+      title: l10n.loginTitle,
+      subtitle: l10n.loginSubtitle,
       children: [
         AuthField(
           controller: _email,
-          label: 'Email',
+          label: l10n.authEmail,
           icon: FontAwesomeIcons.envelope,
           keyboardType: TextInputType.emailAddress,
           errorText: _emailError,
@@ -94,7 +106,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         AuthField(
           controller: _password,
-          label: 'Password',
+          label: l10n.authPassword,
           icon: FontAwesomeIcons.lock,
           obscure: !_showPassword,
           errorText: _passwordError,
@@ -106,7 +118,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               _showPassword ? FontAwesomeIcons.eyeSlash : FontAwesomeIcons.eye,
               size: 15,
             ),
-            tooltip: _showPassword ? 'Hide password' : 'Show password',
+            tooltip: _showPassword
+                ? l10n.authHidePassword
+                : l10n.authShowPassword,
             onPressed: () => setState(() => _showPassword = !_showPassword),
           ),
         ),
@@ -128,19 +142,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     color: context.palette.onAccent,
                   ),
                 )
-              : const Text('Sign in'),
+              : Text(l10n.loginSubmit),
         ),
         const SizedBox(height: Insets.lg),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'No account yet?',
+              l10n.loginNoAccount,
               style: AppText.body.copyWith(color: context.palette.inkMuted),
             ),
             TextButton(
               onPressed: _busy ? null : () => context.push('/register'),
-              child: const Text('Create one'),
+              child: Text(l10n.loginCreateOne),
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../design.dart';
+import '../localization.dart';
 
 /// An animated progress track, rounded at both ends.
 ///
@@ -27,7 +28,7 @@ class AppProgressBar extends StatelessWidget {
     final fraction = total == 0 ? 0.0 : done / total;
 
     return Semantics(
-      label: '$done of $total picked up',
+      label: context.l10n.progressPickedUp(done, total),
       value: '${(fraction * 100).round()}%',
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: fraction),

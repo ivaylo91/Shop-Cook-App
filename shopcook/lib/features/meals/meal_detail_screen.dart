@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/design.dart';
+import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
@@ -22,6 +23,8 @@ class MealDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
+    final l10n = context.l10n;
+    final locale = Localizations.localeOf(context).toLanguageTag();
     final productsAsync = ref.watch(_mealProductsProvider(meal.id));
     final recipesAsync = ref.watch(_mealRecipesProvider(meal.id));
 
@@ -37,13 +40,15 @@ class MealDetailScreen extends ConsumerWidget {
               size: 17,
             ),
             tooltip: meal.plannedFor == null
-                ? 'Plan a day for this meal'
-                : 'Planned for ${DateFormat('EEE d MMM').format(meal.plannedFor!)}',
+                ? l10n.mealPlanDay
+                : l10n.mealPlannedFor(
+                    DateFormat('EEE d MMM', locale).format(meal.plannedFor!),
+                  ),
             onPressed: () => _plan(context, ref),
           ),
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 17),
-            tooltip: 'Find a recipe',
+            tooltip: l10n.mealFindRecipe,
             onPressed: () => context.push(
               '/list/$listId/meal/${meal.id}/search',
               extra: meal,
@@ -64,7 +69,7 @@ class MealDetailScreen extends ConsumerWidget {
               children: [
                 SectionLabel(
                   icon: FontAwesomeIcons.carrot,
-                  label: 'Ingredients',
+                  label: l10n.mealIngredients,
                   // Null rather than 0: a bare "0" beside a heading whose
                   // own empty state already says so is just noise.
                   count: switch (productsAsync.valueOrNull?.length) {
@@ -77,14 +82,13 @@ class MealDetailScreen extends ConsumerWidget {
                 productsAsync.when(
                   loading: () => const SkeletonRows(count: 3),
                   error: (_, __) => ErrorState(
-                    title: 'Could not load the ingredients',
+                    title: l10n.mealIngredientsError,
                     onRetry: () => ref.invalidate(_mealProductsProvider(meal.id)),
                   ),
                   data: (products) {
                     if (products.isEmpty) {
-                      return const InlineNote(
-                        message: 'No ingredients yet. Add them by hand, or find a '
-                            'recipe and import its list in one go.',
+                      return InlineNote(
+                        message: l10n.mealIngredientsEmpty,
                       );
                     }
                     return AppCardList(
@@ -105,7 +109,7 @@ class MealDetailScreen extends ConsumerWidget {
                                 FontAwesomeIcons.ellipsisVertical,
                                 size: 16,
                               ),
-                              tooltip: 'Item actions',
+                              tooltip: l10n.itemActions,
                               onPressed: () => _itemActions(context, ref, product),
                             ),
                           ),
@@ -116,22 +120,19 @@ class MealDetailScreen extends ConsumerWidget {
                 const SizedBox(height: Insets.xl),
                 SectionLabel(
                   icon: FontAwesomeIcons.bookOpen,
-                  label: 'Recipe',
+                  label: l10n.mealRecipe,
                   color: palette.aisle(_recipeSectionHue),
                 ),
                 const SizedBox(height: Insets.md),
                 recipesAsync.when(
                   loading: () => const SkeletonRows(count: 1),
                   error: (_, __) => ErrorState(
-                    title: 'Could not load the recipe',
+                    title: l10n.mealRecipeError,
                     onRetry: () => ref.invalidate(_mealRecipesProvider(meal.id)),
                   ),
                   data: (recipes) {
                     if (recipes.isEmpty) {
-                      return const InlineNote(
-                        message: 'No recipe attached yet. Find one and its '
-                            'ingredients can be imported straight onto this meal.',
-                      );
+                      return InlineNote(message: l10n.mealRecipeEmpty);
                     }
                     return Column(
                       children: [
@@ -153,7 +154,7 @@ class MealDetailScreen extends ConsumerWidget {
           ItemComposer(
             listId: listId,
             mealId: meal.id,
-            hintText: 'Add an ingredient',
+            hintText: l10n.mealComposerHint,
           ),
         ],
       ),
@@ -165,6 +166,8 @@ class MealDetailScreen extends ConsumerWidget {
   /// The screen is handed a snapshot of the meal, so the date it shows comes
   /// from that snapshot; the Plan tab reads the live row.
   Future<void> _plan(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
+    final locale = Localizations.localeOf(context).toLanguageTag();
     final today = ShoppingListRepository.dayOf(DateTime.now());
     final repository = ref.read(shoppingListRepositoryProvider);
 
@@ -172,19 +175,20 @@ class MealDetailScreen extends ConsumerWidget {
       final action = await showAppSheet<String>(
         context: context,
         title: meal.name,
-        subtitle: 'Planned for '
-            '${DateFormat('EEEE d MMM').format(meal.plannedFor!)}',
+        subtitle: l10n.mealPlannedFor(
+          DateFormat('EEEE d MMM', locale).format(meal.plannedFor!),
+        ),
         builder: (context) => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const FaIcon(FontAwesomeIcons.calendarDay, size: 16),
-              title: const Text('Move to another day'),
+              title: Text(l10n.mealMoveDay),
               onTap: () => Navigator.pop(context, 'pick'),
             ),
             ListTile(
               leading: const FaIcon(FontAwesomeIcons.calendarXmark, size: 16),
-              title: const Text('Take off the plan'),
+              title: Text(l10n.mealClearDay),
               onTap: () => Navigator.pop(context, 'clear'),
             ),
           ],
@@ -203,7 +207,7 @@ class MealDetailScreen extends ConsumerWidget {
       initialDate: meal.plannedFor ?? today,
       firstDate: DateTime(today.year, today.month, today.day - 30),
       lastDate: DateTime(today.year + 1, today.month, today.day),
-      helpText: 'Cook ${meal.name} on',
+      helpText: l10n.mealCookOn(meal.name),
     );
 
     if (picked == null) return;
@@ -215,6 +219,7 @@ class MealDetailScreen extends ConsumerWidget {
     WidgetRef ref,
     Product product,
   ) async {
+    final l10n = context.l10n;
     final action = await showAppSheet<String>(
       context: context,
       title: product.name,
@@ -223,8 +228,8 @@ class MealDetailScreen extends ConsumerWidget {
         children: [
           ListTile(
             leading: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 17),
-            title: const Text('Find recipes'),
-            subtitle: const Text('What else can I cook with this?'),
+            title: Text(l10n.itemFindRecipes),
+            subtitle: Text(l10n.itemFindRecipesFromMeal),
             onTap: () => Navigator.pop(context, 'recipes'),
           ),
           ListTile(
@@ -234,7 +239,7 @@ class MealDetailScreen extends ConsumerWidget {
               color: Theme.of(context).colorScheme.error,
             ),
             title: Text(
-              'Delete',
+              l10n.actionDelete,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
             onTap: () => Navigator.pop(context, 'delete'),
@@ -252,9 +257,9 @@ class MealDetailScreen extends ConsumerWidget {
 
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Removed ${product.name}'),
+          content: Text(l10n.itemRemoved(product.name)),
           action: SnackBarAction(
-            label: 'Undo',
+            label: l10n.actionUndo,
             onPressed: () => repository.undoDelete(deleted),
           ),
         ),
@@ -317,7 +322,9 @@ class _RecipeCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: Insets.xs),
                     Text(
-                      isVideo ? 'YouTube' : 'Web recipe',
+                      isVideo
+                          ? context.l10n.recipeSourceVideo
+                          : context.l10n.recipeSourceWeb,
                       style: AppText.caption.copyWith(color: palette.inkMuted),
                     ),
                   ],
@@ -341,26 +348,26 @@ class _RecipeCard extends ConsumerWidget {
                       mealId: mealId,
                     ),
                     icon: const FaIcon(FontAwesomeIcons.fileImport, size: 14),
-                    label: const Text('Import ingredients'),
+                    label: Text(context.l10n.recipeImport),
                   ),
                 )
               else
                 Expanded(
                   child: Text(
-                    'Videos have no ingredient list to import.',
+                    context.l10n.recipeVideoNoImport,
                     style: AppText.caption.copyWith(color: palette.inkFaint),
                   ),
                 ),
               const SizedBox(width: Insets.sm),
               IconButton(
                 icon: const FaIcon(FontAwesomeIcons.trashCan, size: 15),
-                tooltip: 'Remove recipe',
+                tooltip: context.l10n.recipeRemoveTooltip,
                 onPressed: () async {
                   final confirmed = await confirmAction(
                     context,
-                    title: 'Remove this recipe?',
-                    message: 'Ingredients already imported stay on the list.',
-                    confirmLabel: 'Remove',
+                    title: context.l10n.recipeRemoveTitle,
+                    message: context.l10n.recipeRemoveMessage,
+                    confirmLabel: context.l10n.actionRemove,
                     destructive: true,
                   );
                   if (confirmed) {

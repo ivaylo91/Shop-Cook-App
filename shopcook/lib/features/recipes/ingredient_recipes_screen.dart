@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/design.dart';
+import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
@@ -62,7 +63,7 @@ class _IngredientRecipesScreenState
     if (!opened && mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Could not open that link.')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.cookOpenFailed)));
     }
   }
 
@@ -75,15 +76,22 @@ class _IngredientRecipesScreenState
         .attachFromSearchResult(mealId, result);
 
     if (!mounted) return;
+    final l10n = context.l10n;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Attached to ${widget.mealName ?? 'the meal'}.')),
+      SnackBar(
+        content: Text(
+          l10n.cookAttached(widget.mealName ?? l10n.cookAttachedFallback),
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Cook with ${widget.product.name}')),
+      appBar: AppBar(
+        title: Text(context.l10n.cookWith(widget.product.name)),
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           Insets.lg,
@@ -95,7 +103,7 @@ class _IngredientRecipesScreenState
           _SearchAppsCard(query: _query, onOpen: _open),
           const SizedBox(height: Insets.xl),
           Text(
-            'From YouTube',
+            context.l10n.cookFromYouTube,
             style: AppText.title.copyWith(color: context.palette.ink),
           ),
           const SizedBox(height: Insets.md),
@@ -128,19 +136,22 @@ class _SearchAppsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final term = Uri.encodeQueryComponent('$query recipe');
+    final l10n = context.l10n;
+    // The search term is localised too: a Bulgarian speaker looking for
+    // recipes wants Bulgarian results, not a transliterated English query.
+    final term = Uri.encodeQueryComponent(l10n.cookSearchQuery(query));
 
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Search the apps',
+            l10n.cookSearchApps,
             style: AppText.title.copyWith(color: palette.ink),
           ),
           const SizedBox(height: Insets.xs),
           Text(
-            'Opens a search for "$query recipe".',
+            l10n.cookSearchAppsSubtitle(query),
             style: AppText.caption.copyWith(color: palette.inkMuted),
           ),
           const SizedBox(height: Insets.lg),
@@ -183,10 +194,7 @@ class _NoResultsNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const InlineNote(
-      message: 'No in-app results yet. These appear once a YouTube API key '
-          'is set on the backend — until then, use the buttons above.',
-    );
+    return InlineNote(message: context.l10n.cookNoResults);
   }
 }
 
@@ -246,8 +254,8 @@ class _ResultTile extends StatelessWidget {
               ? IconButton(
                   icon: const FaIcon(FontAwesomeIcons.plus, size: 15),
                   tooltip: mealName == null
-                      ? 'Attach to meal'
-                      : 'Attach to $mealName',
+                      ? context.l10n.cookAttachToMeal
+                      : context.l10n.cookAttachToNamed(mealName!),
                   onPressed: onAttach,
                 )
               : null,

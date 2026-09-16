@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/design.dart';
+import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
@@ -17,6 +18,7 @@ class ListDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
+    final l10n = context.l10n;
     final mealsAsync = ref.watch(_mealsProvider(list.id));
     final unassignedAsync = ref.watch(_unassignedProductsProvider(list.id));
 
@@ -26,12 +28,12 @@ class ListDetailScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.utensils, size: 17),
-            tooltip: 'New meal',
+            tooltip: l10n.mealNewTitle,
             onPressed: () => _createMeal(context, ref),
           ),
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.cartShopping, size: 18),
-            tooltip: 'Shopping mode',
+            tooltip: l10n.listDetailShoppingMode,
             onPressed: () => context.push('/list/${list.id}/shop', extra: list),
           ),
         ],
@@ -50,7 +52,7 @@ class ListDetailScreen extends ConsumerWidget {
                 mealsAsync.when(
                   loading: () => const SkeletonRows(count: 2),
                   error: (_, __) => ErrorState(
-                    title: 'Could not load the meals',
+                    title: l10n.listDetailMealsError,
                     onRetry: () => ref.invalidate(_mealsProvider(list.id)),
                   ),
                   data: (meals) {
@@ -68,22 +70,21 @@ class ListDetailScreen extends ConsumerWidget {
                 const SizedBox(height: Insets.sm),
                 SectionLabel(
                   icon: FontAwesomeIcons.basketShopping,
-                  label: 'Other items',
+                  label: l10n.listDetailOtherItems,
                   color: palette.inkMuted,
                 ),
                 const SizedBox(height: Insets.md),
                 unassignedAsync.when(
                   loading: () => const SkeletonRows(count: 2),
                   error: (_, __) => ErrorState(
-                    title: 'Could not load the items',
+                    title: l10n.listDetailItemsError,
                     onRetry: () =>
                         ref.invalidate(_unassignedProductsProvider(list.id)),
                   ),
                   data: (products) {
                     if (products.isEmpty) {
-                      return const InlineNote(
-                        message: 'Anything you add without picking a meal lands '
-                            'here — the milk and the washing-up liquid.',
+                      return InlineNote(
+                        message: l10n.listDetailUnassignedNote,
                       );
                     }
                     return AppCardList(
@@ -108,7 +109,7 @@ class ListDetailScreen extends ConsumerWidget {
                                 FontAwesomeIcons.ellipsisVertical,
                                 size: 16,
                               ),
-                              tooltip: 'Item actions',
+                              tooltip: l10n.itemActions,
                               onPressed: () => _itemActions(
                                 context,
                                 ref,
@@ -124,7 +125,10 @@ class ListDetailScreen extends ConsumerWidget {
               ],
             ),
           ),
-          ItemComposer(listId: list.id),
+          ItemComposer(
+            listId: list.id,
+            hintText: l10n.listDetailComposerHint,
+          ),
         ],
       ),
     );
@@ -133,9 +137,9 @@ class ListDetailScreen extends ConsumerWidget {
   Future<void> _createMeal(BuildContext context, WidgetRef ref) async {
     final name = await promptForText(
       context,
-      title: 'New meal',
-      hint: 'e.g. Spaghetti Bolognese',
-      confirmLabel: 'Create',
+      title: context.l10n.mealNewTitle,
+      hint: context.l10n.mealNewHint,
+      confirmLabel: context.l10n.actionCreate,
     );
     if (name == null) return;
 
@@ -150,6 +154,7 @@ class ListDetailScreen extends ConsumerWidget {
     Product product,
     List<Meal> meals,
   ) async {
+    final l10n = context.l10n;
     final action = await showAppSheet<String>(
       context: context,
       title: product.name,
@@ -158,13 +163,13 @@ class ListDetailScreen extends ConsumerWidget {
         children: [
           ListTile(
             leading: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 17),
-            title: const Text('Find recipes'),
-            subtitle: const Text('What can I cook with this?'),
+            title: Text(l10n.itemFindRecipes),
+            subtitle: Text(l10n.itemFindRecipesFromList),
             onTap: () => Navigator.pop(context, 'recipes'),
           ),
           ListTile(
             leading: const FaIcon(FontAwesomeIcons.utensils, size: 17),
-            title: const Text('Move to a meal'),
+            title: Text(l10n.itemMoveToMeal),
             onTap: () => Navigator.pop(context, 'move'),
           ),
           ListTile(
@@ -174,7 +179,7 @@ class ListDetailScreen extends ConsumerWidget {
               color: Theme.of(context).colorScheme.error,
             ),
             title: Text(
-              'Delete',
+              l10n.actionDelete,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
             onTap: () => Navigator.pop(context, 'delete'),
@@ -203,15 +208,16 @@ class ListDetailScreen extends ConsumerWidget {
     WidgetRef ref,
     Product product,
   ) async {
+    final l10n = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
     final repository = ref.read(shoppingListRepositoryProvider);
     final deleted = await repository.deleteProductWithUndo(product.id);
 
     messenger.showSnackBar(
       SnackBar(
-        content: Text('Removed ${product.name}'),
+        content: Text(l10n.itemRemoved(product.name)),
         action: SnackBarAction(
-          label: 'Undo',
+          label: l10n.actionUndo,
           onPressed: () => repository.undoDelete(deleted),
         ),
       ),
@@ -226,16 +232,14 @@ class ListDetailScreen extends ConsumerWidget {
   ) async {
     if (meals.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Create a meal first, then move items into it.'),
-        ),
+        SnackBar(content: Text(context.l10n.itemMoveNeedsMeal)),
       );
       return;
     }
 
     final mealId = await showAppSheet<String>(
       context: context,
-      title: 'Move "${product.name}" to',
+      title: context.l10n.itemMoveTitle(product.name),
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -319,7 +323,7 @@ class _MealCard extends ConsumerWidget {
           ] else ...[
             const SizedBox(height: Insets.sm),
             Text(
-              'No ingredients yet — open it to add some or find a recipe.',
+              context.l10n.mealCardNoIngredients,
               style: AppText.caption.copyWith(color: palette.inkMuted),
             ),
           ],
@@ -331,6 +335,7 @@ class _MealCard extends ConsumerWidget {
   /// Rename or delete, in a sheet — a long-press with only one outcome is
   /// hard to discover and easy to trigger by accident.
   Future<void> _mealActions(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
     final action = await showAppSheet<String>(
       context: context,
       title: meal.name,
@@ -339,7 +344,7 @@ class _MealCard extends ConsumerWidget {
         children: [
           ListTile(
             leading: const FaIcon(FontAwesomeIcons.pen, size: 16),
-            title: const Text('Rename'),
+            title: Text(l10n.actionRename),
             onTap: () => Navigator.pop(context, 'rename'),
           ),
           ListTile(
@@ -349,7 +354,7 @@ class _MealCard extends ConsumerWidget {
               color: Theme.of(context).colorScheme.error,
             ),
             title: Text(
-              'Delete meal',
+              l10n.mealDelete,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
             onTap: () => Navigator.pop(context, 'delete'),
@@ -363,7 +368,7 @@ class _MealCard extends ConsumerWidget {
     if (action == 'rename') {
       final name = await promptForText(
         context,
-        title: 'Rename meal',
+        title: l10n.mealRenameTitle,
         initialValue: meal.name,
       );
       if (name == null) return;
@@ -377,10 +382,10 @@ class _MealCard extends ConsumerWidget {
 
     messenger.showSnackBar(
       SnackBar(
-        content: Text('Deleted "${meal.name}"'),
+        content: Text(l10n.mealDeleted(meal.name)),
         duration: const Duration(seconds: 6),
         action: SnackBarAction(
-          label: 'Undo',
+          label: l10n.actionUndo,
           onPressed: () => repository.undoDelete(deleted),
         ),
       ),

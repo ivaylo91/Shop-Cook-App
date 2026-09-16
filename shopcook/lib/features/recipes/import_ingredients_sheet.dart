@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/design.dart';
+import '../../core/localization.dart';
 import '../../core/providers.dart';
+import '../../data/remote/recipe_import_api.dart';
 import '../../core/ui/ui.dart';
 import 'ingredient_parser.dart';
 
@@ -19,6 +21,7 @@ Future<void> importIngredients(
   required String mealId,
 }) async {
   final messenger = ScaffoldMessenger.of(context);
+  final l10n = context.l10n;
 
   showDialog<void>(
     context: context,
@@ -35,7 +38,13 @@ Future<void> importIngredients(
 
   if (!imported.hasIngredients) {
     messenger.showSnackBar(
-      SnackBar(content: Text(imported.error ?? 'No ingredients found.')),
+      SnackBar(
+        content: Text(switch (imported.failure) {
+          ImportFailure.unreadable => l10n.importPageUnreadable,
+          ImportFailure.unreachable => l10n.importUnreachable,
+          _ => l10n.importNoneFound,
+        }),
+      ),
     );
     return;
   }
@@ -66,13 +75,7 @@ Future<void> importIngredients(
   );
 
   messenger.showSnackBar(
-    SnackBar(
-      content: Text(
-        chosen.length == 1
-            ? 'Added 1 ingredient.'
-            : 'Added ${chosen.length} ingredients.',
-      ),
-    ),
+    SnackBar(content: Text(l10n.importAdded(chosen.length))),
   );
 }
 
@@ -81,16 +84,16 @@ class _LoadingDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AlertDialog(
+    return AlertDialog(
       content: Row(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          SizedBox(width: Insets.lg),
-          Expanded(child: Text('Reading the recipe…')),
+          const SizedBox(width: Insets.lg),
+          Expanded(child: Text(context.l10n.importReading)),
         ],
       ),
     );
@@ -123,8 +126,10 @@ class _IngredientPickerState extends State<_IngredientPicker> {
       builder: (context, controller) => Column(
         children: [
           AppSheetHeader(
-            title: widget.title.isEmpty ? 'Ingredients' : widget.title,
-            subtitle: 'Pick what to add to this meal.',
+            title: widget.title.isEmpty
+                ? context.l10n.importTitleDefault
+                : widget.title,
+            subtitle: context.l10n.importPick,
           ),
           Expanded(
             child: ListView.builder(
@@ -179,8 +184,8 @@ class _IngredientPickerState extends State<_IngredientPicker> {
                     }),
                     child: Text(
                       _selected.length == widget.ingredients.length
-                          ? 'Clear all'
-                          : 'Select all',
+                          ? context.l10n.importClearAll
+                          : context.l10n.importSelectAll,
                     ),
                   ),
                   const Spacer(),
@@ -192,7 +197,7 @@ class _IngredientPickerState extends State<_IngredientPicker> {
                               widget.ingredients[i],
                           ]),
                     icon: const FaIcon(FontAwesomeIcons.plus, size: 14),
-                    label: Text('Add ${_selected.length}'),
+                    label: Text(context.l10n.importAddCount(_selected.length)),
                   ),
                 ],
               ),

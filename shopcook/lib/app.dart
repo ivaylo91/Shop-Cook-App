@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/localization.dart';
 import 'core/providers.dart';
 import 'core/settings.dart';
 import 'core/theme.dart';
+import 'l10n/app_localizations.dart';
 import 'data/local/database.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
@@ -143,10 +145,15 @@ class ShopCookApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'ShopCook',
+      onGenerateTitle: (context) => context.l10n.appTitle,
       theme: buildAppTheme(Brightness.light),
       darkTheme: buildAppTheme(Brightness.dark),
       themeMode: ref.watch(themeModeProvider),
+      // Null follows the phone; Flutter then picks the closest supported
+      // locale and falls back to the template (English) if there is none.
+      locale: ref.watch(localeProvider),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: supportedAppLocales,
       routerConfig: ref.watch(routerProvider),
     );
   }

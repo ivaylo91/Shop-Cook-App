@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/design.dart';
+import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
@@ -13,29 +14,28 @@ class ListsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final listsAsync = ref.watch(_listsStreamProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Lists')),
+      appBar: AppBar(title: Text(l10n.navLists)),
       body: listsAsync.when(
         loading: () => const Padding(
           padding: EdgeInsets.all(Insets.lg),
           child: SkeletonRows(count: 3),
         ),
         error: (_, __) => ErrorState(
-          title: 'Could not load your lists',
-          details: 'Your lists are stored on this device, so this is usually '
-              'temporary.',
+          title: l10n.listsLoadError,
+          details: l10n.listsLoadErrorDetail,
           onRetry: () => ref.invalidate(_listsStreamProvider),
         ),
         data: (lists) {
           if (lists.isEmpty) {
             return EmptyState(
               icon: FontAwesomeIcons.rectangleList,
-              title: 'No shopping lists yet',
-              message: 'A list holds the meals you are cooking and everything '
-                  'you need to buy for them.',
-              actionLabel: 'Create a list',
+              title: l10n.listsEmptyTitle,
+              message: l10n.listsEmptyMessage,
+              actionLabel: l10n.listsEmptyAction,
               onAction: () => _createList(context, ref),
             );
           }
@@ -58,11 +58,9 @@ class ListsScreen extends ConsumerWidget {
                 // under it, so it both asks first and offers an undo.
                 confirmDismiss: (_) => confirmAction(
                   context,
-                  title: 'Delete "${list.name}"?',
-                  message:
-                      'This also removes its meals, items and recipes. You '
-                      'can undo it straight afterwards.',
-                  confirmLabel: 'Delete',
+                  title: l10n.listsDeleteTitle(list.name),
+                  message: l10n.listsDeleteMessage,
+                  confirmLabel: l10n.actionDelete,
                   destructive: true,
                 ),
                 onDismissed: (_) => _deleteWithUndo(context, ref, list),
@@ -74,7 +72,7 @@ class ListsScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _createList(context, ref),
-        tooltip: 'New shopping list',
+        tooltip: l10n.listsNewTitle,
         child: const FaIcon(FontAwesomeIcons.plus, size: 18),
       ),
     );
@@ -83,9 +81,9 @@ class ListsScreen extends ConsumerWidget {
   Future<void> _createList(BuildContext context, WidgetRef ref) async {
     final name = await promptForText(
       context,
-      title: 'New shopping list',
-      hint: 'e.g. Weekly groceries',
-      confirmLabel: 'Create',
+      title: context.l10n.listsNewTitle,
+      hint: context.l10n.listsNewHint,
+      confirmLabel: context.l10n.actionCreate,
     );
     if (name == null) return;
 
@@ -104,16 +102,17 @@ class ListsScreen extends ConsumerWidget {
     WidgetRef ref,
     ShoppingList list,
   ) async {
+    final l10n = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
     final repository = ref.read(shoppingListRepositoryProvider);
     final deleted = await repository.deleteListWithUndo(list.id);
 
     messenger.showSnackBar(
       SnackBar(
-        content: Text('Deleted "${list.name}"'),
+        content: Text(l10n.listsDeleted(list.name)),
         duration: const Duration(seconds: 6),
         action: SnackBarAction(
-          label: 'Undo',
+          label: l10n.actionUndo,
           onPressed: () => repository.undoDelete(deleted),
         ),
       ),
@@ -182,7 +181,7 @@ class _ListCard extends ConsumerWidget {
           const SizedBox(height: Insets.md),
           if (products.isEmpty)
             Text(
-              'Empty — open it to add meals and items.',
+              context.l10n.listCardEmpty,
               style: AppText.caption.copyWith(color: palette.inkMuted),
             )
           else ...[
@@ -190,8 +189,8 @@ class _ListCard extends ConsumerWidget {
             const SizedBox(height: Insets.sm),
             Text(
               done
-                  ? 'Everything picked up'
-                  : '${products.length - checked} left to buy',
+                  ? context.l10n.listCardAllPicked
+                  : context.l10n.listCardLeftToBuy(products.length - checked),
               style: AppText.caption.copyWith(color: palette.inkFaint),
             ),
           ],
@@ -203,7 +202,7 @@ class _ListCard extends ConsumerWidget {
   Future<void> _rename(BuildContext context, WidgetRef ref) async {
     final name = await promptForText(
       context,
-      title: 'Rename list',
+      title: context.l10n.listsRenameTitle,
       initialValue: list.name,
     );
     if (name == null) return;
@@ -227,7 +226,7 @@ class _DeleteBackground extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Delete',
+            context.l10n.actionDelete,
             style: AppText.caption.copyWith(
               color: scheme.onErrorContainer,
               fontWeight: FontWeight.w600,

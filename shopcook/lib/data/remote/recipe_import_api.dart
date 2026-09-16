@@ -1,16 +1,31 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// Why an import came back with nothing.
+///
+/// A code rather than a sentence: this runs with no BuildContext and so no
+/// locale, and the wording belongs to the screen that shows it.
+enum ImportFailure {
+  /// The function replied, but the page had no ingredient list it could read.
+  noneFound,
+
+  /// The function replied that it could not read the page at all.
+  unreadable,
+
+  /// Never reached the function.
+  unreachable,
+}
+
 class RecipeImport {
   final String title;
   final List<String> ingredients;
 
-  /// Human-readable reason the import came back empty, if it did.
-  final String? error;
+  /// Why it came back empty, if it did.
+  final ImportFailure? failure;
 
   const RecipeImport({
     this.title = '',
     this.ingredients = const [],
-    this.error,
+    this.failure,
   });
 
   bool get hasIngredients => ingredients.isNotEmpty;
@@ -33,7 +48,7 @@ class RecipeImportApi {
       );
       final data = response.data;
       if (data is! Map) {
-        return const RecipeImport(error: 'That page could not be read.');
+        return const RecipeImport(failure: ImportFailure.unreadable);
       }
 
       final ingredients = (data['ingredients'] as List? ?? const [])
@@ -43,14 +58,10 @@ class RecipeImportApi {
       return RecipeImport(
         title: data['title'] as String? ?? '',
         ingredients: ingredients,
-        error: ingredients.isEmpty
-            ? (data['error'] as String? ?? 'No ingredients found there.')
-            : null,
+        failure: ingredients.isEmpty ? ImportFailure.noneFound : null,
       );
     } catch (_) {
-      return const RecipeImport(
-        error: 'Could not reach the importer. Check your connection.',
-      );
+      return const RecipeImport(failure: ImportFailure.unreachable);
     }
   }
 }

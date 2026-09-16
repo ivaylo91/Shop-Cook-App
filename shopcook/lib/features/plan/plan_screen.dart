@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/design.dart';
+import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
@@ -22,19 +23,20 @@ class PlanScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
+    final l10n = context.l10n;
     final today = ShoppingListRepository.dayOf(DateTime.now());
     final plannedAsync = ref.watch(plannedMealsProvider);
     final unplanned = ref.watch(unplannedMealsProvider).valueOrNull ?? const [];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Plan')),
+      appBar: AppBar(title: Text(l10n.navPlan)),
       body: plannedAsync.when(
         loading: () => const Padding(
           padding: EdgeInsets.all(Insets.lg),
           child: SkeletonRows(count: 4),
         ),
         error: (_, __) => ErrorState(
-          title: 'Could not load your plan',
+          title: l10n.planError,
           onRetry: () => ref.invalidate(plannedMealsProvider),
         ),
         data: (planned) {
@@ -47,10 +49,9 @@ class PlanScreen extends ConsumerWidget {
           if (planned.isEmpty && unplanned.isEmpty) {
             return EmptyState(
               icon: FontAwesomeIcons.calendarDays,
-              title: 'Nothing planned yet',
-              message: 'Create a meal inside a shopping list, then give it a '
-                  'day here. Its ingredients come along with it.',
-              actionLabel: 'Go to your lists',
+              title: l10n.planEmptyTitle,
+              message: l10n.planEmptyMessage,
+              actionLabel: l10n.planEmptyAction,
               actionIcon: FontAwesomeIcons.rectangleList,
               onAction: () => context.go('/lists'),
             );
@@ -81,7 +82,7 @@ class PlanScreen extends ConsumerWidget {
                 const SizedBox(height: Insets.xl),
                 SectionLabel(
                   icon: FontAwesomeIcons.lightbulb,
-                  label: 'Not yet planned',
+                  label: l10n.planUnplanned,
                   count: unplanned.length,
                   color: palette.inkMuted,
                 ),
@@ -123,6 +124,8 @@ class _DaySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
+    final l10n = context.l10n;
+    final locale = Localizations.localeOf(context).toLanguageTag();
     final tint = isToday ? palette.accent : palette.inkMuted;
 
     return Padding(
@@ -133,23 +136,25 @@ class _DaySection extends ConsumerWidget {
           Row(
             children: [
               Text(
-                DateFormat('EEEE').format(day),
+                // Locale-aware: the day names are the most visible thing on
+                // this screen, and DateFormat defaults to en_US otherwise.
+                DateFormat('EEEE', locale).format(day),
                 style: AppText.title.copyWith(color: tint),
               ),
               const SizedBox(width: Insets.sm),
               Text(
-                DateFormat('d MMM').format(day),
+                DateFormat('d MMM', locale).format(day),
                 style: AppText.caption.copyWith(color: palette.inkFaint),
               ),
               if (isToday) ...[
                 const SizedBox(width: Insets.sm),
-                CountPill(label: 'Today'),
+                CountPill(label: l10n.planToday),
               ],
               const Spacer(),
               if (hasIdeas)
                 IconButton(
                   icon: const FaIcon(FontAwesomeIcons.plus, size: 14),
-                  tooltip: 'Plan a meal for this day',
+                  tooltip: l10n.planAddForDay,
                   onPressed: () => _assign(context, ref),
                 ),
             ],
@@ -157,7 +162,7 @@ class _DaySection extends ConsumerWidget {
           const SizedBox(height: Insets.sm),
           if (meals.isEmpty)
             Text(
-              'Nothing planned',
+              l10n.planNothing,
               style: AppText.caption.copyWith(color: palette.inkFaint),
             )
           else
@@ -179,10 +184,13 @@ class _DaySection extends ConsumerWidget {
         .first;
     if (!context.mounted || ideas.isEmpty) return;
 
+    final locale = Localizations.localeOf(context).toLanguageTag();
     final mealId = await showAppSheet<String>(
       context: context,
-      title: 'Cook on ${DateFormat('EEEE d MMM').format(day)}',
-      subtitle: 'Pick a meal that has no day yet.',
+      title: context.l10n.planCookOnDay(
+        DateFormat('EEEE d MMM', locale).format(day),
+      ),
+      subtitle: context.l10n.planPickMeal,
       builder: (context) => SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -217,9 +225,10 @@ class _MealRow extends ConsumerWidget {
         ref.watch(mealProductsProvider(meal.id)).valueOrNull ?? const [];
     final checked = products.where((p) => p.isChecked).length;
 
+    final l10n = context.l10n;
     final detail = products.isEmpty
-        ? 'No ingredients yet'
-        : '$checked of ${products.length} bought';
+        ? l10n.planNoIngredients
+        : l10n.planBought(checked, products.length);
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
@@ -235,7 +244,7 @@ class _MealRow extends ConsumerWidget {
       subtitle: Text(detail),
       trailing: IconButton(
         icon: const FaIcon(FontAwesomeIcons.ellipsisVertical, size: 15),
-        tooltip: 'Meal actions',
+        tooltip: l10n.mealActions,
         onPressed: () => _actions(context, ref),
       ),
       onTap: () => context.push(
@@ -246,6 +255,7 @@ class _MealRow extends ConsumerWidget {
   }
 
   Future<void> _actions(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
     final action = await showAppSheet<String>(
       context: context,
       title: meal.name,
@@ -254,13 +264,13 @@ class _MealRow extends ConsumerWidget {
         children: [
           ListTile(
             leading: const FaIcon(FontAwesomeIcons.calendarDay, size: 16),
-            title: Text(showDay ? 'Move to another day' : 'Give it a day'),
+            title: Text(showDay ? l10n.mealMoveDay : l10n.mealGiveDay),
             onTap: () => Navigator.pop(context, 'pick'),
           ),
           if (showDay)
             ListTile(
               leading: const FaIcon(FontAwesomeIcons.calendarXmark, size: 16),
-              title: const Text('Take off the plan'),
+              title: Text(l10n.mealClearDay),
               onTap: () => Navigator.pop(context, 'clear'),
             ),
         ],
@@ -281,7 +291,7 @@ class _MealRow extends ConsumerWidget {
       initialDate: meal.plannedFor ?? today,
       firstDate: DateTime(today.year, today.month, today.day - 30),
       lastDate: DateTime(today.year + 1, today.month, today.day),
-      helpText: 'Cook ${meal.name} on',
+      helpText: l10n.mealCookOn(meal.name),
     );
 
     if (picked == null) return;

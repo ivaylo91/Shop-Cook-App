@@ -96,6 +96,57 @@ before the delete and re-inserted in foreign-key order if you undo — which is
 why this needs no soft-delete column. Long-press a list to rename it; long-press
 a meal for rename and delete.
 
+## Languages
+
+English and Bulgarian. The app follows the phone by default — a `bg-BG` phone
+opens in Bulgarian with nothing to configure — and **Settings → Език** can
+override that when the phone's language is not the one you want to cook in.
+
+Strings live in `lib/l10n/app_en.arb` (the template) and `app_bg.arb`, and
+`AppLocalizations` is generated from them (`l10n.yaml`, `generate: true`). Read
+them as `context.l10n.someKey` via the extension in `lib/core/localization.dart`.
+Adding a string means adding it to the English template first; a key missing
+from the Bulgarian file falls back to English rather than rendering blank.
+
+Counts go through ICU plurals rather than an `if`, because the two languages
+do not split the same way:
+
+```
+"listCardLeftToBuy": "{count, plural, =1{1 left to buy} other{{count} left to buy}}"
+```
+
+Two things are deliberately **not** translated. User content — list names,
+meals, item names — is whatever you typed. And Supabase's auth errors, which
+come back in English regardless of the phone's language; the repository reports
+an `AuthOutcome` and the two messages this app authors are localised at the
+call site, while the server's own wording is passed through as-is. Same shape
+for recipe imports via `ImportFailure`.
+
+### Working in Bulgarian, not just reading it
+
+Translating the UI is the easy half. Two things had to understand Bulgarian
+input or the app would be useless in it:
+
+- **Aisle sorting.** `categorize()` matched English words only, so "мляко"
+  landed in Други. It now carries ~180 Bulgarian keywords alongside the
+  English ones, in one map rather than per locale — a shopping list is not
+  monolingual, and the same person writes "мляко" one week and "halloumi" the
+  next. Bulgarian entries are **stems** ("домат" covers домат / домати /
+  доматен) because the language inflects and matching is by `contains`.
+- **Amount parsing.** `parseIngredient` only knew English units and its
+  word-boundary pattern was ASCII, so "2 кг картофи" did not split. It now
+  reads г / кг / мл / л / бр. / щипка / скилидка / глава and the rest, folds
+  dotted spoon abbreviations ("с.л.", "ч. л.") to one token, and knows
+  Bulgarian preparation words so "1 глава лук, нарязан на кубчета" yields
+  1 глава / Лук.
+
+`test/bulgarian_test.dart` covers both, plus a check that every aisle heading
+actually comes back Cyrillic in `bg`.
+
+One thing to watch when adding strings: **Bulgarian runs longer than English.**
+The first build truncated the composer hint mid-word in a single-line field.
+Anything that cannot wrap needs checking in both languages.
+
 ## Getting around
 
 Three tabs in a persistent bottom bar, each with its own navigator via

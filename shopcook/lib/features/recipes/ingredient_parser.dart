@@ -26,12 +26,15 @@ final _quantityPattern = RegExp(
 
 /// A pack multiplier following the amount: the "x 400g" of "2 x 400g tins".
 final _multiplierPattern = RegExp(
-  r'^[x×]\s*(\d+(?:[.,]\d+)?\s*[a-zA-Z]*)\s+',
+  r'^[x×]\s*(\d+(?:[.,]\d+)?\s*[a-zA-ZЀ-ӿ]*)\s+',
   caseSensitive: false,
 );
 
 /// A word straight after the amount, which may be a unit.
-final _leadingWordPattern = RegExp(r'^([a-zA-Z]+)\.?(?=\s|$)');
+///
+/// Cyrillic as well as Latin: a Bulgarian list says "2 кг картофи", and an
+/// ASCII-only class would read the whole thing as a name.
+final _leadingWordPattern = RegExp(r'^([a-zA-ZЀ-ӿ]+)\.?(?=\s|$)');
 
 /// Words that begin a preparation note rather than name the thing you buy.
 ///
@@ -45,6 +48,13 @@ const Set<String> _prepWords = {
   'halved', 'melted', 'minced', 'peeled', 'picked', 'plus', 'quartered',
   'rinsed', 'roughly', 'shredded', 'sliced', 'softened', 'thawed', 'thinly',
   'torn', 'trimmed', 'washed', 'zested',
+  // Bulgarian. Same rule applies: never cut at the first word, because
+  // "нарязани домати" is a thing you buy.
+  'нарязан', 'нарязани', 'нарязана', 'нарязано', 'настърган', 'настъргани',
+  'обелен', 'обелени', 'обелена', 'сварен', 'сварени', 'варен', 'варени',
+  'ситно', 'едро', 'изцеден', 'изцедени', 'разбит', 'разбити', 'смлян',
+  'смляна', 'смлени', 'почистен', 'почистени', 'измит', 'измити',
+  'предварително', 'приблизително', 'прясно', 'на', 'без', 'плюс',
 };
 
 /// Unit spellings mapped to the short form worth showing on a list row.
@@ -72,7 +82,46 @@ const Map<String, String> _units = {
   'sprig': 'sprig', 'sprigs': 'sprig',
   'stick': 'stick', 'sticks': 'stick',
   'packet': 'packet', 'packets': 'packet', 'pack': 'pack',
+
+  // Bulgarian. Dotted abbreviations ("с.л.", "ч.л.") are folded to a
+  // dotless key before lookup — see _collapseDottedUnits — because the
+  // leading-word pattern stops at the first dot.
+  'г': 'г', 'гр': 'г', 'грам': 'г', 'грама': 'г', 'грамa': 'г',
+  'кг': 'кг', 'килограм': 'кг', 'килограма': 'кг',
+  'мг': 'мг',
+  'мл': 'мл', 'милилитър': 'мл', 'милилитра': 'мл',
+  'л': 'л', 'литър': 'л', 'литра': 'л',
+  'сл': 'с.л.', 'чл': 'ч.л.',
+  'бр': 'бр.', 'брой': 'бр.', 'броя': 'бр.',
+  'щипка': 'щипка', 'щипки': 'щипка',
+  'скилидка': 'скилидка', 'скилидки': 'скилидка',
+  'консерва': 'консерва', 'консерви': 'консерва',
+  'кутия': 'кутия', 'кутии': 'кутия',
+  'буркан': 'буркан', 'буркана': 'буркан',
+  'пакет': 'пакет', 'пакета': 'пакет', 'пакетче': 'пакетче',
+  'чаша': 'чаша', 'чаши': 'чаша',
+  'връзка': 'връзка', 'връзки': 'връзка',
+  'стрък': 'стрък', 'стръка': 'стрък',
+  'резен': 'резен', 'резена': 'резен', 'филия': 'филия', 'филии': 'филия',
+  'шепа': 'шепа',
+  // "1 глава лук" is a head of onion, the same shape as "1 clove".
+  'глава': 'глава', 'глави': 'глава',
 };
+
+/// Folds "с. л." and "ч.л." to "сл" / "чл" so the unit lookup sees one word.
+///
+/// Bulgarian recipes abbreviate spoon measures with dots, and the
+/// leading-word pattern stops at the first one.
+final _dottedUnitPattern = RegExp(
+  r'^([счСЧ])\s*\.?\s*(л|Л)\s*\.?(?=\s|$)',
+);
+
+String _collapseDottedUnits(String text) {
+  return text.replaceFirstMapped(
+    _dottedUnitPattern,
+    (m) => '${m.group(1)!.toLowerCase()}${m.group(2)!.toLowerCase()}',
+  );
+}
 
 /// Splits one recipe ingredient line into shopping-list fields.
 ///
@@ -103,6 +152,7 @@ ParsedIngredient parseIngredient(String raw) {
 
     // Only treat the next word as a unit when an amount preceded it,
     // so "1 onion" keeps "onion" as the name rather than a unit.
+    rest = _collapseDottedUnits(rest);
     final word = _leadingWordPattern.firstMatch(rest);
     if (word != null) {
       final canonical = _units[word.group(1)!.toLowerCase()];

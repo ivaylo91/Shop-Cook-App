@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   flutter_riverpod: ^2.6.1
   drift: ^2.22.1
   sqlite3_flutter_libs: ^0.5.28
@@ -21,7 +23,7 @@ dependencies:
   webview_flutter: ^4.10.0
   url_launcher: ^6.3.1
   uuid: ^4.5.1
-  intl: ^0.19.0
+  intl: ^0.20.2
   # 11.x is required from Flutter 3.47 on: IconData became a final class, and
   # 10.x subclasses it (IconDataSolid, IconDataBrands, ...), so 10.x no longer
   # compiles at all. The analyzer does not catch it — only the CFE does.
@@ -42,6 +44,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Generates AppLocalizations from lib/l10n/*.arb (see l10n.yaml).
+  generate: true
 
   fonts:
     # Bundled rather than fetched at runtime, so the app keeps its

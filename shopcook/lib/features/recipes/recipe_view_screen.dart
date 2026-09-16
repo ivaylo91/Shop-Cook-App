@@ -4,6 +4,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import '../../core/localization.dart';
 import '../../data/local/database.dart';
 
 class RecipeViewScreen extends StatefulWidget {
@@ -51,7 +52,7 @@ class _RecipeViewScreenState extends State<RecipeViewScreen> {
         actions: [
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.arrowUpRightFromSquare, size: 18),
-            tooltip: 'Open externally',
+            tooltip: context.l10n.recipeViewOpenExternally,
             onPressed: () => launchUrl(
               Uri.parse(widget.recipe.sourceUrl),
               mode: LaunchMode.externalApplication,
@@ -68,9 +69,7 @@ class _RecipeViewScreenState extends State<RecipeViewScreen> {
       return YoutubePlayer(controller: _ytController!);
     }
     if (widget.recipe.sourceType == RecipeSourceType.video) {
-      return const Center(
-        child: Text('Could not parse this YouTube link. Use "Open externally".'),
-      );
+      return Center(child: Text(context.l10n.recipeViewBadLink));
     }
     if (_webController != null) {
       return WebViewWidget(controller: _webController!);

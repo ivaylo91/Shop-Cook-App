@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/design.dart';
+import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
@@ -46,26 +47,27 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
   }
 
   Future<void> _attachManualLink() async {
+    final l10n = context.l10n;
     final urlController = TextEditingController();
     final titleController = TextEditingController(text: widget.meal.name);
     final url = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Attach a link'),
+        title: Text(l10n.recipeAttachTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: titleController,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Title'),
+              decoration: InputDecoration(labelText: l10n.recipeAttachTitleField),
             ),
             const SizedBox(height: Insets.md),
             TextField(
               controller: urlController,
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'YouTube or recipe URL',
+              decoration: InputDecoration(
+                labelText: l10n.recipeAttachUrlField,
               ),
               keyboardType: TextInputType.url,
             ),
@@ -74,14 +76,14 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(l10n.actionCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, {
               'title': titleController.text.trim(),
               'url': urlController.text.trim(),
             }),
-            child: const Text('Attach'),
+            child: Text(l10n.recipeAttachSubmit),
           ),
         ],
       ),
@@ -102,7 +104,7 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Find a recipe')),
+      appBar: AppBar(title: Text(context.l10n.recipeSearchTitle)),
       body: Column(
         children: [
           Padding(
@@ -112,9 +114,9 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: 'Search YouTube & the web',
-                      prefixIcon: FaIcon(
+                    decoration: InputDecoration(
+                      hintText: context.l10n.recipeSearchHint,
+                      prefixIcon: const FaIcon(
                         FontAwesomeIcons.magnifyingGlass,
                         size: 15,
                       ),
@@ -124,7 +126,7 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
                 ),
                 IconButton(
                   icon: const FaIcon(FontAwesomeIcons.link, size: 18),
-                  tooltip: 'Attach a link manually',
+                  tooltip: context.l10n.recipeAttachManual,
                   onPressed: _attachManualLink,
                 ),
               ],
@@ -147,10 +149,9 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
     if (_searched && _results.isEmpty) {
       return EmptyState(
         icon: FontAwesomeIcons.magnifyingGlass,
-        title: 'No live results',
-        message: 'This usually means the search API keys have not been set on '
-            'the backend yet. You can still paste a link yourself.',
-        actionLabel: 'Attach a link instead',
+        title: context.l10n.recipeNoResultsTitle,
+        message: context.l10n.recipeNoResultsMessage,
+        actionLabel: context.l10n.recipeNoResultsAction,
         actionIcon: FontAwesomeIcons.link,
         onAction: _attachManualLink,
       );

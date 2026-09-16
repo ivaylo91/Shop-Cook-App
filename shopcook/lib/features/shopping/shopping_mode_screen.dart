@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/design.dart';
+import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 import '../products/item_composer.dart';
+import 'category_label.dart';
 import 'product_category.dart';
 
 /// Everything to buy across every meal in one flat, aisle-ordered checklist —
@@ -29,7 +31,10 @@ class ShoppingModeScreen extends ConsumerWidget {
       body: Column(
         children: [
           Expanded(child: _body(context, ref, productsAsync, mealNames)),
-          ItemComposer(listId: list.id, hintText: 'Remembered something?'),
+          ItemComposer(
+            listId: list.id,
+            hintText: context.l10n.shopComposerHint,
+          ),
         ],
       ),
     );
@@ -42,6 +47,7 @@ class ShoppingModeScreen extends ConsumerWidget {
     Map<String, String> mealNames,
   ) {
     final palette = context.palette;
+    final l10n = context.l10n;
 
     return productsAsync.when(
         loading: () => const Padding(
@@ -49,20 +55,17 @@ class ShoppingModeScreen extends ConsumerWidget {
           child: SkeletonRows(count: 4),
         ),
         error: (_, __) => ErrorState(
-          title: 'Could not load this list',
-          details: 'The list is stored on this device, so this is usually '
-              'temporary. Try again.',
+          title: l10n.shopListError,
+          details: l10n.shopListErrorDetail,
           onRetry: () => ref.invalidate(_shopProductsProvider(list.id)),
         ),
         data: (products) {
           if (products.isEmpty) {
             return EmptyState(
               icon: FontAwesomeIcons.cartShopping,
-              title: 'Nothing to buy yet',
-              message: 'Add ingredients to your meals and they will show up '
-                  'here, grouped by aisle so you can shop straight down the '
-                  'list.',
-              actionLabel: 'Add ingredients',
+              title: l10n.shopEmptyTitle,
+              message: l10n.shopEmptyMessage,
+              actionLabel: l10n.shopEmptyAction,
               onAction: () => Navigator.pop(context),
             );
           }
@@ -89,7 +92,7 @@ class ShoppingModeScreen extends ConsumerWidget {
                 const SizedBox(height: Insets.xl),
                 SectionLabel(
                   icon: FontAwesomeIcons.basketShopping,
-                  label: 'In the basket',
+                  label: l10n.shopInBasket,
                   count: picked.length,
                   color: palette.inkMuted,
                 ),
@@ -129,7 +132,7 @@ class ShoppingModeScreen extends ConsumerWidget {
       const SizedBox(height: Insets.xl),
       SectionLabel(
         icon: category.icon,
-        label: category.label,
+        label: category.label(context.l10n),
         count: items.length,
         color: tint,
       ),
@@ -157,16 +160,17 @@ class _ProgressHero extends StatelessWidget {
 
   const _ProgressHero({required this.picked, required this.total});
 
-  String get _encouragement {
-    if (picked == 0) return 'Nothing in the basket yet';
-    if (picked == total) return 'Every item accounted for';
-    if (total - picked == 1) return 'One to go — almost there';
-    return '${total - picked} still to find';
+  String _encouragement(BuildContext context) {
+    final l10n = context.l10n;
+    if (picked == 0) return l10n.shopNoneYet;
+    if (picked == total) return l10n.shopAllAccountedFor;
+    return l10n.shopStillToFind(total - picked);
   }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = context.l10n;
 
     return AppCard(
       child: Column(
@@ -182,7 +186,7 @@ class _ProgressHero extends StatelessWidget {
               ),
               const SizedBox(width: Insets.sm),
               Text(
-                'of $total picked up',
+                l10n.shopPickedOf(total),
                 style: AppText.body.copyWith(color: palette.inkMuted),
               ),
             ],
@@ -191,7 +195,7 @@ class _ProgressHero extends StatelessWidget {
           AppProgressBar(done: picked, total: total),
           const SizedBox(height: Insets.md),
           Text(
-            _encouragement,
+            _encouragement(context),
             style: AppText.caption.copyWith(color: palette.inkFaint),
           ),
         ],
@@ -246,12 +250,13 @@ class _DonePeak extends StatelessWidget {
               ),
             ),
             const SizedBox(height: Insets.lg),
-            Text('Shopping done', style: AppText.title.copyWith(color: palette.ink)),
+            Text(
+              context.l10n.shopDoneTitle,
+              style: AppText.title.copyWith(color: palette.ink),
+            ),
             const SizedBox(height: Insets.sm),
             Text(
-              total == 1
-                  ? 'The one thing on your list is in the basket.'
-                  : 'All $total items are in the basket. Time to cook.',
+              context.l10n.shopDoneMessage(total),
               textAlign: TextAlign.center,
               style: AppText.body.copyWith(color: palette.inkMuted),
             ),

@@ -4,7 +4,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design.dart';
+import '../../core/localization.dart';
 import '../../core/providers.dart';
+import '../../data/repositories/auth_repository.dart';
 import 'auth_scaffold.dart';
 
 /// Supabase rejects anything shorter, so say it up front rather than
@@ -40,22 +42,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   bool _validate() {
+    final l10n = context.l10n;
     final email = _email.text.trim();
     final password = _password.text;
 
     setState(() {
       _emailError = email.isEmpty
-          ? 'Enter your email'
+          ? l10n.authEnterEmail
           : (!email.contains('@') || !email.contains('.'))
-          ? 'That does not look like an email'
+          ? l10n.authInvalidEmail
           : null;
       _passwordError = password.isEmpty
-          ? 'Choose a password'
+          ? l10n.authChoosePassword
           : password.length < _minPasswordLength
-          ? 'Use at least $_minPasswordLength characters'
+          ? l10n.authPasswordTooShort(_minPasswordLength)
           : null;
       _confirmError = _confirm.text != password
-          ? 'Passwords do not match'
+          ? l10n.authPasswordsDiffer
           : null;
       _formError = null;
     });
@@ -93,23 +96,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         .signUp(email: _email.text, password: _password.text);
 
     if (!mounted) return;
+    final l10n = context.l10n;
     setState(() {
       _busy = false;
-      _formError = result.success ? null : result.message;
-      _notice = result.needsEmailConfirmation ? result.message : null;
+      _formError = switch (result.outcome) {
+        AuthOutcome.offline => l10n.authNetworkError,
+        AuthOutcome.rejected => result.serverMessage,
+        _ => null,
+      };
+      _notice = result.needsEmailConfirmation ? l10n.authCheckInbox : null;
     });
     // A successful sign-up with a session is picked up by the router.
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return AuthScaffold(
-      title: 'Create your account',
-      subtitle: 'So your lists are tied to you, not just this phone.',
+      title: l10n.registerTitle,
+      subtitle: l10n.registerSubtitle,
       children: [
         AuthField(
           controller: _email,
-          label: 'Email',
+          label: l10n.authEmail,
           icon: FontAwesomeIcons.envelope,
           keyboardType: TextInputType.emailAddress,
           errorText: _emailError,
@@ -117,7 +127,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
         AuthField(
           controller: _password,
-          label: 'Password',
+          label: l10n.authPassword,
           icon: FontAwesomeIcons.lock,
           obscure: !_showPassword,
           errorText: _passwordError,
@@ -127,13 +137,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               _showPassword ? FontAwesomeIcons.eyeSlash : FontAwesomeIcons.eye,
               size: 15,
             ),
-            tooltip: _showPassword ? 'Hide password' : 'Show password',
+            tooltip: _showPassword
+                ? l10n.authHidePassword
+                : l10n.authShowPassword,
             onPressed: () => setState(() => _showPassword = !_showPassword),
           ),
         ),
         AuthField(
           controller: _confirm,
-          label: 'Confirm password',
+          label: l10n.authConfirmPassword,
           icon: FontAwesomeIcons.lock,
           obscure: !_showPassword,
           errorText: _confirmError,
@@ -171,14 +183,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     color: context.palette.onAccent,
                   ),
                 )
-              : const Text('Create account'),
+              : Text(l10n.registerSubmit),
         ),
         const SizedBox(height: Insets.lg),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Already have one?',
+              l10n.registerHaveAccount,
               style: AppText.body.copyWith(color: context.palette.inkMuted),
             ),
             TextButton(
@@ -187,7 +199,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   : () => context.canPop()
                         ? context.pop()
                         : context.go('/login'),
-              child: const Text('Sign in'),
+              child: Text(l10n.loginSubmit),
             ),
           ],
         ),

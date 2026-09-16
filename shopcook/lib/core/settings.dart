@@ -43,3 +43,36 @@ class ThemeModeController extends Notifier<ThemeMode> {
 final themeModeProvider = NotifierProvider<ThemeModeController, ThemeMode>(
   ThemeModeController.new,
 );
+
+const _localeKey = 'locale';
+
+/// The chosen language, or null to follow the phone.
+///
+/// Null is the default and is not the same as English: a Bulgarian phone
+/// should open the app in Bulgarian without anyone choosing anything. The
+/// override exists for the case where the phone's language is not the one you
+/// want to cook in.
+class LocaleController extends Notifier<Locale?> {
+  @override
+  Locale? build() {
+    final stored = ref.watch(sharedPreferencesProvider).getString(_localeKey);
+    if (stored == null || stored.isEmpty) return null;
+    return Locale(stored);
+  }
+
+  Future<void> set(Locale? locale) async {
+    if (locale == state) return;
+    state = locale;
+
+    final preferences = ref.read(sharedPreferencesProvider);
+    if (locale == null) {
+      await preferences.remove(_localeKey);
+    } else {
+      await preferences.setString(_localeKey, locale.languageCode);
+    }
+  }
+}
+
+final localeProvider = NotifierProvider<LocaleController, Locale?>(
+  LocaleController.new,
+);

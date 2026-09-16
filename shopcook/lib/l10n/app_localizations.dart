@@ -1,0 +1,1214 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
+
+import 'app_localizations_bg.dart';
+import 'app_localizations_en.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
+
+  static AppLocalizations of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('bg'),
+    Locale('en'),
+  ];
+
+  /// No description provided for @appTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ShopCook'**
+  String get appTitle;
+
+  /// No description provided for @appTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop for the week, cook what you planned.'**
+  String get appTagline;
+
+  /// No description provided for @actionCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get actionCancel;
+
+  /// No description provided for @actionSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get actionSave;
+
+  /// No description provided for @actionCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get actionCreate;
+
+  /// No description provided for @actionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get actionDelete;
+
+  /// No description provided for @actionRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get actionRemove;
+
+  /// No description provided for @actionAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get actionAdd;
+
+  /// No description provided for @actionRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get actionRename;
+
+  /// No description provided for @actionUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get actionUndo;
+
+  /// No description provided for @actionConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get actionConfirm;
+
+  /// No description provided for @actionTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get actionTryAgain;
+
+  /// No description provided for @errorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get errorGeneric;
+
+  /// No description provided for @navLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Lists'**
+  String get navLists;
+
+  /// No description provided for @navPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get navPlan;
+
+  /// No description provided for @navSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get navSettings;
+
+  /// No description provided for @listsLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your lists'**
+  String get listsLoadError;
+
+  /// No description provided for @listsLoadErrorDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lists are stored on this device, so this is usually temporary.'**
+  String get listsLoadErrorDetail;
+
+  /// No description provided for @listsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No shopping lists yet'**
+  String get listsEmptyTitle;
+
+  /// No description provided for @listsEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A list holds the meals you are cooking and everything you need to buy for them.'**
+  String get listsEmptyMessage;
+
+  /// No description provided for @listsEmptyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a list'**
+  String get listsEmptyAction;
+
+  /// No description provided for @listsNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New shopping list'**
+  String get listsNewTitle;
+
+  /// No description provided for @listsNewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Weekly groceries'**
+  String get listsNewHint;
+
+  /// No description provided for @listsRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename list'**
+  String get listsRenameTitle;
+
+  /// No description provided for @listsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"?'**
+  String listsDeleteTitle(String name);
+
+  /// No description provided for @listsDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This also removes its meals, items and recipes. You can undo it straight afterwards.'**
+  String get listsDeleteMessage;
+
+  /// No description provided for @listsDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted \"{name}\"'**
+  String listsDeleted(String name);
+
+  /// No description provided for @listCardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty — open it to add meals and items.'**
+  String get listCardEmpty;
+
+  /// No description provided for @listCardAllPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything picked up'**
+  String get listCardAllPicked;
+
+  /// No description provided for @listCardLeftToBuy.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 left to buy} other{{count} left to buy}}'**
+  String listCardLeftToBuy(int count);
+
+  /// No description provided for @listDetailShoppingMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping mode'**
+  String get listDetailShoppingMode;
+
+  /// No description provided for @listDetailMealsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the meals'**
+  String get listDetailMealsError;
+
+  /// No description provided for @listDetailOtherItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Other items'**
+  String get listDetailOtherItems;
+
+  /// No description provided for @listDetailItemsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the items'**
+  String get listDetailItemsError;
+
+  /// No description provided for @listDetailUnassignedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything you add without picking a meal lands here — the milk and the washing-up liquid.'**
+  String get listDetailUnassignedNote;
+
+  /// No description provided for @listDetailComposerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an item — try \"2 kg potatoes\"'**
+  String get listDetailComposerHint;
+
+  /// No description provided for @mealNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New meal'**
+  String get mealNewTitle;
+
+  /// No description provided for @mealNewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Spaghetti Bolognese'**
+  String get mealNewHint;
+
+  /// No description provided for @mealRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename meal'**
+  String get mealRenameTitle;
+
+  /// No description provided for @mealDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete meal'**
+  String get mealDelete;
+
+  /// No description provided for @mealDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted \"{name}\"'**
+  String mealDeleted(String name);
+
+  /// No description provided for @mealActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal actions'**
+  String get mealActions;
+
+  /// No description provided for @mealCardNoIngredients.
+  ///
+  /// In en, this message translates to:
+  /// **'No ingredients yet — open it to add some or find a recipe.'**
+  String get mealCardNoIngredients;
+
+  /// No description provided for @itemActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Item actions'**
+  String get itemActions;
+
+  /// No description provided for @itemFindRecipes.
+  ///
+  /// In en, this message translates to:
+  /// **'Find recipes'**
+  String get itemFindRecipes;
+
+  /// No description provided for @itemFindRecipesFromList.
+  ///
+  /// In en, this message translates to:
+  /// **'What can I cook with this?'**
+  String get itemFindRecipesFromList;
+
+  /// No description provided for @itemFindRecipesFromMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'What else can I cook with this?'**
+  String get itemFindRecipesFromMeal;
+
+  /// No description provided for @itemMoveToMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to a meal'**
+  String get itemMoveToMeal;
+
+  /// No description provided for @itemRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed {name}'**
+  String itemRemoved(String name);
+
+  /// No description provided for @itemMoveNeedsMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a meal first, then move items into it.'**
+  String get itemMoveNeedsMeal;
+
+  /// No description provided for @itemMoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move \"{name}\" to'**
+  String itemMoveTitle(String name);
+
+  /// No description provided for @mealPlanDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan a day for this meal'**
+  String get mealPlanDay;
+
+  /// No description provided for @mealPlannedFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned for {date}'**
+  String mealPlannedFor(String date);
+
+  /// No description provided for @mealFindRecipe.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a recipe'**
+  String get mealFindRecipe;
+
+  /// No description provided for @mealIngredients.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredients'**
+  String get mealIngredients;
+
+  /// No description provided for @mealIngredientsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the ingredients'**
+  String get mealIngredientsError;
+
+  /// No description provided for @mealIngredientsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No ingredients yet. Add them by hand, or find a recipe and import its list in one go.'**
+  String get mealIngredientsEmpty;
+
+  /// No description provided for @mealComposerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an ingredient'**
+  String get mealComposerHint;
+
+  /// No description provided for @mealRecipe.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipe'**
+  String get mealRecipe;
+
+  /// No description provided for @mealRecipeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the recipe'**
+  String get mealRecipeError;
+
+  /// No description provided for @mealRecipeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No recipe attached yet. Find one and its ingredients can be imported straight onto this meal.'**
+  String get mealRecipeEmpty;
+
+  /// No description provided for @mealMoveDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to another day'**
+  String get mealMoveDay;
+
+  /// No description provided for @mealGiveDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Give it a day'**
+  String get mealGiveDay;
+
+  /// No description provided for @mealClearDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Take off the plan'**
+  String get mealClearDay;
+
+  /// No description provided for @mealCookOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Cook {name} on'**
+  String mealCookOn(String name);
+
+  /// No description provided for @recipeSourceVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube'**
+  String get recipeSourceVideo;
+
+  /// No description provided for @recipeSourceWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Web recipe'**
+  String get recipeSourceWeb;
+
+  /// No description provided for @recipeImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import ingredients'**
+  String get recipeImport;
+
+  /// No description provided for @recipeVideoNoImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos have no ingredient list to import.'**
+  String get recipeVideoNoImport;
+
+  /// No description provided for @recipeRemoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove recipe'**
+  String get recipeRemoveTooltip;
+
+  /// No description provided for @recipeRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this recipe?'**
+  String get recipeRemoveTitle;
+
+  /// No description provided for @recipeRemoveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredients already imported stay on the list.'**
+  String get recipeRemoveMessage;
+
+  /// No description provided for @planError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your plan'**
+  String get planError;
+
+  /// No description provided for @planEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing planned yet'**
+  String get planEmptyTitle;
+
+  /// No description provided for @planEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a meal inside a shopping list, then give it a day here. Its ingredients come along with it.'**
+  String get planEmptyMessage;
+
+  /// No description provided for @planEmptyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to your lists'**
+  String get planEmptyAction;
+
+  /// No description provided for @planUnplanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Not yet planned'**
+  String get planUnplanned;
+
+  /// No description provided for @planToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get planToday;
+
+  /// No description provided for @planAddForDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan a meal for this day'**
+  String get planAddForDay;
+
+  /// No description provided for @planNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing planned'**
+  String get planNothing;
+
+  /// No description provided for @planCookOnDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Cook on {date}'**
+  String planCookOnDay(String date);
+
+  /// No description provided for @planPickMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a meal that has no day yet.'**
+  String get planPickMeal;
+
+  /// No description provided for @planNoIngredients.
+  ///
+  /// In en, this message translates to:
+  /// **'No ingredients yet'**
+  String get planNoIngredients;
+
+  /// No description provided for @planBought.
+  ///
+  /// In en, this message translates to:
+  /// **'{checked} of {total} bought'**
+  String planBought(int checked, int total);
+
+  /// No description provided for @shopComposerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Remembered something?'**
+  String get shopComposerHint;
+
+  /// No description provided for @shopListError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this list'**
+  String get shopListError;
+
+  /// No description provided for @shopListErrorDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The list is stored on this device, so this is usually temporary. Try again.'**
+  String get shopListErrorDetail;
+
+  /// No description provided for @shopEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to buy yet'**
+  String get shopEmptyTitle;
+
+  /// No description provided for @shopEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add ingredients to your meals and they will show up here, grouped by aisle so you can shop straight down the list.'**
+  String get shopEmptyMessage;
+
+  /// No description provided for @shopEmptyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add ingredients'**
+  String get shopEmptyAction;
+
+  /// No description provided for @shopInBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'In the basket'**
+  String get shopInBasket;
+
+  /// No description provided for @shopNoneYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in the basket yet'**
+  String get shopNoneYet;
+
+  /// No description provided for @shopAllAccountedFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Every item accounted for'**
+  String get shopAllAccountedFor;
+
+  /// No description provided for @shopStillToFind.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One to go — almost there} other{{count} still to find}}'**
+  String shopStillToFind(int count);
+
+  /// No description provided for @shopPickedOf.
+  ///
+  /// In en, this message translates to:
+  /// **'of {total} picked up'**
+  String shopPickedOf(int total);
+
+  /// No description provided for @shopDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping done'**
+  String get shopDoneTitle;
+
+  /// No description provided for @shopDoneMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{The one thing on your list is in the basket.} other{All {count} items are in the basket. Time to cook.}}'**
+  String shopDoneMessage(int count);
+
+  /// No description provided for @progressPickedUp.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} picked up'**
+  String progressPickedUp(int done, int total);
+
+  /// No description provided for @composerAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get composerAdd;
+
+  /// No description provided for @composerMergedAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is now {amount}'**
+  String composerMergedAmount(String name, String amount);
+
+  /// No description provided for @composerMergedPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Already on the list — {name}'**
+  String composerMergedPlain(String name);
+
+  /// No description provided for @authEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get authEmail;
+
+  /// No description provided for @authPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get authPassword;
+
+  /// No description provided for @authConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get authConfirmPassword;
+
+  /// No description provided for @authShowPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get authShowPassword;
+
+  /// No description provided for @authHidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get authHidePassword;
+
+  /// No description provided for @authEnterEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email'**
+  String get authEnterEmail;
+
+  /// No description provided for @authInvalidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'That does not look like an email'**
+  String get authInvalidEmail;
+
+  /// No description provided for @authEnterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get authEnterPassword;
+
+  /// No description provided for @authChoosePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a password'**
+  String get authChoosePassword;
+
+  /// No description provided for @authPasswordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least {count} characters'**
+  String authPasswordTooShort(int count);
+
+  /// No description provided for @authPasswordsDiffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get authPasswordsDiffer;
+
+  /// No description provided for @authNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach the server. Check your connection.'**
+  String get authNetworkError;
+
+  /// No description provided for @authCheckInbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created. Check your inbox to confirm your email, then sign in.'**
+  String get authCheckInbox;
+
+  /// No description provided for @loginTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get loginTitle;
+
+  /// No description provided for @loginSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to get to your shopping lists.'**
+  String get loginSubtitle;
+
+  /// No description provided for @loginSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get loginSubmit;
+
+  /// No description provided for @loginNoAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'No account yet?'**
+  String get loginNoAccount;
+
+  /// No description provided for @loginCreateOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Create one'**
+  String get loginCreateOne;
+
+  /// No description provided for @registerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your account'**
+  String get registerTitle;
+
+  /// No description provided for @registerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'So your lists are tied to you, not just this phone.'**
+  String get registerSubtitle;
+
+  /// No description provided for @registerSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get registerSubmit;
+
+  /// No description provided for @registerHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have one?'**
+  String get registerHaveAccount;
+
+  /// No description provided for @settingsAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsAppearance;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Match phone'**
+  String get themeSystem;
+
+  /// No description provided for @themeSystemSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Follows your phone'**
+  String get themeSystemSubtitle;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @settingsLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsLanguage;
+
+  /// No description provided for @languageSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Match phone'**
+  String get languageSystem;
+
+  /// No description provided for @settingsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get settingsAccount;
+
+  /// No description provided for @settingsSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get settingsSignedIn;
+
+  /// No description provided for @settingsDeviceOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lists are stored on this device only. Signing in does not sync them anywhere yet, so another phone will show an empty app.'**
+  String get settingsDeviceOnly;
+
+  /// No description provided for @settingsSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get settingsSignOut;
+
+  /// No description provided for @settingsSignOutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out?'**
+  String get settingsSignOutTitle;
+
+  /// No description provided for @settingsSignOutMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You will need to sign in again to get back in.'**
+  String get settingsSignOutMessage;
+
+  /// No description provided for @settingsSignOutMessageEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'You are signed in as {email}. You will need to sign in again to get back in.'**
+  String settingsSignOutMessageEmail(String email);
+
+  /// No description provided for @settingsAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get settingsAbout;
+
+  /// No description provided for @categoryProduce.
+  ///
+  /// In en, this message translates to:
+  /// **'Produce'**
+  String get categoryProduce;
+
+  /// No description provided for @categoryBakery.
+  ///
+  /// In en, this message translates to:
+  /// **'Bakery'**
+  String get categoryBakery;
+
+  /// No description provided for @categoryMeatAndFish.
+  ///
+  /// In en, this message translates to:
+  /// **'Meat & fish'**
+  String get categoryMeatAndFish;
+
+  /// No description provided for @categoryDairyAndEggs.
+  ///
+  /// In en, this message translates to:
+  /// **'Dairy & eggs'**
+  String get categoryDairyAndEggs;
+
+  /// No description provided for @categoryFrozen.
+  ///
+  /// In en, this message translates to:
+  /// **'Frozen'**
+  String get categoryFrozen;
+
+  /// No description provided for @categoryPantry.
+  ///
+  /// In en, this message translates to:
+  /// **'Pantry'**
+  String get categoryPantry;
+
+  /// No description provided for @categoryDrinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Drinks'**
+  String get categoryDrinks;
+
+  /// No description provided for @categoryHousehold.
+  ///
+  /// In en, this message translates to:
+  /// **'Household'**
+  String get categoryHousehold;
+
+  /// No description provided for @categoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get categoryOther;
+
+  /// No description provided for @recipeSearchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a recipe'**
+  String get recipeSearchTitle;
+
+  /// No description provided for @recipeSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search YouTube & the web'**
+  String get recipeSearchHint;
+
+  /// No description provided for @recipeAttachManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a link manually'**
+  String get recipeAttachManual;
+
+  /// No description provided for @recipeAttachTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a link'**
+  String get recipeAttachTitle;
+
+  /// No description provided for @recipeAttachTitleField.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get recipeAttachTitleField;
+
+  /// No description provided for @recipeAttachUrlField.
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube or recipe URL'**
+  String get recipeAttachUrlField;
+
+  /// No description provided for @recipeAttachSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach'**
+  String get recipeAttachSubmit;
+
+  /// No description provided for @recipeNoResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No live results'**
+  String get recipeNoResultsTitle;
+
+  /// No description provided for @recipeNoResultsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This usually means the search API keys have not been set on the backend yet. You can still paste a link yourself.'**
+  String get recipeNoResultsMessage;
+
+  /// No description provided for @recipeNoResultsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a link instead'**
+  String get recipeNoResultsAction;
+
+  /// No description provided for @recipeViewOpenExternally.
+  ///
+  /// In en, this message translates to:
+  /// **'Open externally'**
+  String get recipeViewOpenExternally;
+
+  /// No description provided for @recipeViewBadLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not parse this YouTube link. Use \"Open externally\".'**
+  String get recipeViewBadLink;
+
+  /// No description provided for @cookWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Cook with {name}'**
+  String cookWith(String name);
+
+  /// No description provided for @cookFromYouTube.
+  ///
+  /// In en, this message translates to:
+  /// **'From YouTube'**
+  String get cookFromYouTube;
+
+  /// No description provided for @cookSearchApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Search the apps'**
+  String get cookSearchApps;
+
+  /// No description provided for @cookSearchAppsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens a search for \"{query} recipe\".'**
+  String cookSearchAppsSubtitle(String query);
+
+  /// No description provided for @cookSearchQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} recipe'**
+  String cookSearchQuery(String name);
+
+  /// No description provided for @cookNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No in-app results yet. These appear once a YouTube API key is set on the backend — until then, use the buttons above.'**
+  String get cookNoResults;
+
+  /// No description provided for @cookAttachToMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach to meal'**
+  String get cookAttachToMeal;
+
+  /// No description provided for @cookAttachToNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach to {name}'**
+  String cookAttachToNamed(String name);
+
+  /// No description provided for @cookAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached to {name}.'**
+  String cookAttached(String name);
+
+  /// No description provided for @cookAttachedFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'the meal'**
+  String get cookAttachedFallback;
+
+  /// No description provided for @cookOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open that link.'**
+  String get cookOpenFailed;
+
+  /// No description provided for @importReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the recipe…'**
+  String get importReading;
+
+  /// No description provided for @importNoneFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No ingredients found.'**
+  String get importNoneFound;
+
+  /// No description provided for @importPageUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'That page could not be read.'**
+  String get importPageUnreadable;
+
+  /// No description provided for @importUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach the importer. Check your connection.'**
+  String get importUnreachable;
+
+  /// No description provided for @importAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Added 1 ingredient.} other{Added {count} ingredients.}}'**
+  String importAdded(int count);
+
+  /// No description provided for @importTitleDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredients'**
+  String get importTitleDefault;
+
+  /// No description provided for @importPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick what to add to this meal.'**
+  String get importPick;
+
+  /// No description provided for @importSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get importSelectAll;
+
+  /// No description provided for @importClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get importClearAll;
+
+  /// No description provided for @importAddCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {count}'**
+  String importAddCount(int count);
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) =>
+      <String>['bg', 'en'].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'bg':
+      return AppLocalizationsBg();
+    case 'en':
+      return AppLocalizationsEn();
+  }
+
+  throw FlutterError(
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
+}

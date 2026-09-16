@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../design.dart';
+import '../localization.dart';
 
 /// Empty states are an opportunity: say what goes here and how to get there.
 class EmptyState extends StatelessWidget {
@@ -81,16 +82,13 @@ class EmptyState extends StatelessWidget {
 /// error message. [details] is there for the cases where a caller has
 /// something specific and useful to say.
 class ErrorState extends StatelessWidget {
-  final String title;
+  /// Defaults to a generic apology when the caller has nothing better; most
+  /// callers do, and should say which thing failed.
+  final String? title;
   final String? details;
   final VoidCallback? onRetry;
 
-  const ErrorState({
-    super.key,
-    this.title = 'Something went wrong',
-    this.details,
-    this.onRetry,
-  });
+  const ErrorState({super.key, this.title, this.details, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +115,7 @@ class ErrorState extends StatelessWidget {
             ),
             const SizedBox(height: Insets.lg),
             Text(
-              title,
+              title ?? context.l10n.errorGeneric,
               style: AppText.title.copyWith(color: palette.ink),
               textAlign: TextAlign.center,
             ),
@@ -137,7 +135,7 @@ class ErrorState extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onRetry,
                 icon: const FaIcon(FontAwesomeIcons.arrowRotateRight, size: 15),
-                label: const Text('Try again'),
+                label: Text(context.l10n.actionTryAgain),
               ),
             ],
           ],

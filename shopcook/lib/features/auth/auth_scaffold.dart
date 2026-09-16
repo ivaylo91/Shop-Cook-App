@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/brand/shopcook_logo.dart';
 import '../../core/design.dart';
+import '../../core/localization.dart';
 
 /// Shared frame for the sign in and register screens, so the two feel like
 /// one flow rather than two separately built pages.
@@ -69,7 +70,7 @@ class _Brand extends StatelessWidget {
         const ShopCookLogoBadge(size: 52),
         const SizedBox(width: Insets.md),
         Text(
-          'ShopCook',
+          context.l10n.appTitle,
           style: AppText.title.copyWith(color: context.palette.ink),
         ),
       ],

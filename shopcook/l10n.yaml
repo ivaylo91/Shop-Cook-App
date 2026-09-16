@@ -1,0 +1,7 @@
+# English is the template: new strings are written there first, and a key
+# missing from app_bg.arb falls back to it rather than showing a blank.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false

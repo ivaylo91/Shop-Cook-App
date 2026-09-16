@@ -318,11 +318,8 @@ class AddOutcome {
     required this.unit,
   }) : didMerge = true;
 
-  /// e.g. "Onions is now 3" — what to tell the user after a merge.
-  String get mergeMessage {
-    final amount = '${quantity ?? ''} ${unit ?? ''}'.trim();
-    return amount.isEmpty
-        ? 'Already on the list — $name'
-        : '$name is now $amount';
-  }
+  /// The combined amount, e.g. "3" or "500 g"; empty when there is none.
+  ///
+  /// The sentence around it is built by the UI, which has the locale.
+  String get amount => '${quantity ?? ''} ${unit ?? ''}'.trim();
 }

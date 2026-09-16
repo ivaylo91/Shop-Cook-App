@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../design.dart';
+import '../localization.dart';
 
 /// A modal bottom sheet on the app's terms: the palette's ground, a rounded
 /// top, a drag handle, and a title that does not have to be hand-built at
@@ -79,11 +80,12 @@ Future<bool> confirmAction(
   BuildContext context, {
   required String title,
   required String message,
-  String confirmLabel = 'Confirm',
-  String cancelLabel = 'Cancel',
+  String? confirmLabel,
+  String? cancelLabel,
   bool destructive = false,
 }) async {
   final scheme = Theme.of(context).colorScheme;
+  final l10n = context.l10n;
 
   final confirmed = await showDialog<bool>(
     context: context,
@@ -93,7 +95,7 @@ Future<bool> confirmAction(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: Text(cancelLabel),
+          child: Text(cancelLabel ?? l10n.actionCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
@@ -103,7 +105,7 @@ Future<bool> confirmAction(
                   foregroundColor: scheme.onError,
                 )
               : null,
-          child: Text(confirmLabel),
+          child: Text(confirmLabel ?? l10n.actionConfirm),
         ),
       ],
     ),
@@ -121,8 +123,9 @@ Future<String?> promptForText(
   required String title,
   String? hint,
   String? initialValue,
-  String confirmLabel = 'Save',
+  String? confirmLabel,
 }) async {
+  final l10n = context.l10n;
   final controller = TextEditingController(text: initialValue);
 
   final value = await showDialog<String>(
@@ -139,11 +142,11 @@ Future<String?> promptForText(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.actionCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, controller.text),
-          child: Text(confirmLabel),
+          child: Text(confirmLabel ?? l10n.actionSave),
         ),
       ],
     ),
