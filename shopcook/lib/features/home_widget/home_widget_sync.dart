@@ -48,6 +48,7 @@ class HomeWidgetSync extends ConsumerStatefulWidget {
 
 class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
   StreamSubscription<Uri?>? _clicks;
+  bool _opening = false;
   WidgetSnapshot? _pushed;
   Locale? _pushedLocale;
 
@@ -70,15 +71,29 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
 
   Future<void> _open(Uri? uri) async {
     if (uri == null || uri.host != 'list' || uri.pathSegments.isEmpty) return;
-    final id = uri.pathSegments.first;
-    final router = GoRouter.of(context);
-    final lists = await ref.read(_widgetListsProvider.future);
-    final list = lists.where((l) => l.id == id).firstOrNull;
-    if (list == null || !mounted) return;
-    // Wait for the shell to settle, as the share intake does, so the push
-    // is not undone by a pending tab change.
-    await WidgetsBinding.instance.endOfFrame;
-    router.push('/list/${list.id}', extra: list);
+    // A tap can arrive twice (the launch intent and the click stream); one
+    // at a time, or both get past the check below while the other awaits.
+    if (_opening) return;
+    _opening = true;
+    try {
+      final id = uri.pathSegments.first;
+      final router = GoRouter.of(context);
+      final lists = await ref.read(_widgetListsProvider.future);
+      final list = lists.where((l) => l.id == id).firstOrNull;
+      if (list == null || !mounted) return;
+      // Back to the lists first, then open this one: tapping the widget
+      // always lands on the same one page with Lists behind it, however
+      // deep the app already was — including on this very list, which a
+      // plain push would stack a second copy of.
+      router.go('/lists');
+      // go only schedules the navigation; pushing in the same frame would
+      // be undone by it.
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      router.push('/list/${list.id}', extra: list);
+    } finally {
+      _opening = false;
+    }
   }
 
   Future<void> _push(WidgetSnapshot snapshot) async {
@@ -107,7 +122,11 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
         ),
         HomeWidget.saveWidgetData<String>(
           'items',
-          list == null ? l10n.widgetNoLists : lines.join('\n'),
+          list == null
+              ? l10n.widgetNoLists
+              : lines.isEmpty
+              ? l10n.widgetAllDone
+              : lines.join('\n'),
         ),
       ]);
       await HomeWidget.updateWidget(qualifiedAndroidName: _androidWidget);

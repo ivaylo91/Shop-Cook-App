@@ -1026,4 +1026,8 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get widgetNoLists => 'Още няма списъци. Докосни, за да създадеш.';
+
+  @override
+  String get widgetAllDone =>
+      'Няма какво да се купува. Докосни, за да отвориш списъка.';
 }

@@ -1735,6 +1735,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No lists yet. Tap to create one.'**
   String get widgetNoLists;
+
+  /// No description provided for @widgetAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing left to buy. Tap to open the list.'**
+  String get widgetAllDone;
 }
 
 class _AppLocalizationsDelegate

@@ -337,5 +337,6 @@
   "@widgetSummary": {"placeholders": {"count": {"type": "int"}}},
   "widgetMore": "+ {count} more",
   "@widgetMore": {"placeholders": {"count": {"type": "int"}}},
-  "widgetNoLists": "No lists yet. Tap to create one."
+  "widgetNoLists": "No lists yet. Tap to create one.",
+  "widgetAllDone": "Nothing left to buy. Tap to open the list."
 }

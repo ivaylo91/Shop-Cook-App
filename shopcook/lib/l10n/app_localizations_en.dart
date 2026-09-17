@@ -1026,4 +1026,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get widgetNoLists => 'No lists yet. Tap to create one.';
+
+  @override
+  String get widgetAllDone => 'Nothing left to buy. Tap to open the list.';
 }

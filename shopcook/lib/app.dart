@@ -36,6 +36,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/lists',
     refreshListenable: refresh,
     redirect: (context, state) {
+      // An app link (the home screen widget's) is never a page itself;
+      // whoever handles it navigates from the lists.
+      if (state.uri.scheme == 'shopcook') return '/lists';
       // The session is restored from local storage at startup, so a
       // returning user is not bounced to login merely for being offline.
       final signedIn = auth.currentSession != null;
