@@ -205,7 +205,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get mealIngredientsEmpty =>
-      'Още няма съставки. Добави ги на ръка или намери рецепта и внеси списъка ѝ наведнъж.';
+      'Още няма съставки. Добави ги на ръка или намери рецепта и внеси продуктите от нея наведнъж.';
 
   @override
   String get mealComposerHint => 'Добави съставка';
@@ -218,7 +218,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get mealRecipeEmpty =>
-      'Още няма прикачена рецепта. Намери една и съставките ѝ ще се внесат направо в ястието.';
+      'Още няма прикачена рецепта. Намери една и съставките от нея ще се внесат направо в ястието.';
 
   @override
   String get mealMoveDay => 'Премести на друг ден';
@@ -829,4 +829,86 @@ class AppLocalizationsBg extends AppLocalizations {
   String importAddCount(int count) {
     return 'Добави $count';
   }
+
+  @override
+  String get cookModeStart => 'Готви';
+
+  @override
+  String get cookModeIngredients => 'Продукти';
+
+  @override
+  String cookModeStepOf(int current, int total) {
+    return 'Стъпка $current от $total';
+  }
+
+  @override
+  String get cookModeGetReady => 'Приготви всичко';
+
+  @override
+  String cookModeServings(String servings) {
+    return 'Порции: $servings';
+  }
+
+  @override
+  String cookModeMinutes(int minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String get cookModeNext => 'Напред';
+
+  @override
+  String get cookModeBack => 'Назад';
+
+  @override
+  String get cookModeStartCooking => 'Започни';
+
+  @override
+  String get cookModeDone => 'Готово';
+
+  @override
+  String cookModeTimerStart(String label) {
+    return 'Таймер $label';
+  }
+
+  @override
+  String cookModeTimerUp(String label) {
+    return 'Времето изтече · $label';
+  }
+
+  @override
+  String get cookModeTimerStop => 'Спри таймера';
+
+  @override
+  String get cookModeNoSteps =>
+      'Тази страница не описва приготвянето във вид, който приложението може да прочете. Продуктите са тук, а стъпките ще намериш на самата страница.';
+
+  @override
+  String get cookModeUnavailableTitle => 'Рецептата не може да се прочете';
+
+  @override
+  String get cookModeUnavailableMessage =>
+      'Режимът за готвене има нужда от данните на рецептата, а тази страница не ги предоставя. Можеш да отвориш самата страница.';
+
+  @override
+  String get cookModeOpenPage => 'Отвори страницата';
+
+  @override
+  String get cookModeLeaveTitle => 'Спираш ли готвенето?';
+
+  @override
+  String get cookModeLeaveMessage => 'Включените таймери ще спрат.';
+
+  @override
+  String get cookModeLeaveConfirm => 'Спри';
+
+  @override
+  String get cookModeOfflineTitle => 'Няма връзка';
+
+  @override
+  String get cookModeOfflineMessage =>
+      'Тази рецепта още не е отваряна на този телефон, затова първия път е нужен интернет. След това работи и без връзка.';
+
+  @override
+  String get cookModeRetry => 'Опитай пак';
 }

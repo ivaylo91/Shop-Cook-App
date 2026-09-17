@@ -235,7 +235,7 @@ with last-write-wins, and a Realtime subscription.
 
 ## Database migrations
 
-`schemaVersion` is **5**. The ladder is in `lib/data/local/database.dart`:
+`schemaVersion` is **6**. The ladder is in `lib/data/local/database.dart`:
 
 | Version | Change |
 |---|---|
@@ -244,6 +244,7 @@ with last-write-wins, and a Realtime subscription.
 | 3 | `shopping_lists.user_id` — which signed-in user owns a list |
 | 4 | `products.price`, `category_override`, `is_staple`; `recipe_searches` cache table |
 | 5 | Recipe library: `meal_recipes` join table, `recipes.user_id`, `recipes.meal_id` dropped |
+| 6 | `recipes.details` — the saved copy of a recipe page, for cooking offline |
 
 Most steps are plain `addColumn`s. **v5 is not**: SQLite cannot drop a column
 that carries a foreign key, so the step copies every existing attachment into
@@ -383,6 +384,30 @@ for.
 - Each library card says how many meals use it, and its menu puts it on any
   meal — labelled with the list's name, since meal names repeat week to week.
 
+## Cooking mode
+
+**Cook** on a web recipe (on its meal card, in the library menu, or in the
+recipe viewer's app bar) opens the recipe one step per screen:
+
+- The first page is the ingredients as a checklist; the list button in the
+  app bar brings the same ticks back up at any step.
+- Steps are set in large type, and the screen is kept awake while cooking
+  mode is open (`wakelock_plus`).
+- Any time mentioned in a step ("20 minutes", "10-15 минути", "1 час")
+  becomes a one-tap timer. A range times its lower end. Running timers sit
+  above the buttons; when one ends the phone vibrates and plays the system
+  alert. Leaving with a timer running asks first.
+- **Timers only run while cooking mode is open.** There is no notification
+  plugin, so a timer cannot ring once you leave the screen.
+
+Recipe data comes from the `import-recipe` function and is **saved on the
+recipe** (`recipes.details`). A recipe is read as soon as it is saved, while
+there is signal, so it works in a kitchen with none; a link saved without a
+title takes the page's title at the same time. A recipe never read before
+shows a "no connection" screen with a retry instead of the generic "can't
+read this page" one. Videos have no step data, so cooking mode is not
+offered for them.
+
 ## Prices, aisles and staples
 
 Tap an item for its sheet:
@@ -426,8 +451,15 @@ results in the app.
 
 Attach a recipe link to a meal, then tap the import icon on the recipe card.
 The `import-recipe` Edge Function fetches the page and reads the
-`schema.org/Recipe` JSON-LD that most recipe sites publish for Google; the app
-splits each line into a name, quantity and unit and lets you pick what to add.
+`schema.org/Recipe` data that most recipe sites publish for Google, JSON-LD
+first and microdata as a fallback. It returns the ingredients, the method as
+steps, the servings and the total time. The app splits each ingredient line
+into a name, quantity and unit and lets you pick what to add.
+
+The method arrives in many shapes (a string, a list, `HowToStep`s,
+`HowToSection`s, or one `<div>` with `<br>`s). Anything that arrives as one
+long block of prose is split into sentences, so cooking mode does not show a
+whole method on one screen.
 
 **This needs no API keys** — it works as soon as you have a recipe URL.
 
@@ -436,6 +468,9 @@ Two limits worth knowing:
 - Some large sites (AllRecipes, Serious Eats, Simply Recipes) block
   server-side fetches and return 403. BBC Good Food, Budget Bytes, Jamie
   Oliver and RecipeTin Eats all work.
+- Bulgarian sites: **bonapeti.bg** works (JSON-LD, with steps, servings and
+  time). **receptite.com** works through the microdata fallback; it gives no
+  servings or time, and its method is often a single paragraph.
 - YouTube has no structured ingredient data, so videos cannot be imported —
   only web recipes.
 

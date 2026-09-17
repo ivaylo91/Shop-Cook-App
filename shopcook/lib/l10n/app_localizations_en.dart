@@ -829,4 +829,86 @@ class AppLocalizationsEn extends AppLocalizations {
   String importAddCount(int count) {
     return 'Add $count';
   }
+
+  @override
+  String get cookModeStart => 'Cook';
+
+  @override
+  String get cookModeIngredients => 'Ingredients';
+
+  @override
+  String cookModeStepOf(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get cookModeGetReady => 'Get everything ready';
+
+  @override
+  String cookModeServings(String servings) {
+    return 'Serves $servings';
+  }
+
+  @override
+  String cookModeMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get cookModeNext => 'Next';
+
+  @override
+  String get cookModeBack => 'Back';
+
+  @override
+  String get cookModeStartCooking => 'Start cooking';
+
+  @override
+  String get cookModeDone => 'Done';
+
+  @override
+  String cookModeTimerStart(String label) {
+    return '$label timer';
+  }
+
+  @override
+  String cookModeTimerUp(String label) {
+    return 'Time\'s up · $label';
+  }
+
+  @override
+  String get cookModeTimerStop => 'Stop timer';
+
+  @override
+  String get cookModeNoSteps =>
+      'This page doesn\'t list its method in a form the app can read. The ingredients are here; open the page for the steps.';
+
+  @override
+  String get cookModeUnavailableTitle => 'Couldn\'t read this recipe';
+
+  @override
+  String get cookModeUnavailableMessage =>
+      'Cooking mode needs the page\'s recipe data, and this page didn\'t provide it. You can still open the page itself.';
+
+  @override
+  String get cookModeOpenPage => 'Open the page';
+
+  @override
+  String get cookModeLeaveTitle => 'Stop cooking?';
+
+  @override
+  String get cookModeLeaveMessage => 'Your running timers will stop.';
+
+  @override
+  String get cookModeLeaveConfirm => 'Stop';
+
+  @override
+  String get cookModeOfflineTitle => 'No connection';
+
+  @override
+  String get cookModeOfflineMessage =>
+      'This recipe hasn\'t been opened on this phone yet, so it needs the internet once. After that it works offline.';
+
+  @override
+  String get cookModeRetry => 'Try again';
 }

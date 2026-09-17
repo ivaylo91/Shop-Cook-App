@@ -1465,6 +1465,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add {count}'**
   String importAddCount(int count);
+
+  /// No description provided for @cookModeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Cook'**
+  String get cookModeStart;
+
+  /// No description provided for @cookModeIngredients.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredients'**
+  String get cookModeIngredients;
+
+  /// No description provided for @cookModeStepOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String cookModeStepOf(int current, int total);
+
+  /// No description provided for @cookModeGetReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Get everything ready'**
+  String get cookModeGetReady;
+
+  /// No description provided for @cookModeServings.
+  ///
+  /// In en, this message translates to:
+  /// **'Serves {servings}'**
+  String cookModeServings(String servings);
+
+  /// No description provided for @cookModeMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String cookModeMinutes(int minutes);
+
+  /// No description provided for @cookModeNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get cookModeNext;
+
+  /// No description provided for @cookModeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get cookModeBack;
+
+  /// No description provided for @cookModeStartCooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Start cooking'**
+  String get cookModeStartCooking;
+
+  /// No description provided for @cookModeDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get cookModeDone;
+
+  /// No description provided for @cookModeTimerStart.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} timer'**
+  String cookModeTimerStart(String label);
+
+  /// No description provided for @cookModeTimerUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Time\'s up · {label}'**
+  String cookModeTimerUp(String label);
+
+  /// No description provided for @cookModeTimerStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop timer'**
+  String get cookModeTimerStop;
+
+  /// No description provided for @cookModeNoSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'This page doesn\'t list its method in a form the app can read. The ingredients are here; open the page for the steps.'**
+  String get cookModeNoSteps;
+
+  /// No description provided for @cookModeUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read this recipe'**
+  String get cookModeUnavailableTitle;
+
+  /// No description provided for @cookModeUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooking mode needs the page\'s recipe data, and this page didn\'t provide it. You can still open the page itself.'**
+  String get cookModeUnavailableMessage;
+
+  /// No description provided for @cookModeOpenPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the page'**
+  String get cookModeOpenPage;
+
+  /// No description provided for @cookModeLeaveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop cooking?'**
+  String get cookModeLeaveTitle;
+
+  /// No description provided for @cookModeLeaveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your running timers will stop.'**
+  String get cookModeLeaveMessage;
+
+  /// No description provided for @cookModeLeaveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get cookModeLeaveConfirm;
+
+  /// No description provided for @cookModeOfflineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection'**
+  String get cookModeOfflineTitle;
+
+  /// No description provided for @cookModeOfflineMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This recipe hasn\'t been opened on this phone yet, so it needs the internet once. After that it works offline.'**
+  String get cookModeOfflineMessage;
+
+  /// No description provided for @cookModeRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get cookModeRetry;
 }
 
 class _AppLocalizationsDelegate

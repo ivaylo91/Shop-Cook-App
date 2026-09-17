@@ -12,6 +12,7 @@ import 'l10n/app_localizations.dart';
 import 'data/local/database.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
+import 'features/cooking/cooking_mode_screen.dart';
 import 'features/meals/meal_detail_screen.dart';
 import 'features/plan/plan_screen.dart';
 import 'features/recipes/library_screen.dart';
@@ -120,6 +121,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             mealName: args.mealName,
           );
         },
+      ),
+      GoRoute(
+        path: '/cook',
+        builder: (context, state) =>
+            CookingModeScreen(recipe: state.extra as Recipe),
       ),
       GoRoute(
         path: '/recipe',

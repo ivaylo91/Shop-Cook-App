@@ -166,6 +166,12 @@ class _LibraryCard extends ConsumerWidget {
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (entry.recipe.sourceType != RecipeSourceType.video)
+            ListTile(
+              leading: const FaIcon(FontAwesomeIcons.kitchenSet, size: 16),
+              title: Text(l10n.cookModeStart),
+              onTap: () => Navigator.pop(context, 'cook'),
+            ),
           ListTile(
             leading: const FaIcon(FontAwesomeIcons.utensils, size: 16),
             title: Text(l10n.libraryAddToMeal),
@@ -185,6 +191,8 @@ class _LibraryCard extends ConsumerWidget {
 
     if (action == null || !context.mounted) return;
     switch (action) {
+      case 'cook':
+        await context.push('/cook', extra: entry.recipe);
       case 'meal':
         await _addToMeal(context, ref);
       case 'delete':

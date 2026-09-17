@@ -80,6 +80,15 @@ class SkeletonRows extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Top-aligned so a screen body's tight constraints do not stretch the
+    // card to the bottom of the screen.
+    return Align(
+      alignment: Alignment.topCenter,
+      child: _rows(),
+    );
+  }
+
+  Widget _rows() {
     return AppCardList(
       children: [
         for (var i = 0; i < count; i++)

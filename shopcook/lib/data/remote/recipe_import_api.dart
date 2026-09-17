@@ -19,19 +19,32 @@ class RecipeImport {
   final String title;
   final List<String> ingredients;
 
+  /// The method, one step per entry. Empty when the page does not publish
+  /// one the function can read.
+  final List<String> steps;
+
+  /// As the site words it ("4", "Makes 12"); empty when not given.
+  final String servings;
+
+  /// Total time in minutes; 0 when not given.
+  final int minutes;
+
   /// Why it came back empty, if it did.
   final ImportFailure? failure;
 
   const RecipeImport({
     this.title = '',
     this.ingredients = const [],
+    this.steps = const [],
+    this.servings = '',
+    this.minutes = 0,
     this.failure,
   });
 
   bool get hasIngredients => ingredients.isNotEmpty;
 }
 
-/// Reads a recipe page's ingredient list via the `import-recipe` Edge
+/// Reads a recipe page's ingredients and method via the `import-recipe` Edge
 /// Function. The work happens server-side because a mobile client cannot
 /// fetch arbitrary origins, and because the page needs parsing before it is
 /// worth sending over the wire.
@@ -58,6 +71,11 @@ class RecipeImportApi {
       return RecipeImport(
         title: data['title'] as String? ?? '',
         ingredients: ingredients,
+        steps: (data['steps'] as List? ?? const [])
+            .whereType<String>()
+            .toList(),
+        servings: data['servings'] as String? ?? '',
+        minutes: (data['minutes'] as num?)?.toInt() ?? 0,
         failure: ingredients.isEmpty ? ImportFailure.noneFound : null,
       );
     } catch (_) {

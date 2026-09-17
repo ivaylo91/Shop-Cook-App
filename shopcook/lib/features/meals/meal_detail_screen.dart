@@ -389,7 +389,15 @@ class _RecipeCard extends ConsumerWidget {
             children: [
               // Videos carry no structured ingredient data, so the importer
               // has nothing to read on them.
-              if (!isVideo)
+              if (!isVideo) ...[
+                Expanded(
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => context.push('/cook', extra: recipe),
+                    icon: const FaIcon(FontAwesomeIcons.kitchenSet, size: 14),
+                    label: Text(context.l10n.cookModeStart),
+                  ),
+                ),
+                const SizedBox(width: Insets.sm),
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => importIngredients(
@@ -402,8 +410,8 @@ class _RecipeCard extends ConsumerWidget {
                     icon: const FaIcon(FontAwesomeIcons.fileImport, size: 14),
                     label: Text(context.l10n.recipeImport),
                   ),
-                )
-              else
+                ),
+              ] else
                 Expanded(
                   child: Text(
                     context.l10n.recipeVideoNoImport,

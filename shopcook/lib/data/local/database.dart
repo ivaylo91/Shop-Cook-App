@@ -99,6 +99,11 @@ class Recipes extends Table {
       )();
   DateTimeColumn get createdAt => dateTime()();
 
+  /// The page's ingredients and method as last read by the importer, as
+  /// JSON. Kept so cooking mode works in a kitchen with no signal; null
+  /// until the page has been read once.
+  TextColumn get details => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -158,7 +163,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   /// The migration ladder. Every step has to be additive and idempotent in
   /// order, because an install can be on any earlier version — a phone that
@@ -242,6 +247,10 @@ class AppDatabase extends _$AppDatabase {
         );
         await customStatement('DROP TABLE recipes');
         await customStatement('ALTER TABLE recipes_v5 RENAME TO recipes');
+      }
+      // v6: a cached copy of each recipe page's ingredients and method.
+      if (from < 6) {
+        await m.addColumn(recipes, recipes.details);
       }
     },
     beforeOpen: (details) async {
@@ -644,6 +653,20 @@ class AppDatabase extends _$AppDatabase {
           )
           ..limit(1))
         .getSingleOrNull();
+  }
+
+  Future<Recipe?> recipeById(String id) =>
+      (select(recipes)..where((r) => r.id.equals(id))).getSingleOrNull();
+
+  /// Stores what the importer read, and, when given, a better title than
+  /// the one the recipe was saved with.
+  Future<void> setRecipeDetails(String id, String details, {String? title}) {
+    return (update(recipes)..where((r) => r.id.equals(id))).write(
+      RecipesCompanion(
+        details: Value(details),
+        title: title == null ? const Value.absent() : Value(title),
+      ),
+    );
   }
 
   Future<void> insertRecipe(RecipesCompanion entry) =>

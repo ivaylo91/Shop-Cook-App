@@ -1,9 +1,12 @@
 import 'dart:convert';
 
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../local/database.dart';
+import '../remote/recipe_import_api.dart';
 import '../remote/recipe_search_api.dart';
 
 const _uuid = Uuid();
@@ -18,7 +21,12 @@ class RecipeRepository {
   final AppDatabase _db;
   final RecipeSearchApi _searchApi;
 
-  RecipeRepository(this._db, this._searchApi);
+  /// Reads recipe pages. Optional so tests that never touch the network
+  /// need not fake it.
+  final RecipeImportApi? _importApi;
+
+  RecipeRepository(this._db, this._searchApi, {RecipeImportApi? importApi})
+    : _importApi = importApi;
 
   Stream<List<Recipe>> watchRecipesForMeal(String mealId) =>
       _db.watchRecipesForMeal(mealId);
@@ -136,7 +144,78 @@ class RecipeRepository {
         createdAt: DateTime.now(),
       ),
     );
+    if (sourceType == RecipeSourceType.web && _importApi != null) {
+      unawaited(_prefetch(id));
+    }
     return id;
+  }
+
+  /// A recipe page's ingredients and method, from the local copy when there
+  /// is one (a kitchen often has no signal) and from the page otherwise.
+  ///
+  /// With [refresh], the page is read again; if that fails the local copy
+  /// is still returned, so a refresh can never make things worse.
+  Future<RecipeImport> details(Recipe recipe, {bool refresh = false}) async {
+    final row = await _db.recipeById(recipe.id) ?? recipe;
+    final cached = decodeDetails(row.details);
+    if (cached != null && !refresh) return cached;
+
+    final api = _importApi;
+    if (api == null) {
+      return cached ?? const RecipeImport(failure: ImportFailure.unreachable);
+    }
+
+    final fresh = await api.fetchIngredients(row.sourceUrl);
+    if (!fresh.hasIngredients) return cached ?? fresh;
+
+    await _db.setRecipeDetails(
+      row.id,
+      encodeDetails(fresh),
+      // A link saved without a title shows its URL; the page knows better.
+      title: _hasNoRealTitle(row) && fresh.title.isNotEmpty
+          ? fresh.title
+          : null,
+    );
+    return fresh;
+  }
+
+  static bool _hasNoRealTitle(Recipe recipe) =>
+      recipe.title.trim().isEmpty || recipe.title == recipe.sourceUrl;
+
+  /// Reads a newly saved web recipe straight away, while there is signal,
+  /// so it has a proper title and works offline later. Best effort: a
+  /// failure here only means the page is read when first cooked instead.
+  Future<void> _prefetch(String id) async {
+    try {
+      final recipe = await _db.recipeById(id);
+      if (recipe != null) await details(recipe);
+    } catch (_) {}
+  }
+
+  static String encodeDetails(RecipeImport details) => jsonEncode({
+    'title': details.title,
+    'ingredients': details.ingredients,
+    'steps': details.steps,
+    'servings': details.servings,
+    'minutes': details.minutes,
+  });
+
+  static RecipeImport? decodeDetails(String? json) {
+    if (json == null) return null;
+    try {
+      final data = jsonDecode(json) as Map<String, dynamic>;
+      final ingredients = (data['ingredients'] as List).cast<String>();
+      if (ingredients.isEmpty) return null;
+      return RecipeImport(
+        title: data['title'] as String? ?? '',
+        ingredients: ingredients,
+        steps: (data['steps'] as List? ?? const []).cast<String>(),
+        servings: data['servings'] as String? ?? '',
+        minutes: (data['minutes'] as num?)?.toInt() ?? 0,
+      );
+    } catch (_) {
+      return null; // Unreadable copy: behave as if there were none.
+    }
   }
 
   /// Saves (or reuses) a recipe and puts it on [mealId].

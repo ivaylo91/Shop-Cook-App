@@ -51,5 +51,6 @@ final recipeRepositoryProvider = Provider<RecipeRepository>((ref) {
   return RecipeRepository(
     ref.watch(databaseProvider),
     ref.watch(recipeSearchApiProvider),
+    importApi: ref.watch(recipeImportApiProvider),
   );
 });
