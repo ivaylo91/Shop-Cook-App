@@ -584,6 +584,9 @@ class AppLocalizationsBg extends AppLocalizations {
       'Още няма резултати в приложението. Появяват се, щом на сървъра се зададе YouTube API ключ — дотогава използвай бутоните горе.';
 
   @override
+  String get cookSearchAgain => 'Потърси отново';
+
+  @override
   String get cookAttachToMeal => 'Прикачи към ястието';
 
   @override
@@ -701,6 +704,90 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get staplesAllPresent => 'Всички основни продукти вече са в списъка.';
+
+  @override
+  String get navRecipes => 'Рецепти';
+
+  @override
+  String get libraryEmptyTitle => 'Още няма запазени рецепти';
+
+  @override
+  String get libraryEmptyMessage =>
+      'Рецептите, които сложиш към ястие или запазиш от търсене, се събират тук — и остават, когато ястието приключи.';
+
+  @override
+  String libraryUsedIn(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Към $count ястия',
+      one: 'Към 1 ястие',
+      zero: 'Не е към ястие',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryAddToMeal => 'Добави към ястие';
+
+  @override
+  String get libraryPickMeal => 'Към кое ястие?';
+
+  @override
+  String get libraryNoMeals => 'Първо създай ястие в някой от списъците.';
+
+  @override
+  String libraryAdded(String meal) {
+    return 'Добавено към $meal';
+  }
+
+  @override
+  String get libraryDeleteForGood => 'Изтрий завинаги';
+
+  @override
+  String get libraryDeleteTitle => 'Да изтрия ли рецептата завинаги?';
+
+  @override
+  String get libraryDeleteMessage =>
+      'Ще бъде махната и от всички ястия, които я ползват. Вече внесените съставки остават в списъците.';
+
+  @override
+  String get libraryDeleted => 'Рецептата е изтрита';
+
+  @override
+  String get libraryAddLink => 'Запази линк';
+
+  @override
+  String get libraryLinkTitle => 'Заглавие (по желание)';
+
+  @override
+  String get libraryLinkUrl => 'Линк към рецепта или YouTube';
+
+  @override
+  String get libraryLinkInvalid => 'Това не прилича на уеб линк.';
+
+  @override
+  String get librarySave => 'Запази в рецептите';
+
+  @override
+  String get librarySaved => 'Запазено в рецептите';
+
+  @override
+  String get mealFromLibrary => 'От твоите рецепти';
+
+  @override
+  String get mealFromLibraryNone =>
+      'Няма какво да добавиш — всички запазени рецепти вече са към това ястие или още няма такива.';
+
+  @override
+  String get recipeDetachTitle => 'Да махна ли рецептата от ястието?';
+
+  @override
+  String get recipeDetachMessage =>
+      'Остава в рецептите, а вече внесените съставки остават в списъка.';
+
+  @override
+  String get recipeDetached => 'Махната от ястието';
 
   @override
   String get importReading => 'Четене на рецептата…';

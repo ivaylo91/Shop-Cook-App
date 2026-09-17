@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shopcook/data/local/database.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -24,7 +25,7 @@ const _v1Schema = [
   'CREATE TABLE products ('
       'id TEXT NOT NULL, '
       'list_id TEXT NOT NULL REFERENCES shopping_lists (id) ON DELETE CASCADE, '
-      'meal_id TEXT REFERENCES meals (id) ON DELETE CASCADE, '
+      'meal_id TEXT NULL REFERENCES meals (id) ON DELETE CASCADE, '
       'name TEXT NOT NULL, '
       "quantity TEXT NOT NULL DEFAULT '', "
       "unit TEXT NOT NULL DEFAULT '', "
@@ -157,6 +158,54 @@ void main() {
 
     expect((await db.watchLists('user-1').first).single.id, 'list-1');
     expect(await db.watchLists('user-2').first, isEmpty);
+  });
+
+  test('an upgraded v1 database has exactly the schema of a fresh one',
+      () async {
+    // The strongest check the ladder can get: Drift builds a fresh database
+    // from the current table definitions and compares it with the upgraded
+    // one, table by table and column by column. It catches a step that adds
+    // a column with the wrong default, forgets an index, or — for v5 — a
+    // hand-written table rebuild that drifts from the Dart definition.
+    final db = AppDatabase.forTesting(NativeDatabase.opened(seedV1()));
+    addTearDown(db.close);
+
+    await db.watchLists('user-1').first; // force the upgrade
+    await db.validateDatabaseSchema();
+  });
+
+  test('v5 turns each attached recipe into a library entry and a link',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.opened(seedV1()));
+    addTearDown(db.close);
+
+    // Still reachable from its meal, now through the join table.
+    final onMeal = await db.watchRecipesForMeal('meal-1').first;
+    expect(onMeal.single.title, 'Best bolognese');
+    expect(
+      onMeal.single.userId,
+      isNull,
+      reason: 'its list was unowned, so it is too, until someone signs in',
+    );
+
+    await db.claimUnownedLists('user-1');
+
+    final library = await db.watchLibrary('user-1').first;
+    expect(library.single.recipe.id, 'recipe-1');
+    expect(library.single.mealCount, 1);
+  });
+
+  test('after v5, deleting a list keeps its recipes in the library', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.opened(seedV1()));
+    addTearDown(db.close);
+    await db.claimUnownedLists('user-1');
+
+    // This is the bug v5 exists to fix: the recipe used to cascade away.
+    await db.deleteList('list-1');
+
+    final library = await db.watchLibrary('user-1').first;
+    expect(library.single.recipe.title, 'Best bolognese');
+    expect(library.single.mealCount, 0, reason: 'its meal is gone, it is not');
   });
 
   test('a fresh database is created at the current version', () async {

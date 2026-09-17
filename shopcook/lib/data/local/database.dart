@@ -77,10 +77,19 @@ class Products extends Table {
 
 enum RecipeSourceType { video, web }
 
+/// A saved recipe, owned by a user rather than by a meal.
+///
+/// Until v5 a recipe belonged to exactly one meal and cascaded with it, so
+/// finishing a meal destroyed the recipe you had found for it. Now recipes are
+/// a library and meals link to them through [MealRecipes]: the bolognese you
+/// cook every other week is one row, used by many meals.
 class Recipes extends Table {
   TextColumn get id => text()();
-  TextColumn get mealId =>
-      text().references(Meals, #id, onDelete: KeyAction.cascade)();
+
+  /// Nullable for the same reason as [ShoppingLists.userId]: rows migrated
+  /// from before ownership existed are claimed at the next sign-in.
+  TextColumn get userId => text().nullable()();
+
   TextColumn get title => text()();
   TextColumn get sourceUrl => text()();
   TextColumn get thumbnailUrl => text().withDefault(const Constant(''))();
@@ -92,6 +101,22 @@ class Recipes extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// Which meals use which saved recipes.
+///
+/// Deleting a meal removes its links and nothing else; deleting a recipe
+/// removes it from every meal.
+@DataClassName('MealRecipe')
+class MealRecipes extends Table {
+  TextColumn get mealId =>
+      text().references(Meals, #id, onDelete: KeyAction.cascade)();
+  TextColumn get recipeId =>
+      text().references(Recipes, #id, onDelete: KeyAction.cascade)();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {mealId, recipeId};
 }
 
 /// Cached recipe-search results.
@@ -119,14 +144,21 @@ class RecipeSearches extends Table {
 }
 
 @DriftDatabase(
-  tables: [ShoppingLists, Meals, Products, Recipes, RecipeSearches],
+  tables: [
+    ShoppingLists,
+    Meals,
+    Products,
+    Recipes,
+    MealRecipes,
+    RecipeSearches,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   /// The migration ladder. Every step has to be additive and idempotent in
   /// order, because an install can be on any earlier version — a phone that
@@ -159,6 +191,58 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(products, products.isStaple);
         await m.createTable(recipeSearches);
       }
+      // v5: recipes become a per-user library linked to meals, instead of
+      // belonging to (and dying with) a single meal. Order matters: the old
+      // meal_id is read twice before the rebuild drops it.
+      if (from < 5) {
+        await m.createTable(mealRecipes);
+        await m.addColumn(recipes, recipes.userId);
+
+        // 1. Every existing attachment becomes a link.
+        await customStatement(
+          'INSERT OR IGNORE INTO meal_recipes (meal_id, recipe_id, created_at) '
+          'SELECT meal_id, id, created_at FROM recipes '
+          'WHERE meal_id IS NOT NULL',
+        );
+
+        // 2. A recipe is owned by whoever owned the list its meal was on.
+        //    Null when that list is itself still unowned; the sign-in claim
+        //    picks those up.
+        await customStatement(
+          'UPDATE recipes SET user_id = ('
+          '  SELECT l.user_id FROM meals m '
+          '  JOIN shopping_lists l ON l.id = m.list_id '
+          '  WHERE m.id = recipes.meal_id'
+          ')',
+        );
+
+        // 3. Rebuild without meal_id, using SQLite's create-copy-drop-rename
+        //    procedure. The DDL is written out rather than derived from the
+        //    Recipes class on purpose: a migration step has to keep doing
+        //    exactly what it did on the day it shipped, and a generated
+        //    rebuild would silently change whenever Recipes did. Foreign keys
+        //    are still off here — beforeOpen turns them on after migrating —
+        //    which the rebuild procedure requires.
+        await customStatement(
+          'CREATE TABLE recipes_v5 ('
+          'id TEXT NOT NULL, '
+          'user_id TEXT NULL, '
+          'title TEXT NOT NULL, '
+          'source_url TEXT NOT NULL, '
+          "thumbnail_url TEXT NOT NULL DEFAULT '', "
+          "source_type TEXT NOT NULL DEFAULT 'web', "
+          'created_at INTEGER NOT NULL, '
+          'PRIMARY KEY (id))',
+        );
+        await customStatement(
+          'INSERT INTO recipes_v5 (id, user_id, title, source_url, '
+          'thumbnail_url, source_type, created_at) '
+          'SELECT id, user_id, title, source_url, thumbnail_url, '
+          'source_type, created_at FROM recipes',
+        );
+        await customStatement('DROP TABLE recipes');
+        await customStatement('ALTER TABLE recipes_v5 RENAME TO recipes');
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -179,9 +263,16 @@ class AppDatabase extends _$AppDatabase {
   /// upgrade. Doing it at sign-in rather than in the migration is what makes
   /// that safe: the migration cannot know who the user is.
   Future<int> claimUnownedLists(String userId) {
-    return (update(shoppingLists)..where((t) => t.userId.isNull())).write(
-      ShoppingListsCompanion(userId: Value(userId)),
-    );
+    return transaction(() async {
+      // Recipes migrated alongside unowned lists are unowned too, and belong
+      // to the same person.
+      await (update(recipes)..where((t) => t.userId.isNull())).write(
+        RecipesCompanion(userId: Value(userId)),
+      );
+      return (update(shoppingLists)..where((t) => t.userId.isNull())).write(
+        ShoppingListsCompanion(userId: Value(userId)),
+      );
+    });
   }
 
   Future<void> insertList(ShoppingListsCompanion entry) =>
@@ -224,6 +315,26 @@ class AppDatabase extends _$AppDatabase {
 
   Future<List<Meal>> mealsForList(String listId) =>
       (select(meals)..where((t) => t.listId.equals(listId))).get();
+
+  /// Every meal of [userId], newest first, with the name of its list — for
+  /// picking which meal a library recipe should go on.
+  Future<List<({Meal meal, String listName})>> mealsForUser(
+    String userId,
+  ) async {
+    final query = select(meals).join([
+      innerJoin(shoppingLists, shoppingLists.id.equalsExp(meals.listId)),
+    ])
+      ..where(shoppingLists.userId.equals(userId))
+      ..orderBy([OrderingTerm.desc(meals.createdAt)]);
+
+    return [
+      for (final row in await query.get())
+        (
+          meal: row.readTable(meals),
+          listName: row.readTable(shoppingLists).name,
+        ),
+    ];
+  }
 
   /// Every planned meal in a half-open date range, across all lists — the
   /// week view is not scoped to one shopping list, because a week is not.
@@ -486,23 +597,88 @@ class AppDatabase extends _$AppDatabase {
       );
 
   // Recipes
-  Stream<List<Recipe>> watchRecipesForMeal(String mealId) =>
-      (select(recipes)
-        ..where((t) => t.mealId.equals(mealId))
-        ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).watch();
+  /// The recipes linked to one meal, most recently linked first.
+  Stream<List<Recipe>> watchRecipesForMeal(String mealId) {
+    final query = select(recipes).join([
+      innerJoin(mealRecipes, mealRecipes.recipeId.equalsExp(recipes.id)),
+    ])
+      ..where(mealRecipes.mealId.equals(mealId))
+      ..orderBy([OrderingTerm.desc(mealRecipes.createdAt)]);
+
+    return query.watch().map(
+      (rows) => rows.map((row) => row.readTable(recipes)).toList(),
+    );
+  }
+
+  /// A user's whole library, newest first, with how many meals use each.
+  Stream<List<LibraryRecipe>> watchLibrary(String userId) {
+    final uses = mealRecipes.mealId.count();
+    final query = select(recipes).join([
+      leftOuterJoin(mealRecipes, mealRecipes.recipeId.equalsExp(recipes.id)),
+    ])
+      ..addColumns([uses])
+      ..where(recipes.userId.equals(userId))
+      ..groupBy([recipes.id])
+      ..orderBy([OrderingTerm.desc(recipes.createdAt)]);
+
+    return query.watch().map(
+      (rows) => [
+        for (final row in rows)
+          LibraryRecipe(
+            recipe: row.readTable(recipes),
+            mealCount: row.read(uses) ?? 0,
+          ),
+      ],
+    );
+  }
+
+  /// The user's existing copy of a link, so attaching the same video twice
+  /// reuses one library entry instead of filling the library with duplicates.
+  Future<Recipe?> recipeByUrl({
+    required String userId,
+    required String sourceUrl,
+  }) {
+    return (select(recipes)
+          ..where(
+            (t) => t.userId.equals(userId) & t.sourceUrl.equals(sourceUrl),
+          )
+          ..limit(1))
+        .getSingleOrNull();
+  }
 
   Future<void> insertRecipe(RecipesCompanion entry) =>
       into(recipes).insert(entry);
 
-  Future<void> insertRecipes(List<RecipesCompanion> entries) =>
-      batch((b) => b.insertAll(recipes, entries));
-
   Future<void> deleteRecipe(String id) =>
       (delete(recipes)..where((t) => t.id.equals(id))).go();
 
-  Future<List<Recipe>> recipesForMeals(List<String> mealIds) {
+  Future<void> linkRecipe({
+    required String mealId,
+    required String recipeId,
+  }) {
+    return into(mealRecipes).insert(
+      MealRecipesCompanion.insert(
+        mealId: mealId,
+        recipeId: recipeId,
+        createdAt: DateTime.now(),
+      ),
+      // Linking twice is a no-op, not an error.
+      mode: InsertMode.insertOrIgnore,
+    );
+  }
+
+  Future<void> unlinkRecipe({
+    required String mealId,
+    required String recipeId,
+  }) {
+    return (delete(mealRecipes)..where(
+      (t) => t.mealId.equals(mealId) & t.recipeId.equals(recipeId),
+    )).go();
+  }
+
+  Future<List<MealRecipe>> linksForMeals(List<String> mealIds) {
     if (mealIds.isEmpty) return Future.value(const []);
-    return (select(recipes)..where((t) => t.mealId.isIn(mealIds))).get();
+    return (select(mealRecipes)..where((t) => t.mealId.isIn(mealIds))).get();
   }
 
   // RecipeSearches
@@ -528,7 +704,7 @@ class AppDatabase extends _$AppDatabase {
     ShoppingList? list,
     List<Meal> meals = const [],
     List<Product> products = const [],
-    List<Recipe> recipes = const [],
+    List<MealRecipe> links = const [],
   }) {
     return transaction(() async {
       if (list != null) await into(shoppingLists).insert(list);
@@ -538,8 +714,15 @@ class AppDatabase extends _$AppDatabase {
       for (final product in products) {
         await into(this.products).insert(product);
       }
-      for (final recipe in recipes) {
-        await into(this.recipes).insert(recipe);
+      // Recipes survive a meal or list delete, so only the links need putting
+      // back — unless the recipe itself was deleted from the library in the
+      // seconds before undo, in which case its link has nothing to point at.
+      for (final link in links) {
+        final stillThere = await (select(
+          recipes,
+        )..where((t) => t.id.equals(link.recipeId))).getSingleOrNull();
+        if (stillThere == null) continue;
+        await into(mealRecipes).insert(link, mode: InsertMode.insertOrIgnore);
       }
     });
   }
@@ -560,6 +743,14 @@ class ProductSuggestion {
   final int uses;
 
   const ProductSuggestion({required this.name, required this.uses});
+}
+
+/// A library entry, with how many meals use it.
+class LibraryRecipe {
+  final Recipe recipe;
+  final int mealCount;
+
+  const LibraryRecipe({required this.recipe, required this.mealCount});
 }
 
 /// A staple, identified by name rather than by row.

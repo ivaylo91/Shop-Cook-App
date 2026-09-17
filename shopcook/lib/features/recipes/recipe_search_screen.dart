@@ -8,6 +8,8 @@ import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 import '../../data/remote/recipe_search_api.dart';
+import '../../data/repositories/recipe_repository.dart';
+import 'recipe_link_dialog.dart';
 
 class RecipeSearchScreen extends ConsumerStatefulWidget {
   final Meal meal;
@@ -60,58 +62,22 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
     });
   }
 
+  /// Attaches a pasted link. Goes through the shared link dialog, which
+  /// refuses anything that is not a web address instead of saving it.
   Future<void> _attachManualLink() async {
-    final l10n = context.l10n;
-    final urlController = TextEditingController();
-    final titleController = TextEditingController(text: widget.meal.name);
-    final url = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.recipeAttachTitle),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(labelText: l10n.recipeAttachTitleField),
-            ),
-            const SizedBox(height: Insets.md),
-            TextField(
-              controller: urlController,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: l10n.recipeAttachUrlField,
-              ),
-              keyboardType: TextInputType.url,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.actionCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, {
-              'title': titleController.text.trim(),
-              'url': urlController.text.trim(),
-            }),
-            child: Text(l10n.recipeAttachSubmit),
-          ),
-        ],
-      ),
-    );
-    if (url == null || url['url']!.isEmpty) return;
-    final isVideo =
-        url['url']!.contains('youtube.com') || url['url']!.contains('youtu.be');
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+
+    final link = await promptForRecipeLink(context, title: widget.meal.name);
+    if (link == null) return;
+
     await ref.read(recipeRepositoryProvider).attachRecipe(
-          mealId: widget.meal.id,
-          title: url['title']!.isEmpty ? url['url']! : url['title']!,
-          sourceUrl: url['url']!,
-          sourceType:
-              isVideo ? RecipeSourceType.video : RecipeSourceType.web,
-        );
+      mealId: widget.meal.id,
+      userId: userId,
+      title: link.title,
+      sourceUrl: link.url,
+      sourceType: RecipeRepository.typeOfUrl(link.url),
+    );
     if (mounted) Navigator.pop(context);
   }
 
@@ -201,9 +167,13 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
           title: Text(r.title),
           subtitle: Text(r.source),
           onTap: () async {
-            await ref
-                .read(recipeRepositoryProvider)
-                .attachFromSearchResult(widget.meal.id, r);
+            final userId = ref.read(currentUserIdProvider);
+            if (userId == null) return;
+            await ref.read(recipeRepositoryProvider).attachFromSearchResult(
+              mealId: widget.meal.id,
+              userId: userId,
+              result: r,
+            );
             if (context.mounted) Navigator.pop(context);
           },
         );

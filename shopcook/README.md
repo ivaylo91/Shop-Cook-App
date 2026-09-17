@@ -149,12 +149,13 @@ Anything that cannot wrap needs checking in both languages.
 
 ## Getting around
 
-Three tabs in a persistent bottom bar, each with its own navigator via
+Four tabs in a persistent bottom bar, each with its own navigator via
 `StatefulShellRoute.indexedStack`, so switching tabs does not throw away where
 you were:
 
 - **Lists** — the shopping lists, and everything under them.
 - **Plan** — the week ahead.
+- **Recipes** — every recipe you have kept (see "Recipe library").
 - **Settings** — appearance, account.
 
 Detail screens (a list, a meal, shopping mode, a recipe) sit *outside* the
@@ -180,8 +181,9 @@ the window.
 
 ## Whose data is whose
 
-Everything stored locally is scoped to the signed-in user. Only
-`shopping_lists` carries a `user_id`: meals, products and recipes are
+Everything stored locally is scoped to the signed-in user. `shopping_lists`
+and `recipes` carry a `user_id` — recipes because, since the library, they no
+longer hang off a list. Meals and products are
 reachable only through a list, and every query for them is already scoped by
 a list id, so scoping lists scopes the whole tree. The one exception is the
 composer's suggestion query, which reads across every list at once — it joins
@@ -192,7 +194,7 @@ another.
 owner. The migration deliberately does **not** guess who they belong to — it
 cannot know, and guessing would hand one person's lists to another. Instead
 they are claimed by the first user to sign in after the upgrade
-(`claimUnownedLists`), which runs before the list stream is read so an
+(`claimUnownedLists`, which claims unowned recipes too), which runs before the list stream is read so an
 upgraded device shows its existing lists rather than looking wiped.
 
 ## Cloud schema (sync groundwork)
@@ -233,13 +235,22 @@ with last-write-wins, and a Realtime subscription.
 
 ## Database migrations
 
-`schemaVersion` is **3**. The ladder is in `lib/data/local/database.dart`:
+`schemaVersion` is **5**. The ladder is in `lib/data/local/database.dart`:
 
 | Version | Change |
 |---|---|
 | 1 | Initial: lists, meals, products, recipes |
 | 2 | `meals.planned_for` — the day a meal is cooked |
 | 3 | `shopping_lists.user_id` — which signed-in user owns a list |
+| 4 | `products.price`, `category_override`, `is_staple`; `recipe_searches` cache table |
+| 5 | Recipe library: `meal_recipes` join table, `recipes.user_id`, `recipes.meal_id` dropped |
+
+Most steps are plain `addColumn`s. **v5 is not**: SQLite cannot drop a column
+that carries a foreign key, so the step copies every existing attachment into
+`meal_recipes`, gives each recipe the owner of its list, then rebuilds
+`recipes` without `meal_id`. The rebuild SQL is written out by hand rather
+than generated, so it keeps describing the v5 table even after the Dart table
+definition moves on.
 
 Every step must be additive and applied in order, because an install can be on
 any earlier version: a phone that skipped a release upgrades straight from 1 to
@@ -249,7 +260,9 @@ current by running each step in turn.
 raw SQL, seeds it with a list, meal, product and recipe, then opens it through
 `AppDatabase` and checks the upgrade ran, every row survived, the new column
 reads null on existing rows, and the foreign-key cascade still works
-afterwards. Writing the old schema out by hand is deliberate — it keeps
+afterwards. A second test upgrades from v1 and compares the result against a
+freshly created database with drift's `validateDatabaseSchema`, which catches
+a migration that runs but leaves a column subtly different. Writing the old schema out by hand is deliberate — it keeps
 describing what is actually installed on a phone rather than whatever the
 current code generates.
 
@@ -353,6 +366,38 @@ For frictionless local testing, turn off **Authentication → Sign In / Up →
 Confirm email** in the Supabase dashboard. For real use, configure custom
 SMTP.
 
+## Recipe library
+
+Recipes used to belong to exactly one meal and were deleted with it. They now
+live in their own library (the **Recipes** tab) and are linked to meals
+through `meal_recipes`, so one recipe can go on as many meals as it is cooked
+for.
+
+- **Removing a recipe from a meal** only unlinks it; it stays in the library.
+  Deleting a meal or a list does the same. Only **Delete for good** in the
+  library removes the recipe itself.
+- **Saving** happens whenever a recipe is attached to a meal, from the bookmark
+  on a search result for an item with no meal, or from the link button on the
+  Recipes tab. Saving the same URL twice reuses the existing recipe.
+- A meal's recipe section has **From your recipes** to pick one already saved.
+- Each library card says how many meals use it, and its menu puts it on any
+  meal — labelled with the list's name, since meal names repeat week to week.
+
+## Prices, aisles and staples
+
+Tap an item for its sheet:
+
+- **Price** — per line, not per unit. Shopping mode shows what is in the
+  basket and the list's running total, in the phone's currency format.
+- **Aisle** — the aisle is guessed from the name; if the guess is wrong, pick
+  another. The correction is remembered for that name and used next time.
+- **Staple** — marks something you always keep in. **Restock staples** on a
+  list adds every staple that is not already on it.
+
+Settings → **Aisle order** drags aisles into the order your shop is laid out,
+and shopping mode walks them in that order. **Share** on a list sends it as
+plain text, grouped by aisle, to any app.
+
 ## Recipe ideas from a shopping item
 
 Long-press any item (or tap its actions button) for **Find recipes**, which
@@ -360,7 +405,12 @@ opens "Cook with &lt;item&gt;". That screen offers:
 
 - **YouTube results in-app**, via the `search-recipes` Edge Function. Needs
   `YOUTUBE_API_KEY` (see below); until it is set the section says so.
-  When the item belongs to a meal, a result can be attached to that meal.
+  When the item belongs to a meal, a result can be attached to that meal;
+  otherwise it can be saved to the library.
+  Results are cached on the device for seven days (`recipe_searches`),
+  because a YouTube search costs 100 of the 10,000 daily quota units. Empty
+  results are never cached, and the refresh button in the app bar skips the cache. The
+  search runs in the app's language, so Bulgarian gets Bulgarian videos.
 - **One-tap search in the YouTube app**, pre-filled with the localised
   "&lt;item&gt; recipe" phrase. Needs no keys. Android routes the link to the
   installed app, falling back to the browser. Worth keeping even with in-app

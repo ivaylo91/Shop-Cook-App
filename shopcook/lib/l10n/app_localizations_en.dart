@@ -584,6 +584,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'No in-app results yet. These appear once a YouTube API key is set on the backend — until then, use the buttons above.';
 
   @override
+  String get cookSearchAgain => 'Search again';
+
+  @override
   String get cookAttachToMeal => 'Attach to meal';
 
   @override
@@ -701,6 +704,90 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get staplesAllPresent => 'Every staple is already on the list.';
+
+  @override
+  String get navRecipes => 'Recipes';
+
+  @override
+  String get libraryEmptyTitle => 'No saved recipes yet';
+
+  @override
+  String get libraryEmptyMessage =>
+      'Recipes you put on a meal or save from a search collect here — and stay here when the meal is done.';
+
+  @override
+  String libraryUsedIn(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'On $count meals',
+      one: 'On 1 meal',
+      zero: 'Not on any meal',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryAddToMeal => 'Add to a meal';
+
+  @override
+  String get libraryPickMeal => 'Which meal?';
+
+  @override
+  String get libraryNoMeals => 'Create a meal in one of your lists first.';
+
+  @override
+  String libraryAdded(String meal) {
+    return 'Added to $meal';
+  }
+
+  @override
+  String get libraryDeleteForGood => 'Delete for good';
+
+  @override
+  String get libraryDeleteTitle => 'Delete this recipe for good?';
+
+  @override
+  String get libraryDeleteMessage =>
+      'It is also taken off every meal that uses it. Ingredients already imported stay on your lists.';
+
+  @override
+  String get libraryDeleted => 'Recipe deleted';
+
+  @override
+  String get libraryAddLink => 'Save a link';
+
+  @override
+  String get libraryLinkTitle => 'Title (optional)';
+
+  @override
+  String get libraryLinkUrl => 'Recipe or YouTube link';
+
+  @override
+  String get libraryLinkInvalid => 'That does not look like a web link.';
+
+  @override
+  String get librarySave => 'Save to recipes';
+
+  @override
+  String get librarySaved => 'Saved to your recipes';
+
+  @override
+  String get mealFromLibrary => 'From your recipes';
+
+  @override
+  String get mealFromLibraryNone =>
+      'No saved recipes to add — every one is already on this meal, or there are none yet.';
+
+  @override
+  String get recipeDetachTitle => 'Take this recipe off the meal?';
+
+  @override
+  String get recipeDetachMessage =>
+      'It stays in your recipes, and ingredients already imported stay on the list.';
+
+  @override
+  String get recipeDetached => 'Taken off this meal';
 
   @override
   String get importReading => 'Reading the recipe…';

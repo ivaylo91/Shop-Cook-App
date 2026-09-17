@@ -51,6 +51,10 @@ class AppShell extends StatelessWidget {
             label: context.l10n.navPlan,
           ),
           NavigationDestination(
+            icon: const FaIcon(FontAwesomeIcons.bookOpen, size: 18),
+            label: context.l10n.navRecipes,
+          ),
+          NavigationDestination(
             icon: const FaIcon(FontAwesomeIcons.gear, size: 18),
             label: context.l10n.navSettings,
           ),

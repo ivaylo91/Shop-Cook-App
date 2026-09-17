@@ -1,6 +1,8 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shopcook/data/local/database.dart';
+import 'package:shopcook/data/remote/recipe_search_api.dart';
+import 'package:shopcook/data/repositories/recipe_repository.dart';
 import 'package:shopcook/data/repositories/shopping_list_repository.dart';
 
 void main() {
@@ -184,6 +186,32 @@ void main() {
       );
     });
 
+    test('deleting a meal keeps its recipe, and undo relinks it', () async {
+      final listId = await aList();
+      await repo.createMeal(listId, 'Bolognese');
+      final meal = (await repo.watchMeals(listId).first).single;
+
+      final recipes = RecipeRepository(db, _NoSearch());
+      await recipes.attachRecipe(
+        mealId: meal.id,
+        userId: user,
+        title: 'Best bolognese',
+        sourceUrl: 'https://example.com/bolognese',
+      );
+
+      final deleted = await repo.deleteMealWithUndo(meal.id);
+
+      final library = await recipes.watchLibrary(user).first;
+      expect(library.single.mealCount, 0, reason: 'the recipe outlives it');
+
+      await repo.undoDelete(deleted);
+
+      expect(
+        (await recipes.watchRecipesForMeal(meal.id).first).single.title,
+        'Best bolognese',
+      );
+    });
+
     test('restores a single deleted item', () async {
       final listId = await aList();
       await repo.addOrMergeProduct(listId: listId, name: 'Bread');
@@ -284,4 +312,14 @@ void main() {
       expect(suggestions.first.uses, 3);
     });
   });
+}
+
+/// The search API is irrelevant to these tests and must not touch a network.
+class _NoSearch implements RecipeSearchApi {
+  @override
+  Future<List<RecipeSearchResult>> search(String query, {String locale = 'en'}) async =>
+      const [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

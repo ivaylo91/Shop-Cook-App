@@ -14,6 +14,7 @@ import '../../core/money.dart';
 import '../products/item_composer.dart';
 import '../products/item_sheet.dart';
 import '../recipes/import_ingredients_sheet.dart';
+import '../recipes/recipe_thumbnail.dart';
 import '../shopping/product_category.dart';
 
 class MealDetailScreen extends ConsumerWidget {
@@ -129,6 +130,15 @@ class MealDetailScreen extends ConsumerWidget {
                   icon: FontAwesomeIcons.bookOpen,
                   label: l10n.mealRecipe,
                   color: palette.aisle(_recipeSectionHue),
+                  trailing: TextButton.icon(
+                    onPressed: () => _addFromLibrary(
+                      context,
+                      ref,
+                      recipesAsync.valueOrNull ?? const [],
+                    ),
+                    icon: const FaIcon(FontAwesomeIcons.bookOpen, size: 13),
+                    label: Text(l10n.mealFromLibrary),
+                  ),
                 ),
                 const SizedBox(height: Insets.md),
                 recipesAsync.when(
@@ -166,6 +176,63 @@ class MealDetailScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Puts an already-saved recipe on this meal.
+  Future<void> _addFromLibrary(
+    BuildContext context,
+    WidgetRef ref,
+    List<Recipe> onMeal,
+  ) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+
+    final repository = ref.read(recipeRepositoryProvider);
+    final attached = {for (final r in onMeal) r.id};
+    final candidates = [
+      for (final entry in await repository.watchLibrary(userId).first)
+        if (!attached.contains(entry.recipe.id)) entry.recipe,
+    ];
+    if (!context.mounted) return;
+
+    if (candidates.isEmpty) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.mealFromLibraryNone)),
+      );
+      return;
+    }
+
+    final picked = await showAppSheet<Recipe>(
+      context: context,
+      title: l10n.mealFromLibrary,
+      builder: (context) => SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final recipe in candidates)
+              ListTile(
+                leading: RecipeThumbnail(
+                  url: recipe.thumbnailUrl,
+                  isVideo: recipe.sourceType == RecipeSourceType.video,
+                  width: 56,
+                  height: 42,
+                ),
+                title: Text(
+                  recipe.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onTap: () => Navigator.pop(context, recipe),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null) return;
+
+    await repository.linkToMeal(mealId: meal.id, recipeId: picked.id);
   }
 
   /// Gives the meal a day, or takes it off the plan.
@@ -290,7 +357,7 @@ class _RecipeCard extends ConsumerWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Thumbnail(url: recipe.thumbnailUrl, isVideo: isVideo),
+              RecipeThumbnail(url: recipe.thumbnailUrl, isVideo: isVideo),
               const SizedBox(width: Insets.md),
               Expanded(
                 child: Column(
@@ -348,61 +415,29 @@ class _RecipeCard extends ConsumerWidget {
                 icon: const FaIcon(FontAwesomeIcons.trashCan, size: 15),
                 tooltip: context.l10n.recipeRemoveTooltip,
                 onPressed: () async {
+                  final l10n = context.l10n;
+                  final messenger = ScaffoldMessenger.of(context);
+                  // Taking it off the meal, not deleting it: the recipe
+                  // stays in the library for the next time.
                   final confirmed = await confirmAction(
                     context,
-                    title: context.l10n.recipeRemoveTitle,
-                    message: context.l10n.recipeRemoveMessage,
-                    confirmLabel: context.l10n.actionRemove,
-                    destructive: true,
+                    title: l10n.recipeDetachTitle,
+                    message: l10n.recipeDetachMessage,
+                    confirmLabel: l10n.actionRemove,
                   );
-                  if (confirmed) {
-                    await ref
-                        .read(recipeRepositoryProvider)
-                        .deleteRecipe(recipe.id);
-                  }
+                  if (!confirmed) return;
+                  await ref
+                      .read(recipeRepositoryProvider)
+                      .detachFromMeal(mealId: mealId, recipeId: recipe.id);
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(l10n.recipeDetached)),
+                  );
                 },
               ),
             ],
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Thumbnail extends StatelessWidget {
-  final String url;
-  final bool isVideo;
-
-  const _Thumbnail({required this.url, required this.isVideo});
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    final fallback = Container(
-      width: 96,
-      height: 72,
-      color: palette.sunken,
-      alignment: Alignment.center,
-      child: FaIcon(
-        isVideo ? FontAwesomeIcons.play : FontAwesomeIcons.fileLines,
-        size: 18,
-        color: palette.inkFaint,
-      ),
-    );
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(Radii.chip),
-      child: url.isEmpty
-          ? fallback
-          : Image.network(
-              url,
-              width: 96,
-              height: 72,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => fallback,
-            ),
     );
   }
 }

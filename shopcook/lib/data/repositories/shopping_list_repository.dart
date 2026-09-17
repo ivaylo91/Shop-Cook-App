@@ -38,14 +38,15 @@ class ShoppingListRepository {
 
   /// Deletes a list and hands back everything it took with it.
   ///
-  /// Deleting a list cascades through its meals, products and recipes, so an
-  /// undo has to put the whole subtree back. Reading it first is what makes
-  /// the undo possible without a soft-delete column.
+  /// Deleting a list cascades through its meals, products and recipe links,
+  /// so an undo has to put the whole subtree back. Reading it first is what
+  /// makes the undo possible without a soft-delete column. Recipes themselves
+  /// live in the library and are not deleted, so only their links are kept.
   Future<DeletedTree> deleteListWithUndo(String id) async {
     final list = await _db.listById(id);
     final meals = await _db.mealsForList(id);
     final products = await _db.productsForList(id);
-    final recipes = await _db.recipesForMeals([for (final m in meals) m.id]);
+    final links = await _db.linksForMeals([for (final m in meals) m.id]);
 
     await _db.deleteList(id);
 
@@ -53,22 +54,22 @@ class ShoppingListRepository {
       list: list,
       meals: meals,
       products: products,
-      recipes: recipes,
+      links: links,
     );
   }
 
-  /// Deletes a meal, keeping its ingredients and recipes for an undo.
+  /// Deletes a meal, keeping its ingredients and recipe links for an undo.
   Future<DeletedTree> deleteMealWithUndo(String id) async {
     final meal = await _db.mealById(id);
     final products = await _db.watchProductsForMeal(id).first;
-    final recipes = await _db.recipesForMeals([id]);
+    final links = await _db.linksForMeals([id]);
 
     await _db.deleteMeal(id);
 
     return DeletedTree(
       meals: meal == null ? const [] : [meal],
       products: products,
-      recipes: recipes,
+      links: links,
     );
   }
 
@@ -82,7 +83,7 @@ class ShoppingListRepository {
     list: tree.list,
     meals: tree.meals,
     products: tree.products,
-    recipes: tree.recipes,
+    links: tree.links,
   );
 
   Stream<List<Meal>> watchMeals(String listId) =>
@@ -363,17 +364,20 @@ class DeletedTree {
   final ShoppingList? list;
   final List<Meal> meals;
   final List<Product> products;
-  final List<Recipe> recipes;
+
+  /// Which library recipes the deleted meals used. The recipes are not part
+  /// of the delete; these are what reattach them on undo.
+  final List<MealRecipe> links;
 
   const DeletedTree({
     this.list,
     this.meals = const [],
     this.products = const [],
-    this.recipes = const [],
+    this.links = const [],
   });
 
   bool get isEmpty =>
-      list == null && meals.isEmpty && products.isEmpty && recipes.isEmpty;
+      list == null && meals.isEmpty && products.isEmpty && links.isEmpty;
 }
 
 /// Whether an add created a row or topped up an existing one.

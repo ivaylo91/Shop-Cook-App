@@ -1088,6 +1088,12 @@ abstract class AppLocalizations {
   /// **'No in-app results yet. These appear once a YouTube API key is set on the backend — until then, use the buttons above.'**
   String get cookNoResults;
 
+  /// No description provided for @cookSearchAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Search again'**
+  String get cookSearchAgain;
+
   /// No description provided for @cookAttachToMeal.
   ///
   /// In en, this message translates to:
@@ -1261,6 +1267,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Every staple is already on the list.'**
   String get staplesAllPresent;
+
+  /// No description provided for @navRecipes.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipes'**
+  String get navRecipes;
+
+  /// No description provided for @libraryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved recipes yet'**
+  String get libraryEmptyTitle;
+
+  /// No description provided for @libraryEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipes you put on a meal or save from a search collect here — and stay here when the meal is done.'**
+  String get libraryEmptyMessage;
+
+  /// No description provided for @libraryUsedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Not on any meal} =1{On 1 meal} other{On {count} meals}}'**
+  String libraryUsedIn(int count);
+
+  /// No description provided for @libraryAddToMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to a meal'**
+  String get libraryAddToMeal;
+
+  /// No description provided for @libraryPickMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Which meal?'**
+  String get libraryPickMeal;
+
+  /// No description provided for @libraryNoMeals.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a meal in one of your lists first.'**
+  String get libraryNoMeals;
+
+  /// No description provided for @libraryAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to {meal}'**
+  String libraryAdded(String meal);
+
+  /// No description provided for @libraryDeleteForGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete for good'**
+  String get libraryDeleteForGood;
+
+  /// No description provided for @libraryDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this recipe for good?'**
+  String get libraryDeleteTitle;
+
+  /// No description provided for @libraryDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'It is also taken off every meal that uses it. Ingredients already imported stay on your lists.'**
+  String get libraryDeleteMessage;
+
+  /// No description provided for @libraryDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipe deleted'**
+  String get libraryDeleted;
+
+  /// No description provided for @libraryAddLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Save a link'**
+  String get libraryAddLink;
+
+  /// No description provided for @libraryLinkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title (optional)'**
+  String get libraryLinkTitle;
+
+  /// No description provided for @libraryLinkUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipe or YouTube link'**
+  String get libraryLinkUrl;
+
+  /// No description provided for @libraryLinkInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That does not look like a web link.'**
+  String get libraryLinkInvalid;
+
+  /// No description provided for @librarySave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to recipes'**
+  String get librarySave;
+
+  /// No description provided for @librarySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to your recipes'**
+  String get librarySaved;
+
+  /// No description provided for @mealFromLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'From your recipes'**
+  String get mealFromLibrary;
+
+  /// No description provided for @mealFromLibraryNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved recipes to add — every one is already on this meal, or there are none yet.'**
+  String get mealFromLibraryNone;
+
+  /// No description provided for @recipeDetachTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Take this recipe off the meal?'**
+  String get recipeDetachTitle;
+
+  /// No description provided for @recipeDetachMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'It stays in your recipes, and ingredients already imported stay on the list.'**
+  String get recipeDetachMessage;
+
+  /// No description provided for @recipeDetached.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken off this meal'**
+  String get recipeDetached;
 
   /// No description provided for @importReading.
   ///

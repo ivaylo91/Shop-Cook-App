@@ -14,6 +14,7 @@ import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
 import 'features/meals/meal_detail_screen.dart';
 import 'features/plan/plan_screen.dart';
+import 'features/recipes/library_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/shell/app_shell.dart';
 import 'features/recipes/ingredient_recipes_screen.dart';
@@ -49,7 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
       ),
-      // The three tabs. Each branch keeps its own navigator, so switching
+      // The tabs. Each branch keeps its own navigator, so switching
       // tabs does not throw away where you were.
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(shell: shell),
@@ -67,6 +68,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/plan',
                 builder: (context, state) => const PlanScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/recipes',
+                builder: (context, state) => const LibraryScreen(),
               ),
             ],
           ),

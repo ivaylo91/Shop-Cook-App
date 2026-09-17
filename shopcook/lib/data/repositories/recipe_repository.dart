@@ -104,37 +104,112 @@ class RecipeRepository {
     }
   }
 
-  Future<void> attachRecipe({
-    required String mealId,
+  /// The user's library, newest first.
+  Stream<List<LibraryRecipe>> watchLibrary(String userId) =>
+      _db.watchLibrary(userId);
+
+  Future<List<({Meal meal, String listName})>> mealsForUser(String userId) =>
+      _db.mealsForUser(userId);
+
+  /// Saves a recipe to the library without putting it on any meal, reusing
+  /// the existing entry when this link is already saved. Returns its id.
+  Future<String> saveRecipe({
+    required String userId,
     required String title,
     required String sourceUrl,
     String thumbnailUrl = '',
     RecipeSourceType sourceType = RecipeSourceType.web,
-  }) {
-    return _db.insertRecipe(
+  }) async {
+    final url = sourceUrl.trim();
+    final existing = await _db.recipeByUrl(userId: userId, sourceUrl: url);
+    if (existing != null) return existing.id;
+
+    final id = _uuid.v4();
+    await _db.insertRecipe(
       RecipesCompanion.insert(
-        id: _uuid.v4(),
-        mealId: mealId,
-        title: title,
-        sourceUrl: sourceUrl,
+        id: id,
+        userId: Value(userId),
+        title: title.trim().isEmpty ? url : title.trim(),
+        sourceUrl: url,
         thumbnailUrl: Value(thumbnailUrl),
         sourceType: Value(sourceType),
         createdAt: DateTime.now(),
       ),
     );
+    return id;
   }
 
-  Future<void> attachFromSearchResult(String mealId, RecipeSearchResult r) {
+  /// Saves (or reuses) a recipe and puts it on [mealId].
+  Future<void> attachRecipe({
+    required String mealId,
+    required String userId,
+    required String title,
+    required String sourceUrl,
+    String thumbnailUrl = '',
+    RecipeSourceType sourceType = RecipeSourceType.web,
+  }) async {
+    final recipeId = await saveRecipe(
+      userId: userId,
+      title: title,
+      sourceUrl: sourceUrl,
+      thumbnailUrl: thumbnailUrl,
+      sourceType: sourceType,
+    );
+    await _db.linkRecipe(mealId: mealId, recipeId: recipeId);
+  }
+
+  Future<void> attachFromSearchResult({
+    required String mealId,
+    required String userId,
+    required RecipeSearchResult result,
+  }) {
     return attachRecipe(
       mealId: mealId,
-      title: r.title,
-      sourceUrl: r.url,
-      thumbnailUrl: r.thumbnailUrl,
-      sourceType: r.type == RecipeResultType.video
-          ? RecipeSourceType.video
-          : RecipeSourceType.web,
+      userId: userId,
+      title: result.title,
+      sourceUrl: result.url,
+      thumbnailUrl: result.thumbnailUrl,
+      sourceType: _typeOf(result),
     );
   }
 
+  Future<String> saveSearchResult({
+    required String userId,
+    required RecipeSearchResult result,
+  }) {
+    return saveRecipe(
+      userId: userId,
+      title: result.title,
+      sourceUrl: result.url,
+      thumbnailUrl: result.thumbnailUrl,
+      sourceType: _typeOf(result),
+    );
+  }
+
+  /// Puts an already-saved recipe on a meal.
+  Future<void> linkToMeal({required String mealId, required String recipeId}) =>
+      _db.linkRecipe(mealId: mealId, recipeId: recipeId);
+
+  /// Takes a recipe off one meal. It stays in the library.
+  Future<void> detachFromMeal({
+    required String mealId,
+    required String recipeId,
+  }) => _db.unlinkRecipe(mealId: mealId, recipeId: recipeId);
+
+  /// Removes a recipe from the library and from every meal using it.
   Future<void> deleteRecipe(String id) => _db.deleteRecipe(id);
+
+  static RecipeSourceType _typeOf(RecipeSearchResult result) =>
+      result.type == RecipeResultType.video
+      ? RecipeSourceType.video
+      : RecipeSourceType.web;
+
+  /// Guesses the type of a pasted link: YouTube links play in the app's
+  /// player, anything else opens as a web page.
+  static RecipeSourceType typeOfUrl(String url) {
+    final host = Uri.tryParse(url.trim())?.host.toLowerCase() ?? '';
+    return host.endsWith('youtube.com') || host == 'youtu.be'
+        ? RecipeSourceType.video
+        : RecipeSourceType.web;
+  }
 }

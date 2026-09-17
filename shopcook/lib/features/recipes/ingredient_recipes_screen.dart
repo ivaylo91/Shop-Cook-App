@@ -79,20 +79,35 @@ class _IngredientRecipesScreenState
     }
   }
 
-  Future<void> _attach(RecipeSearchResult result) async {
-    final mealId = widget.product.mealId;
-    if (mealId == null) return;
+  /// Puts the result on the item's meal, or — for an item with no meal —
+  /// saves it to the library, so a find is never lost for want of a meal.
+  Future<void> _keep(RecipeSearchResult result) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
 
-    await ref
-        .read(recipeRepositoryProvider)
-        .attachFromSearchResult(mealId, result);
+    final repository = ref.read(recipeRepositoryProvider);
+    final mealId = widget.product.mealId;
+
+    if (mealId == null) {
+      await repository.saveSearchResult(userId: userId, result: result);
+    } else {
+      await repository.attachFromSearchResult(
+        mealId: mealId,
+        userId: userId,
+        result: result,
+      );
+    }
 
     if (!mounted) return;
     final l10n = context.l10n;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          l10n.cookAttached(widget.mealName ?? l10n.cookAttachedFallback),
+          mealId == null
+              ? l10n.librarySaved
+              : l10n.cookAttached(
+                  widget.mealName ?? l10n.cookAttachedFallback,
+                ),
         ),
       ),
     );
@@ -103,6 +118,14 @@ class _IngredientRecipesScreenState
     return Scaffold(
       appBar: AppBar(
         title: Text(context.l10n.cookWith(widget.product.name)),
+        actions: [
+          // Results are cached for a week; this is the way past the cache.
+          IconButton(
+            icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16),
+            tooltip: context.l10n.cookSearchAgain,
+            onPressed: _loading ? null : () => _search(forceRefresh: true),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
@@ -127,10 +150,10 @@ class _IngredientRecipesScreenState
             for (final result in _results)
               _ResultTile(
                 result: result,
-                canAttach: widget.product.mealId != null,
+                onMeal: widget.product.mealId != null,
                 mealName: widget.mealName,
                 onOpen: () => _open(result.url),
-                onAttach: () => _attach(result),
+                onKeep: () => _keep(result),
               ),
         ],
       ),
@@ -194,17 +217,18 @@ class _NoResultsNote extends StatelessWidget {
 
 class _ResultTile extends StatelessWidget {
   final RecipeSearchResult result;
-  final bool canAttach;
+  /// Whether keeping it attaches to a meal or only saves to the library.
+  final bool onMeal;
   final String? mealName;
   final VoidCallback onOpen;
-  final VoidCallback onAttach;
+  final VoidCallback onKeep;
 
   const _ResultTile({
     required this.result,
-    required this.canAttach,
+    required this.onMeal,
     required this.mealName,
     required this.onOpen,
-    required this.onAttach,
+    required this.onKeep,
   });
 
   @override
@@ -244,15 +268,18 @@ class _ResultTile extends StatelessWidget {
             result.source,
             style: AppText.caption.copyWith(color: palette.inkMuted),
           ),
-          trailing: canAttach
-              ? IconButton(
-                  icon: const FaIcon(FontAwesomeIcons.plus, size: 15),
-                  tooltip: mealName == null
-                      ? context.l10n.cookAttachToMeal
-                      : context.l10n.cookAttachToNamed(mealName!),
-                  onPressed: onAttach,
-                )
-              : null,
+          trailing: IconButton(
+            icon: FaIcon(
+              onMeal ? FontAwesomeIcons.plus : FontAwesomeIcons.bookmark,
+              size: 15,
+            ),
+            tooltip: !onMeal
+                ? context.l10n.librarySave
+                : mealName == null
+                ? context.l10n.cookAttachToMeal
+                : context.l10n.cookAttachToNamed(mealName!),
+            onPressed: onKeep,
+          ),
         ),
       ),
     );
