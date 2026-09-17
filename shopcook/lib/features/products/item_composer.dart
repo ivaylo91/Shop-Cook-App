@@ -6,9 +6,13 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/design.dart';
 import '../../core/localization.dart';
 import '../../core/providers.dart';
-import '../../core/ui/snack.dart';
+import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
+import '../barcode/barcode_scanner_screen.dart';
+import '../barcode/product_lookup.dart';
 import '../recipes/ingredient_parser.dart';
+import '../voice/spoken_list.dart';
+import '../voice/voice_capture.dart';
 
 /// One field that adds an item, pinned to the bottom of a list.
 ///
@@ -48,6 +52,9 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
   ParsedIngredient? _preview;
   bool _busy = false;
 
+  /// A scanned code waiting for the name it will be remembered under.
+  String? _pendingBarcode;
+
   @override
   void initState() {
     super.initState();
@@ -83,6 +90,10 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
 
     setState(() => _busy = true);
     final parsed = parseIngredient(text);
+    // A scanned code belongs to what was typed after it, not to a tapped
+    // suggestion; either way it is used up by this add.
+    final barcode = raw == null ? _pendingBarcode : null;
+    _pendingBarcode = null;
 
     final outcome = await ref
         .read(shoppingListRepositoryProvider)
@@ -93,6 +104,10 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
           quantity: parsed.quantity,
           unit: parsed.unit,
         );
+
+    if (barcode != null) {
+      await ref.read(productLookupProvider).remember(barcode, parsed.name);
+    }
 
     if (!mounted) return;
 
@@ -122,9 +137,130 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
     }
   }
 
+  void _fill(String text) {
+    _controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+    _focus.requestFocus();
+  }
+
+  Future<void> _scan() async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final language = Localizations.localeOf(context).languageCode;
+
+    final code = await scanBarcode(context);
+    if (code == null || !mounted) return;
+
+    setState(() => _busy = true);
+    final name = await ref
+        .read(productLookupProvider)
+        .nameFor(code, language: language);
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    // Either way the name lands in the field rather than on the list, so a
+    // wrong match can be fixed and an amount added before it is kept.
+    _pendingBarcode = code;
+    if (name != null) {
+      _fill(name);
+    } else {
+      _fill('');
+      messenger.replaceSnackBar(SnackBar(content: Text(l10n.scanUnknown)));
+    }
+  }
+
+  Future<void> _dictate() async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+
+    _pendingBarcode = null;
+    final spoken = await captureSpeech(context);
+    if (spoken == null || !mounted) return;
+
+    final items = splitSpokenList(spoken);
+    if (items.isEmpty) return;
+    if (items.length == 1) {
+      _fill(items.single);
+      return;
+    }
+
+    final chosen = await _confirmItems(items);
+    if (chosen == null || chosen.isEmpty || !mounted) return;
+
+    final repository = ref.read(shoppingListRepositoryProvider);
+    for (final item in chosen) {
+      final parsed = parseIngredient(item);
+      if (parsed.name.isEmpty) continue;
+      await repository.addOrMergeProduct(
+        listId: widget.listId,
+        mealId: widget.mealId,
+        name: parsed.name,
+        quantity: parsed.quantity,
+        unit: parsed.unit,
+      );
+    }
+    HapticFeedback.selectionClick();
+    messenger.replaceSnackBar(
+      SnackBar(content: Text(l10n.voiceAdded(chosen.length))),
+    );
+  }
+
+  /// Several items heard at once: show them, each untickable, before adding.
+  Future<List<String>?> _confirmItems(List<String> items) {
+    final keep = {for (var i = 0; i < items.length; i++) i};
+    return showAppSheet<List<String>>(
+      context: context,
+      title: context.l10n.voiceConfirmTitle,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    for (var i = 0; i < items.length; i++)
+                      CheckboxListTile(
+                        value: keep.contains(i),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        title: Text(items[i]),
+                        onChanged: (_) => setSheetState(
+                          () => keep.contains(i) ? keep.remove(i) : keep.add(i),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(Insets.lg),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: keep.isEmpty
+                      ? null
+                      : () => Navigator.pop(context, [
+                          for (var i = 0; i < items.length; i++)
+                            if (keep.contains(i)) items[i],
+                        ]),
+                  child: Text(context.l10n.voiceAddCount(keep.length)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = context.l10n;
+    // With nothing typed, the ways in other than typing; once typing, add.
+    final empty = _controller.text.trim().isEmpty && !_busy;
 
     return Container(
       decoration: BoxDecoration(
@@ -171,6 +307,26 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
                       ),
                     ),
                   ),
+                  if (empty) ...[
+                    IconButton(
+                      onPressed: _dictate,
+                      tooltip: l10n.voiceTooltip,
+                      icon: FaIcon(
+                        FontAwesomeIcons.microphone,
+                        size: 18,
+                        color: palette.inkMuted,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _scan,
+                      tooltip: l10n.scanTooltip,
+                      icon: FaIcon(
+                        FontAwesomeIcons.barcode,
+                        size: 18,
+                        color: palette.inkMuted,
+                      ),
+                    ),
+                  ] else
                   IconButton(
                     onPressed: _busy ? null : () => _submit(),
                     tooltip: context.l10n.composerAdd,

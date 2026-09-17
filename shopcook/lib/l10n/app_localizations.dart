@@ -1627,6 +1627,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'There was nothing in that share ShopCook could use.'**
   String get shareNothingUsable;
+
+  /// No description provided for @scanTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan a barcode'**
+  String get scanTooltip;
+
+  /// No description provided for @scanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan a product'**
+  String get scanTitle;
+
+  /// No description provided for @scanHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at the barcode on the pack.'**
+  String get scanHint;
+
+  /// No description provided for @scanTorch.
+  ///
+  /// In en, this message translates to:
+  /// **'Torch'**
+  String get scanTorch;
+
+  /// No description provided for @scanNoPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'ShopCook needs the camera to scan. Allow it in the phone’s settings for ShopCook.'**
+  String get scanNoPermission;
+
+  /// No description provided for @scanUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera could not be started.'**
+  String get scanUnavailable;
+
+  /// No description provided for @scanUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown product. Type its name and it will be remembered for next time.'**
+  String get scanUnknown;
+
+  /// No description provided for @voiceTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add by voice'**
+  String get voiceTooltip;
+
+  /// No description provided for @voiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Say what you need'**
+  String get voiceTitle;
+
+  /// No description provided for @voiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For example: “milk, two kilos of potatoes and eggs”. Tap the microphone when you’re done.'**
+  String get voiceHint;
+
+  /// No description provided for @voiceListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening…'**
+  String get voiceListening;
+
+  /// No description provided for @voiceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech recognition isn’t available. Check that ShopCook may use the microphone and that the phone has a voice input service.'**
+  String get voiceUnavailable;
+
+  /// No description provided for @voiceConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add these?'**
+  String get voiceConfirmTitle;
+
+  /// No description provided for @voiceAddCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Add 1 item} other{Add {count} items}}'**
+  String voiceAddCount(int count);
+
+  /// No description provided for @voiceAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Added 1 item} other{Added {count} items}}'**
+  String voiceAdded(int count);
+
+  /// No description provided for @widgetSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{All bought} =1{1 left to buy} other{{count} left to buy}}'**
+  String widgetSummary(int count);
+
+  /// No description provided for @widgetMore.
+  ///
+  /// In en, this message translates to:
+  /// **'+ {count} more'**
+  String widgetMore(int count);
+
+  /// No description provided for @widgetNoLists.
+  ///
+  /// In en, this message translates to:
+  /// **'No lists yet. Tap to create one.'**
+  String get widgetNoLists;
 }
 
 class _AppLocalizationsDelegate

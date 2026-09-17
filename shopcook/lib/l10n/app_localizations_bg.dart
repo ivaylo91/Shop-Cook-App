@@ -941,4 +941,89 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get shareNothingUsable =>
       'В споделеното няма нищо, което ShopCook може да използва.';
+
+  @override
+  String get scanTooltip => 'Сканирай баркод';
+
+  @override
+  String get scanTitle => 'Сканирай продукт';
+
+  @override
+  String get scanHint => 'Насочи камерата към баркода на опаковката.';
+
+  @override
+  String get scanTorch => 'Фенерче';
+
+  @override
+  String get scanNoPermission =>
+      'ShopCook има нужда от камерата, за да сканира. Разреши я в настройките на телефона за ShopCook.';
+
+  @override
+  String get scanUnavailable => 'Камерата не може да се включи.';
+
+  @override
+  String get scanUnknown =>
+      'Непознат продукт. Напиши името му и то ще бъде запомнено за следващия път.';
+
+  @override
+  String get voiceTooltip => 'Добави с глас';
+
+  @override
+  String get voiceTitle => 'Кажи какво ти трябва';
+
+  @override
+  String get voiceHint =>
+      'Например: „мляко, два килограма картофи и яйца“. Докосни микрофона, когато свършиш.';
+
+  @override
+  String get voiceListening => 'Слушам…';
+
+  @override
+  String get voiceUnavailable =>
+      'Разпознаването на реч не е налично. Провери дали ShopCook има достъп до микрофона и дали телефонът има услуга за гласово въвеждане.';
+
+  @override
+  String get voiceConfirmTitle => 'Да добавя ли тези?';
+
+  @override
+  String voiceAddCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Добави $count продукта',
+      one: 'Добави 1 продукт',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String voiceAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Добавени са $count продукта',
+      one: 'Добавен е 1 продукт',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String widgetSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Остават $count за купуване',
+      one: 'Остава 1 за купуване',
+      zero: 'Всичко е взето',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String widgetMore(int count) {
+    return '+ още $count';
+  }
+
+  @override
+  String get widgetNoLists => 'Още няма списъци. Докосни, за да създадеш.';
 }

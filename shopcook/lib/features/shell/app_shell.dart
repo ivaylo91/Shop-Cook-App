@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design.dart';
 import '../../core/localization.dart';
+import '../home_widget/home_widget_sync.dart';
 import '../share_intake/share_intake.dart';
 
 /// The persistent bottom navigation.
@@ -26,7 +27,9 @@ class AppShell extends StatelessWidget {
     final palette = context.palette;
 
     return Scaffold(
-      body: ShareIntake(shell: shell, child: shell),
+      body: HomeWidgetSync(
+        child: ShareIntake(shell: shell, child: shell),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: shell.currentIndex,
         // goBranch with initialLocation resets a branch when its tab is

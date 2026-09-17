@@ -941,4 +941,89 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get shareNothingUsable =>
       'There was nothing in that share ShopCook could use.';
+
+  @override
+  String get scanTooltip => 'Scan a barcode';
+
+  @override
+  String get scanTitle => 'Scan a product';
+
+  @override
+  String get scanHint => 'Point the camera at the barcode on the pack.';
+
+  @override
+  String get scanTorch => 'Torch';
+
+  @override
+  String get scanNoPermission =>
+      'ShopCook needs the camera to scan. Allow it in the phone’s settings for ShopCook.';
+
+  @override
+  String get scanUnavailable => 'The camera could not be started.';
+
+  @override
+  String get scanUnknown =>
+      'Unknown product. Type its name and it will be remembered for next time.';
+
+  @override
+  String get voiceTooltip => 'Add by voice';
+
+  @override
+  String get voiceTitle => 'Say what you need';
+
+  @override
+  String get voiceHint =>
+      'For example: “milk, two kilos of potatoes and eggs”. Tap the microphone when you’re done.';
+
+  @override
+  String get voiceListening => 'Listening…';
+
+  @override
+  String get voiceUnavailable =>
+      'Speech recognition isn’t available. Check that ShopCook may use the microphone and that the phone has a voice input service.';
+
+  @override
+  String get voiceConfirmTitle => 'Add these?';
+
+  @override
+  String voiceAddCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Add $count items',
+      one: 'Add 1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String voiceAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Added $count items',
+      one: 'Added 1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String widgetSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count left to buy',
+      one: '1 left to buy',
+      zero: 'All bought',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String widgetMore(int count) {
+    return '+ $count more';
+  }
+
+  @override
+  String get widgetNoLists => 'No lists yet. Tap to create one.';
 }

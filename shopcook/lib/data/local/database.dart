@@ -148,6 +148,21 @@ class RecipeSearches extends Table {
   Set<Column> get primaryKey => {query, locale};
 }
 
+/// What a scanned barcode turned out to be.
+///
+/// Filled from Open Food Facts, or from what the user typed when the code
+/// was unknown there. A weekly shop scans the same products every week, so
+/// the second scan is instant and works with no signal.
+@DataClassName('ScannedProduct')
+class BarcodeProducts extends Table {
+  TextColumn get code => text()();
+  TextColumn get name => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {code};
+}
+
 @DriftDatabase(
   tables: [
     ShoppingLists,
@@ -156,6 +171,7 @@ class RecipeSearches extends Table {
     Recipes,
     MealRecipes,
     RecipeSearches,
+    BarcodeProducts,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -163,7 +179,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   /// The migration ladder. Every step has to be additive and idempotent in
   /// order, because an install can be on any earlier version — a phone that
@@ -251,6 +267,10 @@ class AppDatabase extends _$AppDatabase {
       // v6: a cached copy of each recipe page's ingredients and method.
       if (from < 6) {
         await m.addColumn(recipes, recipes.details);
+      }
+      // v7: names for scanned barcodes.
+      if (from < 7) {
+        await m.createTable(barcodeProducts);
       }
     },
     beforeOpen: (details) async {
@@ -720,6 +740,20 @@ class AppDatabase extends _$AppDatabase {
       (delete(recipeSearches)
             ..where((t) => t.fetchedAt.isSmallerThanValue(cutoff)))
           .go();
+
+  // BarcodeProducts
+  Future<ScannedProduct?> scannedProduct(String code) =>
+      (select(barcodeProducts)..where((t) => t.code.equals(code)))
+          .getSingleOrNull();
+
+  Future<void> rememberBarcode(String code, String name) =>
+      into(barcodeProducts).insertOnConflictUpdate(
+        BarcodeProductsCompanion.insert(
+          code: code,
+          name: name,
+          updatedAt: DateTime.now(),
+        ),
+      );
 
   /// Re-inserts a whole deleted subtree in foreign-key order, as one
   /// transaction so a failure part-way cannot leave orphans behind.

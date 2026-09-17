@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Списъкът за пазаруване с един поглед</string>
+    <string name="widget_empty_items">Отвори ShopCook веднъж, за да се покаже списъкът тук.</string>
+</resources>

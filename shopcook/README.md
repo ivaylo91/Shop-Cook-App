@@ -235,7 +235,7 @@ with last-write-wins, and a Realtime subscription.
 
 ## Database migrations
 
-`schemaVersion` is **6**. The ladder is in `lib/data/local/database.dart`:
+`schemaVersion` is **7**. The ladder is in `lib/data/local/database.dart`:
 
 | Version | Change |
 |---|---|
@@ -245,6 +245,7 @@ with last-write-wins, and a Realtime subscription.
 | 4 | `products.price`, `category_override`, `is_staple`; `recipe_searches` cache table |
 | 5 | Recipe library: `meal_recipes` join table, `recipes.user_id`, `recipes.meal_id` dropped |
 | 6 | `recipes.details` — the saved copy of a recipe page, for cooking offline |
+| 7 | `barcode_products` — names for scanned barcodes |
 
 Most steps are plain `addColumn`s. **v5 is not**: SQLite cannot drop a column
 that carries a foreign key, so the step copies every existing attachment into
@@ -408,6 +409,42 @@ background the next time the Recipes tab is open. A recipe never read before
 shows a "no connection" screen with a retry instead of the generic "can't
 read this page" one. Videos have no step data, so cooking mode is not
 offered for them.
+
+## Scanning and speaking items
+
+With the composer empty, two more buttons sit beside it:
+
+- **Barcode.** Opens the camera (retail codes only: EAN-13/8, UPC-A/E).
+  The name comes from the phone's own memory first, then from
+  [Open Food Facts](https://world.openfoodfacts.org), a free open database
+  that needs no key, preferring the name in the app's language. It lands in
+  the field, not on the list, so a wrong match can be corrected and an
+  amount added first. A code nobody knows is remembered under whatever name
+  you type for it (`barcode_products`), so the next scan is instant and
+  works offline. Scanning uses `mobile_scanner` (ML Kit), which adds about
+  7 MB to the APK.
+- **Microphone.** Uses the phone's speech recognizer (`speech_to_text`) in
+  the app's language when the phone has it. "Мляко, 2 кг картофи и яйца"
+  is split on commas and joining words (и, плюс, and…), and a leading
+  "купи" or "add" is dropped. One item goes into the field; several are
+  shown as a checklist to confirm before they are added.
+
+Camera and microphone permissions are asked for the first time each
+button is used.
+
+## Home screen widget
+
+Long-press the home screen → Widgets → ShopCook. The widget shows the list
+with the most left to buy: its name, how many items are left, and the first
+six of them. Tapping it opens that list.
+
+The widget is plain Android views (`ShoppingListWidget.kt`,
+`res/layout/shopping_list_widget.xml`) drawn by `home_widget`. It has no
+Flutter behind it, so `HomeWidgetSync` in the tab shell decides everything
+it shows, in the app's language, and pushes it whenever a list changes.
+It therefore updates while the app is running; changes made elsewhere reach
+it the next time the app opens. iOS would need a WidgetKit extension and is
+not done.
 
 ## Sharing into ShopCook
 

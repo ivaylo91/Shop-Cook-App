@@ -2471,6 +2471,268 @@ class RecipeSearchesCompanion extends UpdateCompanion<CachedSearch> {
   }
 }
 
+class $BarcodeProductsTable extends BarcodeProducts
+    with TableInfo<$BarcodeProductsTable, ScannedProduct> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BarcodeProductsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [code, name, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'barcode_products';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ScannedProduct> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {code};
+  @override
+  ScannedProduct map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ScannedProduct(
+      code: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}code'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BarcodeProductsTable createAlias(String alias) {
+    return $BarcodeProductsTable(attachedDatabase, alias);
+  }
+}
+
+class ScannedProduct extends DataClass implements Insertable<ScannedProduct> {
+  final String code;
+  final String name;
+  final DateTime updatedAt;
+  const ScannedProduct({
+    required this.code,
+    required this.name,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['code'] = Variable<String>(code);
+    map['name'] = Variable<String>(name);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  BarcodeProductsCompanion toCompanion(bool nullToAbsent) {
+    return BarcodeProductsCompanion(
+      code: Value(code),
+      name: Value(name),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ScannedProduct.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ScannedProduct(
+      code: serializer.fromJson<String>(json['code']),
+      name: serializer.fromJson<String>(json['name']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'code': serializer.toJson<String>(code),
+      'name': serializer.toJson<String>(name),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ScannedProduct copyWith({String? code, String? name, DateTime? updatedAt}) =>
+      ScannedProduct(
+        code: code ?? this.code,
+        name: name ?? this.name,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  ScannedProduct copyWithCompanion(BarcodeProductsCompanion data) {
+    return ScannedProduct(
+      code: data.code.present ? data.code.value : this.code,
+      name: data.name.present ? data.name.value : this.name,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScannedProduct(')
+          ..write('code: $code, ')
+          ..write('name: $name, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(code, name, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ScannedProduct &&
+          other.code == this.code &&
+          other.name == this.name &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BarcodeProductsCompanion extends UpdateCompanion<ScannedProduct> {
+  final Value<String> code;
+  final Value<String> name;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const BarcodeProductsCompanion({
+    this.code = const Value.absent(),
+    this.name = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BarcodeProductsCompanion.insert({
+    required String code,
+    required String name,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : code = Value(code),
+       name = Value(name),
+       updatedAt = Value(updatedAt);
+  static Insertable<ScannedProduct> custom({
+    Expression<String>? code,
+    Expression<String>? name,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (code != null) 'code': code,
+      if (name != null) 'name': name,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BarcodeProductsCompanion copyWith({
+    Value<String>? code,
+    Value<String>? name,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return BarcodeProductsCompanion(
+      code: code ?? this.code,
+      name: name ?? this.name,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BarcodeProductsCompanion(')
+          ..write('code: $code, ')
+          ..write('name: $name, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2480,6 +2742,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $RecipesTable recipes = $RecipesTable(this);
   late final $MealRecipesTable mealRecipes = $MealRecipesTable(this);
   late final $RecipeSearchesTable recipeSearches = $RecipeSearchesTable(this);
+  late final $BarcodeProductsTable barcodeProducts = $BarcodeProductsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2491,6 +2756,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     recipes,
     mealRecipes,
     recipeSearches,
+    barcodeProducts,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -4854,6 +5120,174 @@ typedef $$RecipeSearchesTableProcessedTableManager =
       CachedSearch,
       PrefetchHooks Function()
     >;
+typedef $$BarcodeProductsTableCreateCompanionBuilder =
+    BarcodeProductsCompanion Function({
+      required String code,
+      required String name,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$BarcodeProductsTableUpdateCompanionBuilder =
+    BarcodeProductsCompanion Function({
+      Value<String> code,
+      Value<String> name,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$BarcodeProductsTableFilterComposer
+    extends Composer<_$AppDatabase, $BarcodeProductsTable> {
+  $$BarcodeProductsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BarcodeProductsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BarcodeProductsTable> {
+  $$BarcodeProductsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BarcodeProductsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BarcodeProductsTable> {
+  $$BarcodeProductsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$BarcodeProductsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BarcodeProductsTable,
+          ScannedProduct,
+          $$BarcodeProductsTableFilterComposer,
+          $$BarcodeProductsTableOrderingComposer,
+          $$BarcodeProductsTableAnnotationComposer,
+          $$BarcodeProductsTableCreateCompanionBuilder,
+          $$BarcodeProductsTableUpdateCompanionBuilder,
+          (
+            ScannedProduct,
+            BaseReferences<
+              _$AppDatabase,
+              $BarcodeProductsTable,
+              ScannedProduct
+            >,
+          ),
+          ScannedProduct,
+          PrefetchHooks Function()
+        > {
+  $$BarcodeProductsTableTableManager(
+    _$AppDatabase db,
+    $BarcodeProductsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BarcodeProductsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BarcodeProductsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BarcodeProductsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> code = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BarcodeProductsCompanion(
+                code: code,
+                name: name,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String code,
+                required String name,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => BarcodeProductsCompanion.insert(
+                code: code,
+                name: name,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BarcodeProductsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BarcodeProductsTable,
+      ScannedProduct,
+      $$BarcodeProductsTableFilterComposer,
+      $$BarcodeProductsTableOrderingComposer,
+      $$BarcodeProductsTableAnnotationComposer,
+      $$BarcodeProductsTableCreateCompanionBuilder,
+      $$BarcodeProductsTableUpdateCompanionBuilder,
+      (
+        ScannedProduct,
+        BaseReferences<_$AppDatabase, $BarcodeProductsTable, ScannedProduct>,
+      ),
+      ScannedProduct,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4870,4 +5304,6 @@ class $AppDatabaseManager {
       $$MealRecipesTableTableManager(_db, _db.mealRecipes);
   $$RecipeSearchesTableTableManager get recipeSearches =>
       $$RecipeSearchesTableTableManager(_db, _db.recipeSearches);
+  $$BarcodeProductsTableTableManager get barcodeProducts =>
+      $$BarcodeProductsTableTableManager(_db, _db.barcodeProducts);
 }

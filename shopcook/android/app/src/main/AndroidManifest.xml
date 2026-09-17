@@ -5,6 +5,12 @@
          every request fails silently. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- Barcode scanning and voice add. Both are asked for at the moment
+         they are first used, not at install. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
     <!-- Android 11+ hides other installed apps unless declared here. Needed
          so "Find recipes" can hand its search URL to the YouTube app rather
          than always falling back to a browser. -->
@@ -12,6 +18,10 @@
         <intent>
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="https"/>
+        </intent>
+        <!-- The phone's speech recognizer, for voice add. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
         </intent>
     </queries>
 
@@ -48,6 +58,17 @@
                 <data android:mimeType="text/plain"/>
             </intent-filter>
         </activity>
+        <!-- Home screen widget: the list with the most left to buy. -->
+        <receiver
+            android:name=".ShoppingListWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/shopping_list_widget_info"/>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
