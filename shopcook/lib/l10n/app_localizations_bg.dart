@@ -910,5 +910,35 @@ class AppLocalizationsBg extends AppLocalizations {
       'Тази рецепта още не е отваряна на този телефон, затова първия път е нужен интернет. След това работи и без връзка.';
 
   @override
-  String get cookModeRetry => 'Опитай пак';
+  String shareAddItemsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Добави $count продукта в…',
+      one: 'Добави 1 продукт в…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shareItemsAdded(int count, String list) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Добавени са $count продукта в $list',
+      one: 'Добавен е 1 продукт в $list',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shareOpenList => 'Отвори';
+
+  @override
+  String get shareNoLists =>
+      'Първо създай списък, после сподели към ShopCook отново.';
+
+  @override
+  String get shareNothingUsable =>
+      'В споделеното няма нищо, което ShopCook може да използва.';
 }

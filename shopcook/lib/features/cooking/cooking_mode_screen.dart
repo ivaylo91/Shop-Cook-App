@@ -190,7 +190,7 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
       icon: FontAwesomeIcons.wifi,
       title: l10n.cookModeOfflineTitle,
       message: l10n.cookModeOfflineMessage,
-      actionLabel: l10n.cookModeRetry,
+      actionLabel: l10n.actionTryAgain,
       actionIcon: FontAwesomeIcons.arrowsRotate,
       onAction: () => ref.invalidate(recipeDetailsProvider(widget.recipe)),
     );

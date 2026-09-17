@@ -304,5 +304,9 @@
   "cookModeLeaveConfirm": "Спри",
   "cookModeOfflineTitle": "Няма връзка",
   "cookModeOfflineMessage": "Тази рецепта още не е отваряна на този телефон, затова първия път е нужен интернет. След това работи и без връзка.",
-  "cookModeRetry": "Опитай пак"
+  "shareAddItemsTitle": "{count, plural, =1{Добави 1 продукт в…} other{Добави {count} продукта в…}}",
+  "shareItemsAdded": "{count, plural, =1{Добавен е 1 продукт в {list}} other{Добавени са {count} продукта в {list}}}",
+  "shareOpenList": "Отвори",
+  "shareNoLists": "Първо създай списък, после сподели към ShopCook отново.",
+  "shareNothingUsable": "В споделеното няма нищо, което ShopCook може да използва."
 }

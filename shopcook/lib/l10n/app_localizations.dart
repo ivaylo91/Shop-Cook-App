@@ -1598,11 +1598,35 @@ abstract class AppLocalizations {
   /// **'This recipe hasn\'t been opened on this phone yet, so it needs the internet once. After that it works offline.'**
   String get cookModeOfflineMessage;
 
-  /// No description provided for @cookModeRetry.
+  /// No description provided for @shareAddItemsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Try again'**
-  String get cookModeRetry;
+  /// **'{count, plural, =1{Add 1 item to…} other{Add {count} items to…}}'**
+  String shareAddItemsTitle(int count);
+
+  /// No description provided for @shareItemsAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Added 1 item to {list}} other{Added {count} items to {list}}}'**
+  String shareItemsAdded(int count, String list);
+
+  /// No description provided for @shareOpenList.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get shareOpenList;
+
+  /// No description provided for @shareNoLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a list first, then share to ShopCook again.'**
+  String get shareNoLists;
+
+  /// No description provided for @shareNothingUsable.
+  ///
+  /// In en, this message translates to:
+  /// **'There was nothing in that share ShopCook could use.'**
+  String get shareNothingUsable;
 }
 
 class _AppLocalizationsDelegate

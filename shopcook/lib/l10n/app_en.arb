@@ -309,5 +309,11 @@
   "cookModeLeaveConfirm": "Stop",
   "cookModeOfflineTitle": "No connection",
   "cookModeOfflineMessage": "This recipe hasn't been opened on this phone yet, so it needs the internet once. After that it works offline.",
-  "cookModeRetry": "Try again"
+  "shareAddItemsTitle": "{count, plural, =1{Add 1 item to…} other{Add {count} items to…}}",
+  "@shareAddItemsTitle": {"placeholders": {"count": {"type": "int"}}},
+  "shareItemsAdded": "{count, plural, =1{Added 1 item to {list}} other{Added {count} items to {list}}}",
+  "@shareItemsAdded": {"placeholders": {"count": {"type": "int"}, "list": {"type": "String"}}},
+  "shareOpenList": "Open",
+  "shareNoLists": "Create a list first, then share to ShopCook again.",
+  "shareNothingUsable": "There was nothing in that share ShopCook could use."
 }

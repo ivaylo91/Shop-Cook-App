@@ -910,5 +910,35 @@ class AppLocalizationsEn extends AppLocalizations {
       'This recipe hasn\'t been opened on this phone yet, so it needs the internet once. After that it works offline.';
 
   @override
-  String get cookModeRetry => 'Try again';
+  String shareAddItemsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Add $count items to…',
+      one: 'Add 1 item to…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shareItemsAdded(int count, String list) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Added $count items to $list',
+      one: 'Added 1 item to $list',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shareOpenList => 'Open';
+
+  @override
+  String get shareNoLists =>
+      'Create a list first, then share to ShopCook again.';
+
+  @override
+  String get shareNothingUsable =>
+      'There was nothing in that share ShopCook could use.';
 }

@@ -408,6 +408,24 @@ shows a "no connection" screen with a retry instead of the generic "can't
 read this page" one. Videos have no step data, so cooking mode is not
 offered for them.
 
+## Sharing into ShopCook
+
+On Android, ShopCook appears in the system share sheet for text:
+
+- **A link** (from a browser, YouTube, anything) opens the Recipes tab with
+  the save-link dialog filled in, using the page title when the sharing app
+  sent one.
+- **Plain text** (a checklist from a notes app) asks which list to add it to,
+  then adds one item per line. Bullets, numbering and `[ ]` checkboxes are
+  stripped, headings ending in `:` are skipped, and each line goes through the
+  same parser and duplicate merging as the composer.
+
+This is a few lines of Kotlin in `MainActivity` and a `shopcook/share` method
+channel, not a plugin: `receive_sharing_intent` 1.9 needs AGP 9 and Kotlin
+2.4, and this project stays on AGP 8 (see the toolchain notes). Dart pulls a
+pending share with `takeShared`, so a share that launches the app is not lost
+while Flutter starts. iOS would need a share extension and is not done.
+
 ## Prices, aisles and staples
 
 Tap an item for its sheet:
