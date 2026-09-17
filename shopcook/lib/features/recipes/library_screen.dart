@@ -24,6 +24,13 @@ class LibraryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final libraryAsync = ref.watch(libraryProvider);
+    ref.listen(libraryProvider, (_, next) {
+      final library = next.valueOrNull;
+      if (library == null) return;
+      ref
+          .read(recipeRepositoryProvider)
+          .fillMissingDetails(library.map((e) => e.recipe));
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -41,9 +48,8 @@ class LibraryScreen extends ConsumerWidget {
           padding: EdgeInsets.all(Insets.lg),
           child: SkeletonRows(count: 3),
         ),
-        error: (_, __) => ErrorState(
-          onRetry: () => ref.invalidate(libraryProvider),
-        ),
+        error: (_, __) =>
+            ErrorState(onRetry: () => ref.invalidate(libraryProvider)),
         data: (library) {
           if (library.isEmpty) {
             return EmptyState(
@@ -89,14 +95,16 @@ Future<void> addLinkToLibrary(
   );
   if (link == null) return;
 
-  await ref.read(recipeRepositoryProvider).saveRecipe(
-    userId: userId,
-    title: link.title,
-    sourceUrl: link.url,
-    sourceType: RecipeRepository.typeOfUrl(link.url),
-  );
+  await ref
+      .read(recipeRepositoryProvider)
+      .saveRecipe(
+        userId: userId,
+        title: link.title,
+        sourceUrl: link.url,
+        sourceType: RecipeRepository.typeOfUrl(link.url),
+      );
 
-  messenger.showSnackBar(SnackBar(content: Text(l10n.librarySaved)));
+  messenger.replaceSnackBar(SnackBar(content: Text(l10n.librarySaved)));
 }
 
 class _LibraryCard extends ConsumerWidget {
@@ -211,7 +219,7 @@ class _LibraryCard extends ConsumerWidget {
     if (!context.mounted) return;
 
     if (meals.isEmpty) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.libraryNoMeals)));
+      messenger.replaceSnackBar(SnackBar(content: Text(l10n.libraryNoMeals)));
       return;
     }
 
@@ -237,7 +245,7 @@ class _LibraryCard extends ConsumerWidget {
     if (picked == null) return;
 
     await repository.linkToMeal(mealId: picked.id, recipeId: entry.recipe.id);
-    messenger.showSnackBar(
+    messenger.replaceSnackBar(
       SnackBar(content: Text(l10n.libraryAdded(picked.name))),
     );
   }
@@ -256,7 +264,7 @@ class _LibraryCard extends ConsumerWidget {
     if (!confirmed) return;
 
     await ref.read(recipeRepositoryProvider).deleteRecipe(entry.recipe.id);
-    messenger.showSnackBar(SnackBar(content: Text(l10n.libraryDeleted)));
+    messenger.replaceSnackBar(SnackBar(content: Text(l10n.libraryDeleted)));
   }
 }
 

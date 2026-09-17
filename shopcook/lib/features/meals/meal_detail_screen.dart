@@ -86,13 +86,12 @@ class MealDetailScreen extends ConsumerWidget {
                   loading: () => const SkeletonRows(count: 3),
                   error: (_, __) => ErrorState(
                     title: l10n.mealIngredientsError,
-                    onRetry: () => ref.invalidate(_mealProductsProvider(meal.id)),
+                    onRetry: () =>
+                        ref.invalidate(_mealProductsProvider(meal.id)),
                   ),
                   data: (products) {
                     if (products.isEmpty) {
-                      return InlineNote(
-                        message: l10n.mealIngredientsEmpty,
-                      );
+                      return InlineNote(message: l10n.mealIngredientsEmpty);
                     }
                     return AppCardList(
                       tint: palette.accent,
@@ -145,7 +144,8 @@ class MealDetailScreen extends ConsumerWidget {
                   loading: () => const SkeletonRows(count: 1),
                   error: (_, __) => ErrorState(
                     title: l10n.mealRecipeError,
-                    onRetry: () => ref.invalidate(_mealRecipesProvider(meal.id)),
+                    onRetry: () =>
+                        ref.invalidate(_mealRecipesProvider(meal.id)),
                   ),
                   data: (recipes) {
                     if (recipes.isEmpty) {
@@ -198,7 +198,7 @@ class MealDetailScreen extends ConsumerWidget {
     if (!context.mounted) return;
 
     if (candidates.isEmpty) {
-      messenger.showSnackBar(
+      messenger.replaceSnackBar(
         SnackBar(content: Text(l10n.mealFromLibraryNone)),
       );
       return;
@@ -313,7 +313,7 @@ class MealDetailScreen extends ConsumerWidget {
     final repository = ref.read(shoppingListRepositoryProvider);
     final deleted = await repository.deleteProductWithUndo(product.id);
 
-    messenger.showSnackBar(
+    messenger.replaceSnackBar(
       SnackBar(
         content: Text(l10n.itemRemoved(product.name)),
         action: SnackBarAction(
@@ -437,7 +437,7 @@ class _RecipeCard extends ConsumerWidget {
                   await ref
                       .read(recipeRepositoryProvider)
                       .detachFromMeal(mealId: mealId, recipeId: recipe.id);
-                  messenger.showSnackBar(
+                  messenger.replaceSnackBar(
                     SnackBar(content: Text(l10n.recipeDetached)),
                   );
                 },

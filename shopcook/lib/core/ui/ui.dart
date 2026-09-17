@@ -11,4 +11,5 @@ export 'product_row.dart';
 export 'progress_bar.dart';
 export 'section_label.dart';
 export 'skeleton.dart';
+export 'snack.dart';
 export 'states.dart';

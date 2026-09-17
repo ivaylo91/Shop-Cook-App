@@ -107,7 +107,7 @@ class ListsScreen extends ConsumerWidget {
     final repository = ref.read(shoppingListRepositoryProvider);
     final deleted = await repository.deleteListWithUndo(list.id);
 
-    messenger.showSnackBar(
+    messenger.replaceSnackBar(
       SnackBar(
         content: Text(l10n.listsDeleted(list.name)),
         duration: const Duration(seconds: 6),

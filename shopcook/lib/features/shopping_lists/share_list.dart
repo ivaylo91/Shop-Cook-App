@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/localization.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/shopping_list_repository.dart';
+import '../../core/ui/snack.dart';
 import '../shopping/category_label.dart';
 import '../shopping/product_category.dart';
 
@@ -26,9 +27,9 @@ Future<void> shareList(
   final remaining = products.where((p) => !p.isChecked).toList();
 
   if (remaining.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.shareNothing)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).replaceSnackBar(SnackBar(content: Text(l10n.shareNothing)));
     return;
   }
 

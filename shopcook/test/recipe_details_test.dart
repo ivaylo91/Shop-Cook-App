@@ -118,6 +118,28 @@ void main() {
     expect(importer.calls, 0);
   });
 
+  test('fillMissingDetails reads unread web recipes, once each', () async {
+    final unread = await saved();
+    importer.next = _chilli;
+
+    await recipes.fillMissingDetails([unread]);
+    expect(importer.calls, 1);
+    final filled = (await db.recipeById(unread.id))!;
+    expect(filled.title, 'Чили кон карне');
+
+    // Already read: skipped. Tried before this session: skipped too.
+    await recipes.fillMissingDetails([filled, unread]);
+    expect(importer.calls, 1);
+  });
+
+  test('fillMissingDetails does not retry a failure in the same session',
+      () async {
+    final unread = await saved();
+    await recipes.fillMissingDetails([unread]);
+    await recipes.fillMissingDetails([unread]);
+    expect(importer.calls, 1);
+  });
+
   test('an unreadable saved copy counts as none', () {
     expect(RecipeRepository.decodeDetails('not json'), isNull);
     expect(RecipeRepository.decodeDetails('{"ingredients": []}'), isNull);

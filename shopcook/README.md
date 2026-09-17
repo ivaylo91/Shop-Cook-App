@@ -403,7 +403,8 @@ recipe viewer's app bar) opens the recipe one step per screen:
 Recipe data comes from the `import-recipe` function and is **saved on the
 recipe** (`recipes.details`). A recipe is read as soon as it is saved, while
 there is signal, so it works in a kitchen with none; a link saved without a
-title takes the page's title at the same time. A recipe never read before
+title takes the page's title at the same time. Recipes saved before this, or while offline, are read in the
+background the next time the Recipes tab is open. A recipe never read before
 shows a "no connection" screen with a retry instead of the generic "can't
 read this page" one. Videos have no step data, so cooking mode is not
 offered for them.

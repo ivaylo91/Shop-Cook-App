@@ -37,7 +37,7 @@ Future<void> importIngredients(
   Navigator.of(context).pop(); // close the loading dialog
 
   if (!imported.hasIngredients) {
-    messenger.showSnackBar(
+    messenger.replaceSnackBar(
       SnackBar(
         content: Text(switch (imported.failure) {
           ImportFailure.unreadable => l10n.importPageUnreadable,
@@ -61,20 +61,22 @@ Future<void> importIngredients(
 
   if (chosen == null || chosen.isEmpty) return;
 
-  await ref.read(shoppingListRepositoryProvider).addProducts(
-    listId: listId,
-    mealId: mealId,
-    items: [
-      for (final ingredient in chosen)
-        (
-          name: ingredient.name,
-          quantity: ingredient.quantity,
-          unit: ingredient.unit,
-        ),
-    ],
-  );
+  await ref
+      .read(shoppingListRepositoryProvider)
+      .addProducts(
+        listId: listId,
+        mealId: mealId,
+        items: [
+          for (final ingredient in chosen)
+            (
+              name: ingredient.name,
+              quantity: ingredient.quantity,
+              unit: ingredient.unit,
+            ),
+        ],
+      );
 
-  messenger.showSnackBar(
+  messenger.replaceSnackBar(
     SnackBar(content: Text(l10n.importAdded(chosen.length))),
   );
 }

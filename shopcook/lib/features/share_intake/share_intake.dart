@@ -61,17 +61,20 @@ class _ShareIntakeState extends ConsumerState<ShareIntake> {
       }
       if (raw == null || !mounted) return;
 
-      final content = parseShared(
-        raw['text'] ?? '',
-        subject: raw['subject'],
-      );
+      final content = parseShared(raw['text'] ?? '', subject: raw['subject']);
       switch (content) {
         case null:
-          ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).replaceSnackBar(
             SnackBar(content: Text(context.l10n.shareNothingUsable)),
           );
         case SharedLink(:final url, :final title):
           widget.shell.goBranch(_recipesTab);
+          // goBranch only schedules the navigation. A dialog opened now sits
+          // on whatever page is on top (a list, say), and is thrown away with
+          // it when the router swaps the pages a frame later.
+          await WidgetsBinding.instance.endOfFrame;
+          await WidgetsBinding.instance.endOfFrame;
+          if (!mounted) return;
           await addLinkToLibrary(
             context,
             ref,
@@ -97,7 +100,7 @@ class _ShareIntakeState extends ConsumerState<ShareIntake> {
     final lists = await repository.watchLists(userId).first;
     if (!mounted) return;
     if (lists.isEmpty) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.shareNoLists)));
+      messenger.replaceSnackBar(SnackBar(content: Text(l10n.shareNoLists)));
       return;
     }
 
@@ -136,7 +139,7 @@ class _ShareIntakeState extends ConsumerState<ShareIntake> {
       added++;
     }
 
-    messenger.showSnackBar(
+    messenger.replaceSnackBar(
       SnackBar(
         content: Text(l10n.shareItemsAdded(added, list.name)),
         action: SnackBarAction(

@@ -179,6 +179,26 @@ class RecipeRepository {
     return fresh;
   }
 
+  /// Recipes already tried by [fillMissingDetails] this session, so a page
+  /// that cannot be read is not fetched again on every library update.
+  final _tried = <String>{};
+
+  /// Reads, in the background, any web recipe that has never been read:
+  /// ones saved before recipes were read on save, or saved while offline.
+  Future<void> fillMissingDetails(Iterable<Recipe> recipes) async {
+    if (_importApi == null) return;
+    for (final recipe in recipes) {
+      if (recipe.sourceType != RecipeSourceType.web ||
+          recipe.details != null ||
+          !_tried.add(recipe.id)) {
+        continue;
+      }
+      try {
+        await details(recipe);
+      } catch (_) {}
+    }
+  }
+
   static bool _hasNoRealTitle(Recipe recipe) =>
       recipe.title.trim().isEmpty || recipe.title == recipe.sourceUrl;
 

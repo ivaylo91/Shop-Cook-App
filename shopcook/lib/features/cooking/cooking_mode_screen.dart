@@ -146,7 +146,10 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            loaded?.title.isNotEmpty == true
+            // The name the user saved it under; the page's own title only
+            // stands in for a link saved without one.
+            widget.recipe.title == widget.recipe.sourceUrl &&
+                    loaded?.title.isNotEmpty == true
                 ? loaded!.title
                 : widget.recipe.title,
             maxLines: 1,
@@ -335,9 +338,8 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
             checked: _checked,
             onToggle: (i) {
               setState(
-                () => _checked.contains(i)
-                    ? _checked.remove(i)
-                    : _checked.add(i),
+                () =>
+                    _checked.contains(i) ? _checked.remove(i) : _checked.add(i),
               );
               setSheetState(() {});
             },
@@ -531,7 +533,9 @@ class _TimerTray extends StatelessWidget {
               message: l10n.cookModeTimerStop,
               child: InputChip(
                 avatar: FaIcon(
-                  timer.isUp ? FontAwesomeIcons.bell : FontAwesomeIcons.stopwatch,
+                  timer.isUp
+                      ? FontAwesomeIcons.bell
+                      : FontAwesomeIcons.stopwatch,
                   size: 14,
                   color: timer.isUp ? error : palette.accent,
                 ),

@@ -75,7 +75,7 @@ class _IngredientRecipesScreenState
     if (!opened && mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.cookOpenFailed)));
+      ).replaceSnackBar(SnackBar(content: Text(context.l10n.cookOpenFailed)));
     }
   }
 
@@ -100,14 +100,12 @@ class _IngredientRecipesScreenState
 
     if (!mounted) return;
     final l10n = context.l10n;
-    ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context).replaceSnackBar(
       SnackBar(
         content: Text(
           mealId == null
               ? l10n.librarySaved
-              : l10n.cookAttached(
-                  widget.mealName ?? l10n.cookAttachedFallback,
-                ),
+              : l10n.cookAttached(widget.mealName ?? l10n.cookAttachedFallback),
         ),
       ),
     );
@@ -193,9 +191,8 @@ class _SearchAppsCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: () => onOpen(
-                'https://www.youtube.com/results?search_query=$term',
-              ),
+              onPressed: () =>
+                  onOpen('https://www.youtube.com/results?search_query=$term'),
               icon: const FaIcon(FontAwesomeIcons.youtube, size: 16),
               label: const Text('YouTube'),
             ),
@@ -217,6 +214,7 @@ class _NoResultsNote extends StatelessWidget {
 
 class _ResultTile extends StatelessWidget {
   final RecipeSearchResult result;
+
   /// Whether keeping it attaches to a meal or only saves to the library.
   final bool onMeal;
   final String? mealName;

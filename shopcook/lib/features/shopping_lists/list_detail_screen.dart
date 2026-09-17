@@ -97,9 +97,7 @@ class ListDetailScreen extends ConsumerWidget {
                   ),
                   data: (products) {
                     if (products.isEmpty) {
-                      return InlineNote(
-                        message: l10n.listDetailUnassignedNote,
-                      );
+                      return InlineNote(message: l10n.listDetailUnassignedNote);
                     }
                     return AppCardList(
                       tint: palette.inkMuted,
@@ -143,10 +141,7 @@ class ListDetailScreen extends ConsumerWidget {
               ],
             ),
           ),
-          ItemComposer(
-            listId: list.id,
-            hintText: l10n.listDetailComposerHint,
-          ),
+          ItemComposer(listId: list.id, hintText: l10n.listDetailComposerHint),
         ],
       ),
     );
@@ -199,7 +194,7 @@ class ListDetailScreen extends ConsumerWidget {
     final staples = await repository.watchStaples(userId).first;
 
     if (staples.isEmpty) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.staplesNone)));
+      messenger.replaceSnackBar(SnackBar(content: Text(l10n.staplesNone)));
       return;
     }
 
@@ -208,7 +203,7 @@ class ListDetailScreen extends ConsumerWidget {
       userId: userId,
     );
 
-    messenger.showSnackBar(
+    messenger.replaceSnackBar(
       SnackBar(
         content: Text(
           added == 0 ? l10n.staplesAllPresent : l10n.staplesAdded(added),
@@ -239,7 +234,7 @@ class ListDetailScreen extends ConsumerWidget {
     final repository = ref.read(shoppingListRepositoryProvider);
     final deleted = await repository.deleteProductWithUndo(product.id);
 
-    messenger.showSnackBar(
+    messenger.replaceSnackBar(
       SnackBar(
         content: Text(l10n.itemRemoved(product.name)),
         action: SnackBarAction(
@@ -257,7 +252,7 @@ class ListDetailScreen extends ConsumerWidget {
     List<Meal> meals,
   ) async {
     if (meals.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).replaceSnackBar(
         SnackBar(content: Text(context.l10n.itemMoveNeedsMeal)),
       );
       return;
@@ -406,7 +401,7 @@ class _MealCard extends ConsumerWidget {
     final repository = ref.read(shoppingListRepositoryProvider);
     final deleted = await repository.deleteMealWithUndo(meal.id);
 
-    messenger.showSnackBar(
+    messenger.replaceSnackBar(
       SnackBar(
         content: Text(l10n.mealDeleted(meal.name)),
         duration: const Duration(seconds: 6),

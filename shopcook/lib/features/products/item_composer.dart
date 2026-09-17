@@ -6,6 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/design.dart';
 import '../../core/localization.dart';
 import '../../core/providers.dart';
+import '../../core/ui/snack.dart';
 import '../../data/local/database.dart';
 import '../recipes/ingredient_parser.dart';
 
@@ -109,7 +110,7 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
     if (outcome.didMerge) {
       final l10n = context.l10n;
       final name = outcome.name ?? '';
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).replaceSnackBar(
         SnackBar(
           content: Text(
             outcome.amount.isEmpty
@@ -158,7 +159,8 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
                       onSubmitted: (_) => _submit(),
                       decoration: InputDecoration(
                         hintText:
-                            widget.hintText ?? context.l10n.listDetailComposerHint,
+                            widget.hintText ??
+                            context.l10n.listDetailComposerHint,
                         filled: false,
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
@@ -317,11 +319,10 @@ class _Suggestions extends ConsumerWidget {
   }
 }
 
-final productSuggestionsProvider =
-    StreamProvider<List<ProductSuggestion>>((ref) {
-      final userId = ref.watch(currentUserIdProvider);
-      if (userId == null) return const Stream.empty();
-      return ref
-          .watch(shoppingListRepositoryProvider)
-          .watchSuggestions(userId);
-    });
+final productSuggestionsProvider = StreamProvider<List<ProductSuggestion>>((
+  ref,
+) {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return const Stream.empty();
+  return ref.watch(shoppingListRepositoryProvider).watchSuggestions(userId);
+});
