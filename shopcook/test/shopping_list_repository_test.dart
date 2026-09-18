@@ -26,6 +26,32 @@ void main() {
     return lists.firstWhere((l) => l.name == name).id;
   }
 
+  test('deleteUserData removes only that user’s lists and recipes', () async {
+    final mine = await aList('Mine', user);
+    final theirs = await aList('Theirs', otherUser);
+    await repo.createMeal(mine, 'Curry');
+    await repo.addOrMergeProduct(listId: mine, name: 'Rice');
+    final recipes = RecipeRepository(db, _NoSearch());
+    await recipes.saveRecipe(
+      userId: user,
+      title: 'Curry',
+      sourceUrl: 'https://example.com/curry',
+    );
+    await recipes.saveRecipe(
+      userId: otherUser,
+      title: 'Soup',
+      sourceUrl: 'https://example.com/soup',
+    );
+
+    await db.deleteUserData(user);
+
+    expect(await repo.watchLists(user).first, isEmpty);
+    expect(await db.productsForList(mine), isEmpty);
+    expect(await recipes.watchLibrary(user).first, isEmpty);
+    expect((await repo.watchLists(otherUser).first).single.id, theirs);
+    expect(await recipes.watchLibrary(otherUser).first, hasLength(1));
+  });
+
   group('addOrMergeProduct', () {
     test('adds a new item', () async {
       final listId = await aList();

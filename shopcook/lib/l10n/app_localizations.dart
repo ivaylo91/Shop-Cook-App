@@ -1765,6 +1765,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More'**
   String get cookModeMore;
+
+  /// No description provided for @settingsDeleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get settingsDeleteAccount;
+
+  /// No description provided for @settingsDeleteAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your account?'**
+  String get settingsDeleteAccountTitle;
+
+  /// No description provided for @settingsDeleteAccountMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes your ShopCook account and everything saved under it (lists, meals and recipes), on this phone and on the server. It cannot be undone.'**
+  String get settingsDeleteAccountMessage;
+
+  /// No description provided for @settingsDeleteAccountConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete for good'**
+  String get settingsDeleteAccountConfirm;
+
+  /// No description provided for @settingsDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The account could not be deleted. Check the connection and try again.'**
+  String get settingsDeleteFailed;
+
+  /// No description provided for @settingsAccountDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account has been deleted.'**
+  String get settingsAccountDeleted;
 }
 
 class _AppLocalizationsDelegate

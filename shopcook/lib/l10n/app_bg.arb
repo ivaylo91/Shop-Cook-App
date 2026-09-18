@@ -331,5 +331,11 @@
   "cookModeServingsCount": "{count, plural, =1{1 порция} other{{count} порции}}",
   "cookModeAmounts": "Количества {factor}",
   "cookModeFewer": "По-малко",
-  "cookModeMore": "Повече"
+  "cookModeMore": "Повече",
+  "settingsDeleteAccount": "Изтрий акаунта",
+  "settingsDeleteAccountTitle": "Да изтрия ли акаунта ти?",
+  "settingsDeleteAccountMessage": "Това изтрива акаунта ти в ShopCook и всичко записано към него (списъци, ястия и рецепти) на този телефон и на сървъра. Не може да се отмени.",
+  "settingsDeleteAccountConfirm": "Изтрий завинаги",
+  "settingsDeleteFailed": "Акаунтът не можа да се изтрие. Провери връзката и опитай пак.",
+  "settingsAccountDeleted": "Акаунтът ти е изтрит."
 }

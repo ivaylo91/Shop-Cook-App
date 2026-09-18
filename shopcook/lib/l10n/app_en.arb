@@ -344,5 +344,11 @@
   "cookModeAmounts": "Amounts {factor}",
   "@cookModeAmounts": {"placeholders": {"factor": {"type": "String"}}},
   "cookModeFewer": "Less",
-  "cookModeMore": "More"
+  "cookModeMore": "More",
+  "settingsDeleteAccount": "Delete account",
+  "settingsDeleteAccountTitle": "Delete your account?",
+  "settingsDeleteAccountMessage": "This deletes your ShopCook account and everything saved under it (lists, meals and recipes), on this phone and on the server. It cannot be undone.",
+  "settingsDeleteAccountConfirm": "Delete for good",
+  "settingsDeleteFailed": "The account could not be deleted. Check the connection and try again.",
+  "settingsAccountDeleted": "Your account has been deleted."
 }

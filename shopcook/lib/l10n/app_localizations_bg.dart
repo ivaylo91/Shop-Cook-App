@@ -1052,4 +1052,24 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get cookModeMore => 'Повече';
+
+  @override
+  String get settingsDeleteAccount => 'Изтрий акаунта';
+
+  @override
+  String get settingsDeleteAccountTitle => 'Да изтрия ли акаунта ти?';
+
+  @override
+  String get settingsDeleteAccountMessage =>
+      'Това изтрива акаунта ти в ShopCook и всичко записано към него (списъци, ястия и рецепти) на този телефон и на сървъра. Не може да се отмени.';
+
+  @override
+  String get settingsDeleteAccountConfirm => 'Изтрий завинаги';
+
+  @override
+  String get settingsDeleteFailed =>
+      'Акаунтът не можа да се изтрие. Провери връзката и опитай пак.';
+
+  @override
+  String get settingsAccountDeleted => 'Акаунтът ти е изтрит.';
 }

@@ -32,6 +32,19 @@ final widgetSnapshotProvider = Provider<WidgetSnapshot?>((ref) {
   return pickWidgetSnapshot(lists, products);
 });
 
+/// Blanks the home screen widget, so a list does not stay on the home
+/// screen after its owner has signed out or deleted their account.
+Future<void> clearHomeWidget() async {
+  try {
+    for (final key in ['list_id', 'title', 'summary', 'items']) {
+      await HomeWidget.saveWidgetData<String>(key, null);
+    }
+    await HomeWidget.updateWidget(qualifiedAndroidName: _androidWidget);
+  } catch (_) {
+    // No widget support here (tests), or no widget placed.
+  }
+}
+
 /// Keeps the home screen widget in step with the lists, and opens the list
 /// the widget was showing when it is tapped.
 ///

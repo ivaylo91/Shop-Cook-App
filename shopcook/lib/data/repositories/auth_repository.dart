@@ -92,4 +92,21 @@ class AuthRepository {
   }
 
   Future<void> signOut() => _client.auth.signOut();
+
+  /// Deletes the signed-in user's account on the server, with everything
+  /// stored under it there, then ends the session on this phone. False when
+  /// the server could not be reached or refused; nothing changes then.
+  Future<bool> deleteAccount() async {
+    try {
+      final response = await _client.functions.invoke('delete-account');
+      final data = response.data;
+      if (data is! Map || data['deleted'] != true) return false;
+    } catch (_) {
+      return false;
+    }
+    // Local only: the user no longer exists, so a server-side sign-out
+    // would be refused.
+    await _client.auth.signOut(scope: SignOutScope.local);
+    return true;
+  }
 }

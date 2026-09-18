@@ -304,6 +304,15 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// Everything this phone holds for [userId], for account deletion. Lists
+  /// take their meals, products and recipe links with them by cascade;
+  /// recipes are owned directly. Shared caches (searches, barcode names)
+  /// hold nothing personal and stay.
+  Future<void> deleteUserData(String userId) => transaction(() async {
+    await (delete(shoppingLists)..where((t) => t.userId.equals(userId))).go();
+    await (delete(recipes)..where((t) => t.userId.equals(userId))).go();
+  });
+
   Future<void> insertList(ShoppingListsCompanion entry) =>
       into(shoppingLists).insert(entry);
 

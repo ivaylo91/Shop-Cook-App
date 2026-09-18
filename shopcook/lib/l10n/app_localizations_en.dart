@@ -1051,4 +1051,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cookModeMore => 'More';
+
+  @override
+  String get settingsDeleteAccount => 'Delete account';
+
+  @override
+  String get settingsDeleteAccountTitle => 'Delete your account?';
+
+  @override
+  String get settingsDeleteAccountMessage =>
+      'This deletes your ShopCook account and everything saved under it (lists, meals and recipes), on this phone and on the server. It cannot be undone.';
+
+  @override
+  String get settingsDeleteAccountConfirm => 'Delete for good';
+
+  @override
+  String get settingsDeleteFailed =>
+      'The account could not be deleted. Check the connection and try again.';
+
+  @override
+  String get settingsAccountDeleted => 'Your account has been deleted.';
 }

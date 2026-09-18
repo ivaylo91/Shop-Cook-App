@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../core/settings.dart';
 import '../../core/ui/ui.dart';
 import '../../l10n/app_localizations.dart';
+import '../home_widget/home_widget_sync.dart';
 import '../shopping/category_label.dart';
 
 /// Appearance, language and account, in the place people look for them.
@@ -164,6 +165,15 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   label: Text(l10n.settingsSignOut),
                 ),
+                const SizedBox(height: Insets.sm),
+                TextButton.icon(
+                  onPressed: () => _deleteAccount(context, ref),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                  icon: const FaIcon(FontAwesomeIcons.userXmark, size: 14),
+                  label: Text(l10n.settingsDeleteAccount),
+                ),
               ],
             ),
           ),
@@ -231,9 +241,51 @@ class SettingsScreen extends ConsumerWidget {
     );
 
     if (confirmed) {
+      await clearHomeWidget();
       await ref.read(authRepositoryProvider).signOut();
       // The router redirect takes it from here.
     }
+  }
+
+  /// Required by Google Play for any app that creates accounts: deletion
+  /// from inside the app, of the account and the data kept under it.
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final auth = ref.read(authRepositoryProvider);
+    final userId = auth.currentUser?.id;
+    if (userId == null) return;
+
+    final confirmed = await confirmAction(
+      context,
+      title: l10n.settingsDeleteAccountTitle,
+      message: l10n.settingsDeleteAccountMessage,
+      confirmLabel: l10n.settingsDeleteAccountConfirm,
+      destructive: true,
+    );
+    if (!confirmed || !context.mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    // The server first: if it fails, nothing on the phone has been touched.
+    final deleted = await auth.deleteAccount();
+    if (deleted) {
+      await ref.read(databaseProvider).deleteUserData(userId);
+      await clearHomeWidget();
+    }
+    navigator.pop(); // the progress dialog
+    messenger.replaceSnackBar(
+      SnackBar(
+        content: Text(
+          deleted ? l10n.settingsAccountDeleted : l10n.settingsDeleteFailed,
+        ),
+      ),
+    );
+    // On success the session is gone and the router returns to login.
   }
 }
 

@@ -339,6 +339,54 @@ own migrator wrote into `android/gradle.properties`. Flutter warns that Gradle
 8.x support will be dropped in favour of 9.1.0+; that upgrade is a real
 migration, not a version bump.
 
+## Releasing to Google Play
+
+**Signing.** Release builds are signed with the upload key named in
+`android/key.properties` (git-ignored). The keystore itself lives outside
+the repository, at `C:/Users/ipene/keys/shopcook-upload.jks`.
+**Back both up somewhere safe** (a password manager plus an offline copy):
+with Play App Signing, a lost upload key can be reset through Play support,
+but it takes days. Without `key.properties`, release builds fall back to the
+debug key.
+
+```bash
+flutter build appbundle --release
+# -> build/app/outputs/bundle/release/app-release.aab  (upload this to Play)
+```
+
+Bump `version:` in `pubspec.yaml` for every upload: the part after `+` is
+the versionCode, and Play refuses one it has seen before.
+
+**Testing on a phone that has the development build.** Android refuses to
+update an app signed with a different key, and uninstalling first erases
+its lists. To keep installing over a development copy, sign the test APK
+with the debug key:
+
+```bash
+SHOPCOOK_DEBUG_SIGNING=1 flutter build apk --release --split-per-abi
+```
+
+**Account deletion** (a Play requirement for apps with accounts): Settings
+-> Delete account calls the `delete-account` Edge Function, which deletes
+the caller's own auth user; every cloud table cascades from `auth.users`, so
+their rows go too. The app then wipes that user's data from the phone and
+blanks the home screen widget.
+
+**Privacy policy and deletion page.** `docs/privacy.html` and
+`docs/delete-account.html`, in Bulgarian and English. Fill in the
+`[ИМЕ…]`/`[DEVELOPER NAME]` and `[ИМЕЙЛ…]`/`[CONTACT EMAIL]` placeholders,
+publish them (GitHub Pages serving `docs/` works), and give Play Console both
+URLs: the privacy policy under App content, the deletion page under Data
+safety -> Account deletion.
+
+**Data safety answers**, matching what the app actually does:
+- Collected: email address (account management), required.
+- Shared: none. Recipe links, search terms and barcodes are sent to
+  services only to perform the feature and are not stored.
+- Encrypted in transit: yes. Users can request deletion: yes (in-app).
+- Camera and microphone: used on-device for scanning and dictation, not
+  collected.
+
 ## iOS
 
 iOS platform files are generated (`ios/`), but building the iOS target needs
@@ -592,9 +640,6 @@ theme and language choice, which live in the same file.
 
 **Still to do:**
 
-- The release APK is signed with the **debug key** (see "Building an APK").
-  Anything for Play needs a real upload key kept out of git; `.gitignore`
-  already excludes `*.jks` and `key.properties`.
 - **Leaked-password protection** is off in Supabase Auth (Authentication →
   Sign In / Providers → Password → "Prevent use of leaked passwords").
 - **Restrict the YouTube API key** in Google Cloud Console to the YouTube
