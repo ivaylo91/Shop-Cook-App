@@ -201,6 +201,50 @@ interface Parsed {
   steps: string[];
   servings: string;
   minutes: number;
+  image: string;
+}
+
+/// schema.org `image` may be a URL, a list of URLs, or ImageObjects.
+function imagesOf(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(imagesOf);
+  if (value && typeof value === "object") {
+    const url = (value as Record<string, unknown>)["url"];
+    return typeof url === "string" ? [url] : [];
+  }
+  return [];
+}
+
+/// The first usable picture: absolute, and https where one is offered —
+/// Android will not load a plain http image. A page offering only http
+/// gets it upgraded, which nearly every image host serves.
+function pickImage(candidates: string[], pageUrl: string): string {
+  const absolute = candidates
+    .map((raw) => {
+      try {
+        return new URL(decodeEntities(raw.trim()), pageUrl).toString();
+      } catch {
+        return "";
+      }
+    })
+    .filter((url) => /^https?:\/\//i.test(url));
+  return absolute.find((url) => url.startsWith("https://")) ??
+    absolute[0]?.replace(/^http:\/\//i, "https://") ?? "";
+}
+
+/// Open Graph and microdata images, for pages whose recipe data has none.
+function pageImages(html: string): string[] {
+  const found: string[] = [];
+  for (
+    const pattern of [
+      /<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]*content=["']([^"']+)["']/gi,
+      /<meta[^>]+content=["']([^"']+)["'][^>]*property=["']og:image["']/gi,
+      /itemprop=["']image["'][^>]*(?:content|src)=["']([^"']+)["']/gi,
+    ]
+  ) {
+    for (const match of html.matchAll(pattern)) found.push(match[1]);
+  }
+  return found;
 }
 
 function fromJsonLd(recipe: Record<string, unknown>): Parsed {
@@ -215,6 +259,7 @@ function fromJsonLd(recipe: Record<string, unknown>): Parsed {
     servings: servingsOf(recipe["recipeYield"]),
     minutes: total ||
       minutesOf(recipe["prepTime"]) + minutesOf(recipe["cookTime"]),
+    image: "",
   };
 }
 
@@ -254,10 +299,21 @@ function fromMicrodata(html: string): Parsed | null {
       ? tidy(yieldMeta[1])
       : tidy(plainText(itemprops(html, "recipeYield")[0] ?? "")),
     minutes: 0,
+    image: "",
   };
 }
 
-function parse(html: string): Parsed | null {
+function parse(html: string, pageUrl: string): Parsed | null {
+  const recipe = parseRecipe(html);
+  if (!recipe) return null;
+  const { images, ...parsed } = recipe;
+  return {
+    ...parsed,
+    image: pickImage([...images, ...pageImages(html)], pageUrl),
+  };
+}
+
+function parseRecipe(html: string): (Parsed & { images: string[] }) | null {
   const blocks = [
     ...html.matchAll(
       /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
@@ -274,11 +330,13 @@ function parse(html: string): Parsed | null {
     const recipe = findRecipe(parsed);
     if (!recipe) continue;
     const result = fromJsonLd(recipe);
-    if (result.ingredients.length > 0) return result;
+    if (result.ingredients.length > 0) {
+      return { ...result, images: imagesOf(recipe["image"]) };
+    }
   }
 
   const micro = fromMicrodata(html);
-  return micro && micro.ingredients.length > 0 ? micro : null;
+  return micro && micro.ingredients.length > 0 ? { ...micro, images: [] } : null;
 }
 
 Deno.serve(async (req: Request) => {
@@ -320,7 +378,7 @@ Deno.serve(async (req: Request) => {
     return reply({ ingredients: [], error: "Could not reach that page." });
   }
 
-  const recipe = parse(html);
+  const recipe = parse(html, url);
   if (!recipe) {
     return reply({
       ingredients: [],

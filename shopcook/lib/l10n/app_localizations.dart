@@ -1741,6 +1741,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing left to buy. Tap to open the list.'**
   String get widgetAllDone;
+
+  /// No description provided for @cookModeServingsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 serving} other{{count} servings}}'**
+  String cookModeServingsCount(int count);
+
+  /// No description provided for @cookModeAmounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Amounts {factor}'**
+  String cookModeAmounts(String factor);
+
+  /// No description provided for @cookModeFewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Less'**
+  String get cookModeFewer;
+
+  /// No description provided for @cookModeMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get cookModeMore;
 }
 
 class _AppLocalizationsDelegate

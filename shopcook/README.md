@@ -382,6 +382,13 @@ for.
   on a search result for an item with no meal, or from the link button on the
   Recipes tab. Saving the same URL twice reuses the existing recipe.
 - A meal's recipe section has **From your recipes** to pick one already saved.
+- **Pictures.** A web recipe takes the dish photo the importer finds (the
+  recipe data's own image, else the page's `og:image`, preferring https since
+  Android will not load plain http images). A pasted YouTube link takes the
+  video's still from `i.ytimg.com`, which needs no request; the 16:9
+  `mqdefault` still is used because the 4:3 `hqdefault` one is letterboxed.
+  Recipes saved before either existed are filled in when the Recipes tab
+  opens.
 - Each library card says how many meals use it, and its menu puts it on any
   meal — labelled with the list's name, since meal names repeat week to week.
 
@@ -394,6 +401,14 @@ recipe viewer's app bar) opens the recipe one step per screen:
   app bar brings the same ticks back up at any step.
 - Steps are set in large type, and the screen is kept awake while cooking
   mode is open (`wakelock_plus`).
+- **Servings.** − and + on the ingredients page scale every amount. When the
+  recipe says how many it serves, the control counts servings (6 → 3 halves
+  everything); otherwise it steps through ×½ … ×4. The amount at the start of
+  each line is scaled: whole numbers, ranges ("4–5"), "1/2", "1 1/2", "½" and
+  decimals. Lines written with a decimal stay decimal ("1,5 кг" → "4,5 кг");
+  the rest come out as kitchen fractions ("1 ч. л." → "½ ч. л."). Lines with
+  no leading amount ("сол на вкус") are left alone, as are amounts inside the
+  steps' text.
 - Any time mentioned in a step ("20 minutes", "10-15 минути", "1 час")
   becomes a one-tap timer. A range times its lower end. Running timers sit
   above the buttons; when one ends the phone vibrates and plays the system
@@ -509,7 +524,7 @@ Attach a recipe link to a meal, then tap the import icon on the recipe card.
 The `import-recipe` Edge Function fetches the page and reads the
 `schema.org/Recipe` data that most recipe sites publish for Google, JSON-LD
 first and microdata as a fallback. It returns the ingredients, the method as
-steps, the servings and the total time. The app splits each ingredient line
+steps, the servings, the total time and a picture of the dish. The app splits each ingredient line
 into a name, quantity and unit and lets you pick what to add.
 
 The method arrives in many shapes (a string, a list, `HowToStep`s,

@@ -1,6 +1,5 @@
-import 'dart:convert';
-
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
@@ -131,6 +130,9 @@ class RecipeRepository {
     final url = sourceUrl.trim();
     final existing = await _db.recipeByUrl(userId: userId, sourceUrl: url);
     if (existing != null) return existing.id;
+    if (thumbnailUrl.isEmpty && sourceType == RecipeSourceType.video) {
+      thumbnailUrl = youtubeThumbnail(url);
+    }
 
     final id = _uuid.v4();
     await _db.insertRecipe(
@@ -175,6 +177,10 @@ class RecipeRepository {
       title: _hasNoRealTitle(row) && fresh.title.isNotEmpty
           ? fresh.title
           : null,
+      // Only when there is none: a search result's own thumbnail is kept.
+      thumbnailUrl: row.thumbnailUrl.isEmpty && fresh.image.isNotEmpty
+          ? fresh.image
+          : null,
     );
     return fresh;
   }
@@ -183,18 +189,36 @@ class RecipeRepository {
   /// that cannot be read is not fetched again on every library update.
   final _tried = <String>{};
 
-  /// Reads, in the background, any web recipe that has never been read:
-  /// ones saved before recipes were read on save, or saved while offline.
+  /// Reads, in the background, any web recipe that has never been read
+  /// (saved before recipes were read on save, or saved offline), or that
+  /// was read before the importer returned pictures and still has none.
   Future<void> fillMissingDetails(Iterable<Recipe> recipes) async {
+    for (final recipe in recipes) {
+      // A pasted video link has no picture, but YouTube keeps one at an
+      // address built from the video id: no request needed.
+      // The 4:3 "hqdefault" still, which search results also carry, is
+      // letterboxed with black bars; the 16:9 one is not.
+      final letterboxed = recipe.thumbnailUrl.contains('i.ytimg.com/') &&
+          recipe.thumbnailUrl.endsWith('/hqdefault.jpg');
+      if (recipe.sourceType == RecipeSourceType.video &&
+          (recipe.thumbnailUrl.isEmpty || letterboxed)) {
+        final thumbnail = youtubeThumbnail(recipe.sourceUrl);
+        if (thumbnail.isNotEmpty && thumbnail != recipe.thumbnailUrl) {
+          await _db.setRecipeThumbnail(recipe.id, thumbnail);
+        }
+      }
+    }
     if (_importApi == null) return;
     for (final recipe in recipes) {
+      final complete =
+          recipe.details != null && recipe.thumbnailUrl.isNotEmpty;
       if (recipe.sourceType != RecipeSourceType.web ||
-          recipe.details != null ||
+          complete ||
           !_tried.add(recipe.id)) {
         continue;
       }
       try {
-        await details(recipe);
+        await details(recipe, refresh: recipe.details != null);
       } catch (_) {}
     }
   }
@@ -302,6 +326,27 @@ class RecipeRepository {
       result.type == RecipeResultType.video
       ? RecipeSourceType.video
       : RecipeSourceType.web;
+
+  /// The still YouTube serves for a video link, or empty when [url] is not
+  /// one it can read the id from.
+  static String youtubeThumbnail(String url) {
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null) return '';
+    final host = uri.host.toLowerCase();
+    String? id;
+    if (host == 'youtu.be') {
+      id = uri.pathSegments.firstOrNull;
+    } else if (host.endsWith('youtube.com')) {
+      final segments = uri.pathSegments;
+      id = uri.queryParameters['v'] ??
+          (segments.length >= 2 &&
+                  const {'shorts', 'embed', 'live', 'v'}.contains(segments[0])
+              ? segments[1]
+              : null);
+    }
+    if (id == null || !RegExp(r'^[\w-]{11}$').hasMatch(id)) return '';
+    return 'https://i.ytimg.com/vi/$id/mqdefault.jpg';
+  }
 
   /// Guesses the type of a pasted link: YouTube links play in the app's
   /// player, anything else opens as a web page.

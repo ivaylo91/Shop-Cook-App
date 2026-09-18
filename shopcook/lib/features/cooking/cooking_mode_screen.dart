@@ -13,6 +13,7 @@ import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 import '../../data/remote/recipe_import_api.dart';
+import 'scale_ingredients.dart';
 import 'step_timers.dart';
 
 /// A recipe's ingredients and method: the saved copy when there is one,
@@ -48,6 +49,9 @@ class _RunningTimer {
 class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
   final _pages = PageController();
   final _checked = <int>{};
+
+  /// How much of the recipe is being made: 1 is as written.
+  double _factor = 1;
   final _timers = <_RunningTimer>[];
   Timer? _ticker;
   int _page = 0;
@@ -211,6 +215,10 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
     );
   }
 
+  List<String> _scaled(RecipeImport recipe) => [
+    for (final line in recipe.ingredients) scaleIngredientLine(line, _factor),
+  ];
+
   Widget _cook(RecipeImport recipe) {
     final l10n = context.l10n;
     final palette = context.palette;
@@ -256,6 +264,9 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
               itemBuilder: (context, index) => index == 0
                   ? _IngredientsPage(
                       recipe: recipe,
+                      ingredients: _scaled(recipe),
+                      factor: _factor,
+                      onFactor: (f) => setState(() => _factor = f),
                       checked: _checked,
                       onToggle: (i) => setState(
                         () => _checked.contains(i)
@@ -334,7 +345,7 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
         // The sheet and page 0 share one set of ticks.
         builder: (context, setSheetState) => SingleChildScrollView(
           child: _IngredientChecklist(
-            ingredients: recipe.ingredients,
+            ingredients: _scaled(recipe),
             checked: _checked,
             onToggle: (i) {
               setState(
@@ -352,12 +363,20 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
 
 class _IngredientsPage extends StatelessWidget {
   final RecipeImport recipe;
+
+  /// [recipe]'s ingredients, already scaled by [factor].
+  final List<String> ingredients;
+  final double factor;
+  final ValueChanged<double> onFactor;
   final Set<int> checked;
   final ValueChanged<int> onToggle;
   final VoidCallback onOpenPage;
 
   const _IngredientsPage({
     required this.recipe,
+    required this.ingredients,
+    required this.factor,
+    required this.onFactor,
     required this.checked,
     required this.onToggle,
     required this.onOpenPage,
@@ -367,8 +386,11 @@ class _IngredientsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final palette = context.palette;
+    final base = baseServings(recipe.servings);
     final facts = [
-      if (recipe.servings.isNotEmpty) l10n.cookModeServings(recipe.servings),
+      // With a number to scale from, the servings control says it instead.
+      if (recipe.servings.isNotEmpty && base == null)
+        l10n.cookModeServings(recipe.servings),
       if (recipe.minutes > 0) l10n.cookModeMinutes(recipe.minutes),
     ];
 
@@ -386,13 +408,15 @@ class _IngredientsPage extends StatelessWidget {
             style: AppText.body.copyWith(color: palette.inkMuted),
           ),
         ],
-        const SizedBox(height: Insets.lg),
+        const SizedBox(height: Insets.md),
+        _ScaleControl(base: base, factor: factor, onChanged: onFactor),
+        const SizedBox(height: Insets.md),
         AppCard(
           padding: const EdgeInsets.symmetric(vertical: Insets.xs),
           tint: palette.ink,
           shadowOpacity: 0.05,
           child: _IngredientChecklist(
-            ingredients: recipe.ingredients,
+            ingredients: ingredients,
             checked: checked,
             onToggle: onToggle,
           ),
@@ -411,6 +435,73 @@ class _IngredientsPage extends StatelessWidget {
           ),
         ],
         const SizedBox(height: Insets.lg),
+      ],
+    );
+  }
+}
+
+/// Cook for more or fewer. In servings when the recipe says how many it
+/// makes, otherwise as a multiple of what is written.
+class _ScaleControl extends StatelessWidget {
+  final int? base;
+  final double factor;
+  final ValueChanged<double> onChanged;
+
+  const _ScaleControl({
+    required this.base,
+    required this.factor,
+    required this.onChanged,
+  });
+
+  static const _multiples = [0.5, 1.0, 1.5, 2.0, 3.0, 4.0];
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final l10n = context.l10n;
+    final base = this.base;
+
+    final String label;
+    final VoidCallback? less;
+    final VoidCallback? more;
+    if (base != null) {
+      final servings = (base * factor).round();
+      label = l10n.cookModeServingsCount(servings);
+      less = servings > 1 ? () => onChanged((servings - 1) / base) : null;
+      more = servings < 99 ? () => onChanged((servings + 1) / base) : null;
+    } else {
+      final index = _multiples.indexOf(factor);
+      label = l10n.cookModeAmounts('×${formatAmount(factor)}');
+      less = index > 0 ? () => onChanged(_multiples[index - 1]) : null;
+      more = index >= 0 && index < _multiples.length - 1
+          ? () => onChanged(_multiples[index + 1])
+          : null;
+    }
+
+    return Row(
+      children: [
+        FaIcon(FontAwesomeIcons.users, size: 15, color: palette.inkMuted),
+        const SizedBox(width: Insets.sm),
+        Expanded(
+          child: Text(
+            label,
+            style: AppText.body.copyWith(
+              color: factor == 1 ? palette.ink : palette.accent,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        IconButton.outlined(
+          onPressed: less,
+          tooltip: l10n.cookModeFewer,
+          icon: const FaIcon(FontAwesomeIcons.minus, size: 14),
+        ),
+        const SizedBox(width: Insets.sm),
+        IconButton.outlined(
+          onPressed: more,
+          tooltip: l10n.cookModeMore,
+          icon: const FaIcon(FontAwesomeIcons.plus, size: 14),
+        ),
       ],
     );
   }

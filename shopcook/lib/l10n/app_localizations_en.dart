@@ -1029,4 +1029,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get widgetAllDone => 'Nothing left to buy. Tap to open the list.';
+
+  @override
+  String cookModeServingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count servings',
+      one: '1 serving',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String cookModeAmounts(String factor) {
+    return 'Amounts $factor';
+  }
+
+  @override
+  String get cookModeFewer => 'Less';
+
+  @override
+  String get cookModeMore => 'More';
 }

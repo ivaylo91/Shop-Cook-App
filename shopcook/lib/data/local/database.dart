@@ -680,14 +680,27 @@ class AppDatabase extends _$AppDatabase {
 
   /// Stores what the importer read, and, when given, a better title than
   /// the one the recipe was saved with.
-  Future<void> setRecipeDetails(String id, String details, {String? title}) {
+  Future<void> setRecipeDetails(
+    String id,
+    String details, {
+    String? title,
+    String? thumbnailUrl,
+  }) {
     return (update(recipes)..where((r) => r.id.equals(id))).write(
       RecipesCompanion(
         details: Value(details),
         title: title == null ? const Value.absent() : Value(title),
+        thumbnailUrl: thumbnailUrl == null
+            ? const Value.absent()
+            : Value(thumbnailUrl),
       ),
     );
   }
+
+  Future<void> setRecipeThumbnail(String id, String thumbnailUrl) =>
+      (update(recipes)..where((r) => r.id.equals(id))).write(
+        RecipesCompanion(thumbnailUrl: Value(thumbnailUrl)),
+      );
 
   Future<void> insertRecipe(RecipesCompanion entry) =>
       into(recipes).insert(entry);

@@ -14,6 +14,7 @@ const _chilli = RecipeImport(
   steps: ['Запържете каймата.', 'Гответе 40 минути.'],
   servings: '6',
   minutes: 150,
+  image: 'https://example.com/chilli.jpg',
 );
 
 void main() {
@@ -138,6 +139,93 @@ void main() {
     await recipes.fillMissingDetails([unread]);
     await recipes.fillMissingDetails([unread]);
     expect(importer.calls, 1);
+  });
+
+  test('the page picture becomes the thumbnail when there is none', () async {
+    final recipe = await saved(title: 'Chilli');
+    importer.next = _chilli;
+    await recipes.details(recipe);
+    expect(
+      (await db.recipeById(recipe.id))!.thumbnailUrl,
+      'https://example.com/chilli.jpg',
+    );
+  });
+
+  test('a thumbnail the recipe already has is kept', () async {
+    importer.next = const RecipeImport(failure: ImportFailure.unreachable);
+    final id = await recipes.saveRecipe(
+      userId: _user,
+      title: 'Chilli',
+      sourceUrl: _url,
+      thumbnailUrl: 'https://i.ytimg.com/own.jpg',
+    );
+    await pumpEventQueue();
+    importer.next = _chilli;
+    await recipes.details((await db.recipeById(id))!);
+    expect((await db.recipeById(id))!.thumbnailUrl, 'https://i.ytimg.com/own.jpg');
+  });
+
+  test('a recipe read before pictures existed is read again once', () async {
+    final recipe = await saved(title: 'Chilli');
+    importer.next = const RecipeImport(
+      ingredients: ['600 г кайма'],
+      steps: ['Гответе.'],
+    );
+    await recipes.details(recipe);
+    importer.calls = 0;
+
+    importer.next = _chilli;
+    final stale = (await db.recipeById(recipe.id))!;
+    await recipes.fillMissingDetails([stale]);
+    expect(importer.calls, 1);
+    expect(
+      (await db.recipeById(recipe.id))!.thumbnailUrl,
+      'https://example.com/chilli.jpg',
+    );
+  });
+
+  test('youtubeThumbnail reads the id from every link shape', () {
+    const still = 'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg';
+    for (final link in [
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42',
+      'https://youtu.be/dQw4w9WgXcQ?si=abc',
+      'https://m.youtube.com/shorts/dQw4w9WgXcQ',
+      'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    ]) {
+      expect(RecipeRepository.youtubeThumbnail(link), still, reason: link);
+    }
+    expect(RecipeRepository.youtubeThumbnail('https://example.com/x'), '');
+    expect(RecipeRepository.youtubeThumbnail('https://youtu.be/short'), '');
+  });
+
+  test('a pasted video gets its picture, on save and after', () async {
+    final id = await recipes.saveRecipe(
+      userId: _user,
+      title: 'Мусака',
+      sourceUrl: 'https://youtu.be/dQw4w9WgXcQ',
+      sourceType: RecipeSourceType.video,
+    );
+    expect(
+      (await db.recipeById(id))!.thumbnailUrl,
+      'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+    );
+
+    // One saved before this existed.
+    await db.setRecipeThumbnail(id, '');
+    await recipes.fillMissingDetails([(await db.recipeById(id))!]);
+    expect((await db.recipeById(id))!.thumbnailUrl, isNotEmpty);
+    expect(importer.calls, 0, reason: 'no page read for a video');
+
+    // A letterboxed still, as search results carry, is swapped.
+    await db.setRecipeThumbnail(
+      id,
+      'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+    );
+    await recipes.fillMissingDetails([(await db.recipeById(id))!]);
+    expect(
+      (await db.recipeById(id))!.thumbnailUrl,
+      'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+    );
   });
 
   test('an unreadable saved copy counts as none', () {

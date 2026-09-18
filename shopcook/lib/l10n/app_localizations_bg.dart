@@ -1030,4 +1030,26 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get widgetAllDone =>
       'Няма какво да се купува. Докосни, за да отвориш списъка.';
+
+  @override
+  String cookModeServingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count порции',
+      one: '1 порция',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String cookModeAmounts(String factor) {
+    return 'Количества $factor';
+  }
+
+  @override
+  String get cookModeFewer => 'По-малко';
+
+  @override
+  String get cookModeMore => 'Повече';
 }

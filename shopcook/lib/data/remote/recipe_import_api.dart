@@ -29,6 +29,9 @@ class RecipeImport {
   /// Total time in minutes; 0 when not given.
   final int minutes;
 
+  /// The page's picture of the dish, or empty.
+  final String image;
+
   /// Why it came back empty, if it did.
   final ImportFailure? failure;
 
@@ -38,6 +41,7 @@ class RecipeImport {
     this.steps = const [],
     this.servings = '',
     this.minutes = 0,
+    this.image = '',
     this.failure,
   });
 
@@ -76,6 +80,7 @@ class RecipeImportApi {
             .toList(),
         servings: data['servings'] as String? ?? '',
         minutes: (data['minutes'] as num?)?.toInt() ?? 0,
+        image: data['image'] as String? ?? '',
         failure: ingredients.isEmpty ? ImportFailure.noneFound : null,
       );
     } catch (_) {
