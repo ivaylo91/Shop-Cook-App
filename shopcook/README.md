@@ -557,6 +557,55 @@ The `search-recipes` Edge Function is deployed, but returns empty results until 
 
 Until then, the recipe search screen still works end-to-end via **"Attach a link manually"**, which lets you paste a YouTube or recipe URL directly.
 
+## Security
+
+What protects what, and what is still open.
+
+**Edge Functions require a signed-in user.** The gateway's `verify_jwt`
+check accepts the publishable key, and that key ships inside the APK, so on
+its own it let anyone call `search-recipes` (spending the YouTube quota) and
+`import-recipe` (a free web fetcher) with no account. Both now confirm the
+caller against Supabase Auth (`/auth/v1/user`) and answer 401 otherwise; the
+app sends the user's token automatically.
+
+**`import-recipe` only fetches public addresses.** Private, loopback,
+link-local and carrier-NAT IPv4 ranges, `localhost`/`.local`/`.internal`
+names and all IPv6 literals are refused, and redirects are followed by hand
+so every hop is checked, not just the first. Pages are read up to 2 MB.
+Not covered: a public hostname whose DNS points at a private address; the
+Supabase runtime's own network sandbox is the backstop there.
+
+**`search-recipes`** takes queries of at most 100 characters. The YouTube
+and Custom Search keys live only in Supabase secrets and never reach the
+app.
+
+**Database.** Row-level security is on for every cloud table, and each
+policy lets a signed-in user reach only rows carrying their own `user_id`.
+The local SQLite database on the phone is not encrypted; it sits in the
+app's private storage like any Android app's data.
+
+**Backups.** The lists are included in Android backup and phone-to-phone
+transfer; `FlutterSharedPreferences.xml`, which holds the Supabase session,
+is excluded (`res/xml/data_extraction_rules.xml`, `backup_rules.xml`). A
+restored phone keeps its lists and asks to sign in again. It also loses the
+theme and language choice, which live in the same file.
+
+**Still to do:**
+
+- The release APK is signed with the **debug key** (see "Building an APK").
+  Anything for Play needs a real upload key kept out of git; `.gitignore`
+  already excludes `*.jks` and `key.properties`.
+- **Leaked-password protection** is off in Supabase Auth (Authentication →
+  Sign In / Providers → Password → "Prevent use of leaked passwords").
+- **Restrict the YouTube API key** in Google Cloud Console to the YouTube
+  Data API v3, and rotate it: it was pasted into a chat once.
+- No per-user rate limit on the Edge Functions yet: a signed-in user could
+  still spend the daily YouTube quota by searching in a loop.
+- When sync is built: child rows (meals, products, recipes) are checked
+  only on their own `user_id`, so a user could create a row pointing at
+  another user's list id. Harmless while nothing syncs; add a check that the
+  parent list is also theirs before sync ships.
+
 ## Supabase project
 
 - Project ref: `wqidsbhicyfufncxyqww`

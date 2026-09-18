@@ -20,6 +20,32 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+/// Longer than any shopping item; a cap so the function cannot be used to
+/// send arbitrary text on to Google under this project's keys.
+const MAX_QUERY = 100;
+
+/// The signed-in user making the call, or null.
+///
+/// The gateway's JWT check lets the publishable key through, and that key
+/// ships inside the app for anyone to extract. Without this, anyone could
+/// use this function without an account; so the caller must be a real
+/// signed-in user, which only Supabase Auth can confirm.
+async function signedInUser(req: Request): Promise<string | null> {
+  const auth = req.headers.get("Authorization") ?? "";
+  if (!auth.startsWith("Bearer ")) return null;
+  const apikey = req.headers.get("apikey") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  try {
+    const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/user`, {
+      headers: { Authorization: auth, apikey },
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return typeof user?.id === "string" ? user.id : null;
+  } catch {
+    return null;
+  }
+}
+
 // The word to search alongside the item, per language. Appending the English
 // "recipe" to a Bulgarian query produced "пиле recipe", which YouTube answered
 // with a scatter of English, Ukrainian and Czech results.
@@ -138,6 +164,16 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+  // Every call spends the YouTube quota: only signed-in users may spend it.
+  if (!(await signedInUser(req))) {
+    return new Response(
+      JSON.stringify({ error: "Sign in to search.", results: [] }),
+      {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
 
   try {
     const body = await req.json();
@@ -149,7 +185,11 @@ Deno.serve(async (req: Request) => {
       ? rawLocale.slice(0, 2).toLowerCase()
       : "en";
 
-    if (typeof query !== "string" || query.trim().length === 0) {
+    if (
+      typeof query !== "string" ||
+      query.trim().length === 0 ||
+      query.length > MAX_QUERY
+    ) {
       return new Response(
         JSON.stringify({ error: "query is required" }),
         {

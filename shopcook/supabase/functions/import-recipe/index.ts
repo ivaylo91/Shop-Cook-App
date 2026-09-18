@@ -24,6 +24,28 @@ function reply(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
 }
 
+/// The signed-in user making the call, or null.
+///
+/// The gateway's JWT check lets the publishable key through, and that key
+/// ships inside the app for anyone to extract. Without this, anyone could
+/// use this function without an account; so the caller must be a real
+/// signed-in user, which only Supabase Auth can confirm.
+async function signedInUser(req: Request): Promise<string | null> {
+  const auth = req.headers.get("Authorization") ?? "";
+  if (!auth.startsWith("Bearer ")) return null;
+  const apikey = req.headers.get("apikey") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  try {
+    const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/user`, {
+      headers: { Authorization: auth, apikey },
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return typeof user?.id === "string" ? user.id : null;
+  } catch {
+    return null;
+  }
+}
+
 /// This function fetches a URL the caller supplies, so it must not be
 /// usable as a proxy into private infrastructure.
 function isPubliclyFetchable(raw: string): boolean {
@@ -36,6 +58,10 @@ function isPubliclyFetchable(raw: string): boolean {
   if (url.protocol !== "http:" && url.protocol !== "https:") return false;
 
   const host = url.hostname.toLowerCase();
+  // IPv6 literals are refused outright: "::ffff:127.0.0.1" and friends
+  // spell a private address in too many ways to list, and recipe sites are
+  // reached by name.
+  if (host.startsWith("[") || host.includes(":")) return false;
   if (
     host === "localhost" ||
     host === "0.0.0.0" ||
@@ -52,13 +78,64 @@ function isPubliclyFetchable(raw: string): boolean {
     /^192\.168\./.test(host) ||
     /^169\.254\./.test(host) ||
     /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
-    host === "::1" ||
-    host.startsWith("fd") ||
-    host.startsWith("fe80")
+    /^0\./.test(host) ||
+    /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host)
   ) {
     return false;
   }
   return true;
+}
+
+const MAX_REDIRECTS = 5;
+
+/// Fetches [url], following redirects by hand so every hop passes the same
+/// public-address check as the first: with automatic following, a public
+/// page could bounce the request on to a private one. Null when a hop is
+/// refused or there are too many.
+async function fetchPublic(url: string): Promise<Response | null> {
+  let current = url;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    if (!isPubliclyFetchable(current)) return null;
+    const res = await fetch(current, {
+      headers: {
+        // Plenty of recipe sites serve nothing useful to unknown agents.
+        "User-Agent":
+          "Mozilla/5.0 (compatible; ShopCookBot/1.0; +https://shopcook.app)",
+        "Accept": "text/html,application/xhtml+xml",
+      },
+      redirect: "manual",
+    });
+    const location = res.headers.get("location");
+    if (res.status < 300 || res.status >= 400 || !location) return res;
+    await res.body?.cancel();
+    current = new URL(location, current).toString();
+  }
+  return null;
+}
+
+/// The body as text, reading no more than [limit] bytes of it: a page
+/// larger than that is cut rather than held in memory whole.
+async function readCapped(res: Response, limit: number): Promise<string> {
+  const reader = res.body?.getReader();
+  if (!reader) return "";
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (size < limit) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    size += value.length;
+  }
+  await reader.cancel().catch(() => {});
+  const all = new Uint8Array(Math.min(size, limit));
+  let offset = 0;
+  for (const chunk of chunks) {
+    const part = chunk.subarray(0, all.length - offset);
+    all.set(part, offset);
+    offset += part.length;
+    if (offset >= all.length) break;
+  }
+  return new TextDecoder().decode(all);
 }
 
 /// Walks JSON-LD (which may be a bare object, an array, or an @graph) and
@@ -343,6 +420,9 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+  if (!(await signedInUser(req))) {
+    return reply({ error: "Sign in to import recipes." }, 401);
+  }
 
   let url = "";
   try {
@@ -357,23 +437,21 @@ Deno.serve(async (req: Request) => {
 
   let html: string;
   try {
-    const res = await fetch(url, {
-      headers: {
-        // Plenty of recipe sites serve nothing useful to unknown agents.
-        "User-Agent":
-          "Mozilla/5.0 (compatible; ShopCookBot/1.0; +https://shopcook.app)",
-        "Accept": "text/html,application/xhtml+xml",
-      },
-      redirect: "follow",
-    });
+    const res = await fetchPublic(url);
+    if (!res) {
+      return reply({
+        ingredients: [],
+        error: "That page redirects somewhere that is not a public web address.",
+      });
+    }
     if (!res.ok) {
+      await res.body?.cancel();
       return reply({
         ingredients: [],
         error: `The site returned ${res.status}.`,
       });
     }
-    const buffer = await res.arrayBuffer();
-    html = new TextDecoder().decode(buffer.slice(0, MAX_BYTES));
+    html = await readCapped(res, MAX_BYTES);
   } catch (_err) {
     return reply({ ingredients: [], error: "Could not reach that page." });
   }
