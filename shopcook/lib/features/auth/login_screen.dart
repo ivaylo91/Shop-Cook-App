@@ -95,6 +95,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return AuthScaffold(
       title: l10n.loginTitle,
       subtitle: l10n.loginSubtitle,
+      // Not translated: a name and a year read the same in both languages.
+      footer: Text(
+        '© 2026 Ivaylo Penev',
+        textAlign: TextAlign.center,
+        style: AppText.caption.copyWith(color: context.palette.inkFaint),
+      ),
       children: [
         AuthField(
           controller: _email,

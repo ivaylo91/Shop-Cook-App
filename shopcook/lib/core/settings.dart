@@ -48,17 +48,26 @@ final themeModeProvider = NotifierProvider<ThemeModeController, ThemeMode>(
 
 const _localeKey = 'locale';
 
-/// The chosen language, or null to follow the phone.
+/// The app's default language, ignoring the phone's.
 ///
-/// Null is the default and is not the same as English: a Bulgarian phone
-/// should open the app in Bulgarian without anyone choosing anything. The
-/// override exists for the case where the phone's language is not the one you
-/// want to cook in.
+/// English rather than the phone's language: the store listing, the
+/// screenshots and the app's own wording are written in English first, and
+/// a reader who wants Bulgarian picks it — or "Follow the phone" — in
+/// Settings.
+const defaultLocale = Locale('en');
+
+/// The chosen language: [defaultLocale] until someone chooses, or null to
+/// follow the phone.
 class LocaleController extends Notifier<Locale?> {
+  /// Stored when the reader picks "Follow the phone", which is a real
+  /// choice and not the same as never having chosen.
+  static const _system = 'system';
+
   @override
   Locale? build() {
     final stored = ref.watch(sharedPreferencesProvider).getString(_localeKey);
-    if (stored == null || stored.isEmpty) return null;
+    if (stored == _system) return null;
+    if (stored == null || stored.isEmpty) return defaultLocale;
     return Locale(stored);
   }
 
@@ -67,11 +76,10 @@ class LocaleController extends Notifier<Locale?> {
     state = locale;
 
     final preferences = ref.read(sharedPreferencesProvider);
-    if (locale == null) {
-      await preferences.remove(_localeKey);
-    } else {
-      await preferences.setString(_localeKey, locale.languageCode);
-    }
+    await preferences.setString(
+      _localeKey,
+      locale?.languageCode ?? _system,
+    );
   }
 }
 

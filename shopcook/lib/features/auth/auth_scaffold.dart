@@ -11,11 +11,15 @@ class AuthScaffold extends StatelessWidget {
   final String subtitle;
   final List<Widget> children;
 
+  /// Shown under the form, quieter than the rest: the copyright line.
+  final Widget? footer;
+
   const AuthScaffold({
     super.key,
     required this.title,
     required this.subtitle,
     required this.children,
+    this.footer,
   });
 
   @override
@@ -50,6 +54,10 @@ class AuthScaffold extends StatelessWidget {
                   ),
                   const SizedBox(height: Insets.xl),
                   ...children,
+                  if (footer != null) ...[
+                    const SizedBox(height: Insets.xxl),
+                    footer!,
+                  ],
                 ],
               ),
             ),

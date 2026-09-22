@@ -98,9 +98,15 @@ a meal for rename and delete.
 
 ## Languages
 
-English and Bulgarian. The app follows the phone by default — a `bg-BG` phone
-opens in Bulgarian with nothing to configure — and **Settings → Език** can
-override that when the phone's language is not the one you want to cook in.
+English and Bulgarian. **English is the default**, whatever the phone's
+language: the store listing and the app's own wording are written in English
+first. **Settings → Language** offers English, Български, and "Match phone"
+for anyone who wants the phone to decide.
+
+A saved choice always wins over the default, so a phone that already chose
+Bulgarian keeps it after an update; only a fresh install opens in English.
+"Match phone" is stored as a choice of its own (`locale=system`) rather than
+as the absence of one, or an update would silently overrule it.
 
 Strings live in `lib/l10n/app_en.arb` (the template) and `app_bg.arb`, and
 `AppLocalizations` is generated from them (`l10n.yaml`, `generate: true`). Read
