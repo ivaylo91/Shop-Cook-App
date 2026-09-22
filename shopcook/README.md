@@ -373,11 +373,14 @@ their rows go too. The app then wipes that user's data from the phone and
 blanks the home screen widget.
 
 **Privacy policy and deletion page.** `docs/privacy.html` and
-`docs/delete-account.html`, in Bulgarian and English. Fill in the
-`[ИМЕ…]`/`[DEVELOPER NAME]` and `[ИМЕЙЛ…]`/`[CONTACT EMAIL]` placeholders,
-publish them (GitHub Pages serving `docs/` works), and give Play Console both
-URLs: the privacy policy under App content, the deletion page under Data
-safety -> Account deletion.
+`docs/delete-account.html` at the repository root, in Bulgarian and English,
+published with GitHub Pages (Settings -> Pages -> main, folder `/docs`):
+
+- <https://ivaylo91.github.io/Shop-Cook-App/privacy.html>
+- <https://ivaylo91.github.io/Shop-Cook-App/delete-account.html>
+
+Play Console wants both: the privacy policy under App content, the deletion
+page under Data safety -> Account deletion.
 
 **Data safety answers**, matching what the app actually does:
 - Collected: email address (account management), required.
