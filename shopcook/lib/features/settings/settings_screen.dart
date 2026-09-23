@@ -166,14 +166,7 @@ class SettingsScreen extends ConsumerWidget {
                   label: Text(l10n.settingsSignOut),
                 ),
                 const SizedBox(height: Insets.sm),
-                TextButton.icon(
-                  onPressed: () => _deleteAccount(context, ref),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                  ),
-                  icon: const FaIcon(FontAwesomeIcons.userXmark, size: 14),
-                  label: Text(l10n.settingsDeleteAccount),
-                ),
+                const _DeleteAccountButton(),
               ],
             ),
           ),
@@ -246,14 +239,31 @@ class SettingsScreen extends ConsumerWidget {
       // The router redirect takes it from here.
     }
   }
+}
 
-  /// Required by Google Play for any app that creates accounts: deletion
-  /// from inside the app, of the account and the data kept under it.
-  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+/// Deleting the account, which Google Play requires any app with accounts
+/// to offer from inside the app.
+///
+/// The progress shows in the button rather than in a dialog: deleting ends
+/// the session, which sends the router to the login screen, and a dialog
+/// still open at that moment took the new page down with it when it closed,
+/// leaving a black screen.
+class _DeleteAccountButton extends ConsumerStatefulWidget {
+  const _DeleteAccountButton();
+
+  @override
+  ConsumerState<_DeleteAccountButton> createState() =>
+      _DeleteAccountButtonState();
+}
+
+class _DeleteAccountButtonState extends ConsumerState<_DeleteAccountButton> {
+  bool _busy = false;
+
+  Future<void> _delete() async {
     final l10n = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context, rootNavigator: true);
     final auth = ref.read(authRepositoryProvider);
+    final database = ref.read(databaseProvider);
     final userId = auth.currentUser?.id;
     if (userId == null) return;
 
@@ -264,20 +274,17 @@ class SettingsScreen extends ConsumerWidget {
       confirmLabel: l10n.settingsDeleteAccountConfirm,
       destructive: true,
     );
-    if (!confirmed || !context.mounted) return;
+    if (!confirmed || !mounted) return;
 
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
+    setState(() => _busy = true);
     // The server first: if it fails, nothing on the phone has been touched.
     final deleted = await auth.deleteAccount();
     if (deleted) {
-      await ref.read(databaseProvider).deleteUserData(userId);
+      await database.deleteUserData(userId);
       await clearHomeWidget();
+    } else if (mounted) {
+      setState(() => _busy = false);
     }
-    navigator.pop(); // the progress dialog
     messenger.replaceSnackBar(
       SnackBar(
         content: Text(
@@ -285,7 +292,26 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
-    // On success the session is gone and the router returns to login.
+    // On success the session is gone and the router returns to login, which
+    // takes this screen with it — so there is no state left to reset.
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final error = Theme.of(context).colorScheme.error;
+
+    return TextButton.icon(
+      onPressed: _busy ? null : _delete,
+      style: TextButton.styleFrom(foregroundColor: error),
+      icon: _busy
+          ? SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2, color: error),
+            )
+          : const FaIcon(FontAwesomeIcons.userXmark, size: 14),
+      label: Text(context.l10n.settingsDeleteAccount),
+    );
   }
 }
 

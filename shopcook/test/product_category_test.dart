@@ -44,6 +44,23 @@ void main() {
       expect(categorize('Red Bell Pepper'), ProductCategory.produce);
     });
 
+    test('matches whole words, not letters inside them', () {
+      // "bunch" contains "bun", which used to file this under Bakery.
+      expect(
+        categorize('Small bunch of coriander leaves'),
+        isNot(ProductCategory.bakery),
+      );
+      // "grape" inside "grapefruit" and "corn" inside "cornflour" likewise.
+      expect(categorize('Cornflour'), isNot(ProductCategory.produce));
+    });
+
+    test('still reads plurals and compounds', () {
+      expect(categorize('Bananas'), ProductCategory.produce);
+      expect(categorize('Tomatoes'), ProductCategory.produce);
+      expect(categorize('Buttermilk'), ProductCategory.dairyAndEggs);
+      expect(categorize('Chicken thighs'), ProductCategory.meatAndFish);
+    });
+
     test('falls back to other for anything unrecognised', () {
       expect(categorize('Batteries'), ProductCategory.other);
       expect(categorize(''), ProductCategory.other);

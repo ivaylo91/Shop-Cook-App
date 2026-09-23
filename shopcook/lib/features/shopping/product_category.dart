@@ -107,16 +107,37 @@ ProductCategory categorize(String productName) {
   );
   if (phrase != null) return phrase;
 
+  final words = name.split(RegExp(r'[\s,./()]+')).where((w) => w.isNotEmpty);
+
   // Otherwise the last word is the head noun — "orange juice" is a juice
-  // rather than an orange. `contains` rather than `==` so plurals still
-  // match ("bananas" → "banana").
-  final head = name.split(RegExp(r'\s+')).last;
-  final headMatch = _bestMatch((keyword) => head.contains(keyword));
+  // rather than an orange.
+  final headMatch = _bestMatch((keyword) => _wordIs(words.last, keyword));
   if (headMatch != null) return headMatch;
 
   // Last resort: anything mentioned anywhere in the name.
-  return _bestMatch((keyword) => name.contains(keyword)) ??
+  return _bestMatch(
+        (keyword) => words.any((word) => _wordIs(word, keyword)),
+      ) ??
       ProductCategory.other;
+}
+
+final _cyrillic = RegExp(r'[Ѐ-ӿ]');
+
+/// Whether [word] is the thing [keyword] names.
+///
+/// Word by word rather than by substring: "small bunch of coriander leaves"
+/// used to land in Bakery because "bunch" contains "bun".
+///
+/// Bulgarian keywords are stems, because the language inflects and one entry
+/// has to cover домат / домати / доматен, so those match as a prefix.
+/// English ones match the word itself, its plural, or a compound ending in
+/// it ("buttermilk" is milk, "cheesecake" is not cheese).
+bool _wordIs(String word, String keyword) {
+  if (_cyrillic.hasMatch(keyword)) return word.startsWith(keyword);
+  if (word == keyword || word.endsWith(keyword)) return true;
+  if (word == '${keyword}s' || word == '${keyword}es') return true;
+  return keyword.endsWith('y') &&
+      word == '${keyword.substring(0, keyword.length - 1)}ies';
 }
 
 /// The category whose longest keyword satisfies [matches], if any.

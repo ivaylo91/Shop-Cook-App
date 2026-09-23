@@ -13,5 +13,10 @@ The icon is the launcher artwork flattened onto the brand green: Play
 applies its own rounding and shadow, so the file must be a full square
 with no transparency.
 
-Screenshots are still needed: at least 2 phone screenshots, 16:9 or 9:16,
-each between 320 px and 3840 px on its longest side.
+`screenshots/` holds six phone screenshots (1080x1920, 9:16), built by
+`screenshots.py` from emulator captures of a demo account: a caption on the
+brand ground above each capture. Play wants at least 2 and takes up to 8.
+
+They were taken on a throwaway account with demo data ("Weekly shop",
+"Chicken curry", BBC Good Food's easy chicken curry), which was deleted
+afterwards, so no real person's data is in them.
