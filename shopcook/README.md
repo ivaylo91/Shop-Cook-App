@@ -153,6 +153,16 @@ One thing to watch when adding strings: **Bulgarian runs longer than English.**
 The first build truncated the composer hint mid-word in a single-line field.
 Anything that cannot wrap needs checking in both languages.
 
+## On a tablet
+
+Every screen is a single column, and a column stretched across a tablet
+reads badly — one shopping item alone on a line 1600 pixels wide. The app
+is held to **620 logical pixels, centred**, with the sunken palette colour
+around it (`_PhoneWidth` in `lib/app.dart`, applied through
+`MaterialApp.builder` so dialogs and sheets sit in the same column).
+
+A real two-pane tablet layout — lists beside the open list — is not built.
+
 ## Getting around
 
 Four tabs in a persistent bottom bar, each with its own navigator via

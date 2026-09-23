@@ -17,6 +17,10 @@ with no transparency.
 `screenshots.py` from emulator captures of a demo account: a caption on the
 brand ground above each capture. Play wants at least 2 and takes up to 8.
 
-They were taken on a throwaway account with demo data ("Weekly shop",
+`screenshots-tablet/` holds four at 1440x2560 (9:16), which satisfies both
+Play's 7-inch slot (320-3840 px a side) and its 10-inch one (1080-7680),
+captured with the emulator's display set to 1600x2560.
+
+Both sets were taken on a throwaway account with demo data ("Weekly shop",
 "Chicken curry", BBC Good Food's easy chicken curry), which was deleted
 afterwards, so no real person's data is in them.

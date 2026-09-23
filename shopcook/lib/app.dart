@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/design.dart';
 import 'core/localization.dart';
 import 'core/providers.dart';
 import 'core/settings.dart';
@@ -173,6 +174,39 @@ class ShopCookApp extends ConsumerWidget {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: supportedAppLocales,
       routerConfig: ref.watch(routerProvider),
+      builder: (context, child) => _PhoneWidth(child: child!),
+    );
+  }
+}
+
+/// Keeps the app to a phone's width on a tablet.
+///
+/// Every screen here is a single column — a list, a meal, a recipe's steps —
+/// and a column stretched across 1600 pixels reads badly: one shopping item
+/// alone on a line the width of the screen. Centred at phone width it looks
+/// deliberate instead, and the layout is the one the app is designed for.
+/// Applied around the router rather than per screen, so dialogs and sheets
+/// sit inside the same column.
+class _PhoneWidth extends StatelessWidget {
+  static const _maxWidth = 620.0;
+
+  final Widget child;
+
+  const _PhoneWidth({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width <= _maxWidth) return child;
+
+    return ColoredBox(
+      // The ground around the column, which no Scaffold reaches.
+      color: context.palette.sunken,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _maxWidth),
+          child: child,
+        ),
+      ),
     );
   }
 }
