@@ -1,0 +1,12 @@
+# IDE settings: local to whoever opened the project.
+.idea/
+*.iml
+
+# Secrets never belong here; the app's own .gitignore repeats these for
+# anyone working inside shopcook/.
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+key.properties
