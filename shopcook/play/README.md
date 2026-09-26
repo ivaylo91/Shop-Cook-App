@@ -24,3 +24,22 @@ captured with the emulator's display set to 1600x2560.
 Both sets were taken on a throwaway account with demo data ("Weekly shop",
 "Chicken curry", BBC Good Food's easy chicken curry), which was deleted
 afterwards, so no real person's data is in them.
+
+## Testers
+
+`testers.csv` is the email list for closed testing: **one address per line,
+no header**, which is what Play Console's "Upload CSV file" expects
+(Testing -> Closed testing -> your track -> Testers -> Create email list).
+
+Every address must be a **Google account** — a Gmail address, or another
+address registered with Google — because Play matches the tester against the
+account signed in on the device. An address that is not a Google account
+simply never sees the app.
+
+A personal developer account opened since November 2023 must run a closed
+test with **at least 12 testers who stay opted in for 14 days** before it
+can apply for production access. Google counts testers who actually opt in,
+so invite comfortably more than twelve.
+
+Testers opt in through the invitation link Play gives you on the same page,
+then install from Play like any other app.
