@@ -53,3 +53,7 @@ app.*.map.json
 *.keystore
 **/android/key.properties
 supabase/.temp/
+
+# The closed-testing tester list: other people's email addresses, and this
+# repository is public. Keep it on the machine that uploads it to Play.
+play/testers.csv

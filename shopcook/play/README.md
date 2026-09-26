@@ -27,7 +27,9 @@ afterwards, so no real person's data is in them.
 
 ## Testers
 
-`testers.csv` is the email list for closed testing: **one address per line,
+`testers.csv` is **git-ignored** — it holds other people's email
+addresses and this repository is public. It lives only on the machine that
+uploads it. It is the email list for closed testing: **one address per line,
 no header**, which is what Play Console's "Upload CSV file" expects
 (Testing -> Closed testing -> your track -> Testers -> Create email list).
 
