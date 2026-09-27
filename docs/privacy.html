@@ -20,7 +20,7 @@
 <body>
 <main>
   <h1>ShopCook</h1>
-  <p class="muted">Последна промяна / Last updated: 18.09.2026</p>
+  <p class="muted">Последна промяна / Last updated: 27.09.2026</p>
   <nav><a href="#bg">Български</a><a href="#en">English</a><a href="delete-account.html">Изтриване на акаунт / Delete account</a></nav>
 
   <section class="lang" id="bg" lang="bg">
@@ -29,7 +29,9 @@
 
     <h2>Какви данни събираме и защо</h2>
     <p><strong>Акаунт.</strong> Имейл адрес и парола, за да влизаш в приложението. Паролата се пази само като криптиран хеш. Съхраняват се от нашия доставчик Supabase в Европейския съюз (Франкфурт, Германия).</p>
-    <p><strong>Списъци, ястия, продукти и рецепти.</strong> Пазят се <em>само на твоя телефон</em>. Не се изпращат на наш сървър.</p>
+    <p><strong>Списъци, ястия, продукти и рецепти.</strong> Пазят се <em>само на твоя телефон</em>. Не се изпращат на наш сървър, освен списъците, които споделиш.</p>
+<p><strong>Споделени списъци.</strong> Когато споделиш списък, името му, ястията и продуктите в него (с количествата, цените и отметките) се пазят при Supabase в ЕС, за да ги виждат и променят хората, които се присъединят с твоя код. Те виждат само този списък, не останалите ти данни и не имейла ти. Когато спреш споделянето или изтриеш акаунта си, списъкът се изтрива от сървъра; всеки участник запазва копие на своя телефон. Ако напуснеш чужд списък, копието на другите остава.</p>
+<p><strong>Доклади за сривове.</strong> Ако приложението се срине, на нашия сървър се изпраща описание на грешката, мястото в кода, версията на приложението и на операционната система. Докладите не са свързани с акаунта ти и не съдържат списъците ти. Пазим ги само докато са нужни, за да оправим проблема.</p>
     <p><strong>Линкове към рецепти.</strong> Когато запазиш или отвориш рецепта, линкът се изпраща на нашия сървър, който зарежда страницата и връща продуктите, стъпките и снимката. Линкът и страницата не се съхраняват на сървъра.</p>
     <p><strong>Търсене на рецепти.</strong> Името на продукта, за който търсиш, се изпраща през нашия сървър към YouTube (Google) и се връщат видеа. Не пазим историята на търсенията на сървъра; последните резултати се пазят на телефона за 7 дни.</p>
     <p><strong>Баркодове.</strong> Когато сканираш продукт, номерът на баркода се изпраща към Open Food Facts (openfoodfacts.org), за да се намери името на продукта. Не се изпраща нищо друго.</p>
@@ -37,13 +39,13 @@
     <p><strong>Микрофон.</strong> Използва се само докато диктуваш продукти. Разпознаването на реч се прави от услугата за гласово въвеждане на телефона ти (например Google), според нейните условия. Приложението получава само разпознатия текст и не записва звук.</p>
 
     <h2>Какво не правим</h2>
-    <p>Нямаме реклами, аналитика или проследяване. Не продаваме и не споделяме данни с трети страни, освен описаните по-горе услуги, нужни за съответната функция.</p>
+    <p>Нямаме реклами, аналитика или проследяване (освен докладите за сривове по-горе). Не продаваме и не споделяме данни с трети страни, освен описаните по-горе услуги, нужни за съответната функция.</p>
 
     <h2>Правно основание и срокове</h2>
     <p>Обработваме данните за изпълнение на услугата, която използваш (чл. 6, ал. 1, б. „б“ от ОРЗД). Данните на акаунта се пазят, докато не го изтриеш.</p>
 
     <h2>Твоите права и изтриване</h2>
-    <p>Можеш по всяко време да изтриеш акаунта си от <strong>Настройки → Изтрий акаунта</strong>. Това изтрива акаунта и всички свързани с него данни на сървъра и на телефона. Може и да ни пишеш на ipenev91@gmail.com. Имаш право на достъп, поправка, изтриване и преносимost на данните, както и на жалба до Комисията за защита на личните данни (cpdp.bg).</p>
+    <p>Можеш по всяко време да изтриеш акаунта си от <strong>Настройки → Изтрий акаунта</strong>. Това изтрива акаунта и всички свързани с него данни на сървъра и на телефона, включително споделените от теб списъци. Може и да ни пишеш на ipenev91@gmail.com. Имаш право на достъп, поправка, изтриване и преносимост на данните, както и на жалба до Комисията за защита на личните данни (cpdp.bg).</p>
 
     <h2>Деца</h2>
     <p>Приложението не е предназначено за деца под 13 години.</p>
@@ -58,7 +60,9 @@
 
     <h2>What we collect and why</h2>
     <p><strong>Account.</strong> Your email address and password, so you can sign in. The password is stored only as a secure hash. Both are held by our provider Supabase in the European Union (Frankfurt, Germany).</p>
-    <p><strong>Lists, meals, items and recipes.</strong> Stored <em>only on your phone</em>. They are not sent to our server.</p>
+    <p><strong>Lists, meals, items and recipes.</strong> Stored <em>only on your phone</em>. They are not sent to our server, except lists you choose to share.</p>
+<p><strong>Shared lists.</strong> When you share a list, its name, meals and items (with their amounts, prices and ticks) are stored with Supabase in the EU, so the people who join with your code can see and change it. They see only that list — not your other data, and not your email address. When you stop sharing it or delete your account, the list is removed from the server; every member keeps a copy on their own phone. If you leave someone else's list, the others keep theirs.</p>
+<p><strong>Crash reports.</strong> If the app crashes, a description of the error, where in the code it happened, and the app and operating system versions are sent to our server. Reports are not linked to your account and contain none of your lists. We keep them only as long as needed to fix the problem.</p>
     <p><strong>Recipe links.</strong> When you save or open a recipe, its link is sent to our server, which loads the page and returns its ingredients, steps and picture. Neither the link nor the page is stored on the server.</p>
     <p><strong>Recipe search.</strong> The name of the item you search for is sent through our server to YouTube (Google), which returns videos. We keep no search history on the server; recent results are kept on your phone for 7 days.</p>
     <p><strong>Barcodes.</strong> When you scan a product, the barcode number is sent to Open Food Facts (openfoodfacts.org) to find the product's name. Nothing else is sent.</p>
@@ -66,13 +70,13 @@
     <p><strong>Microphone.</strong> Used only while you dictate items. Speech is recognized by your phone's voice input service (for example Google), under that service's terms. The app receives only the recognized text and records no audio.</p>
 
     <h2>What we do not do</h2>
-    <p>No ads, no analytics, no tracking. We do not sell or share data with third parties, other than the services above, each used only for its feature.</p>
+    <p>No ads, no analytics, no tracking (other than the crash reports above). We do not sell or share data with third parties, other than the services above, each used only for its feature.</p>
 
     <h2>Legal basis and retention</h2>
     <p>We process data to provide the service you use (GDPR Art. 6(1)(b)). Account data is kept until you delete your account.</p>
 
     <h2>Your rights and deletion</h2>
-    <p>You can delete your account at any time from <strong>Settings → Delete account</strong>. This deletes the account and all data linked to it, on the server and on the phone. You can also email ipenev91@gmail.com. You have the right to access, correct, delete and port your data, and to complain to your data protection authority.</p>
+    <p>You can delete your account at any time from <strong>Settings → Delete account</strong>. This deletes the account and all data linked to it, on the server and on the phone, including lists you shared. You can also email ipenev91@gmail.com. You have the right to access, correct, delete and port your data, and to complain to your data protection authority.</p>
 
     <h2>Children</h2>
     <p>The app is not directed at children under 13.</p>
