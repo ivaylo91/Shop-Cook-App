@@ -113,47 +113,50 @@ class _IngredientRecipesScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.cookWith(widget.product.name)),
-        actions: [
-          // Results are cached for a week; this is the way past the cache.
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16),
-            tooltip: context.l10n.cookSearchAgain,
-            onPressed: _loading ? null : () => _search(forceRefresh: true),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          Insets.lg,
-          Insets.sm,
-          Insets.lg,
-          Insets.xxl,
+    return Backdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(context.l10n.cookWith(widget.product.name)),
+          actions: [
+            // Results are cached for a week; this is the way past the cache.
+            IconButton(
+              icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16),
+              tooltip: context.l10n.cookSearchAgain,
+              onPressed: _loading ? null : () => _search(forceRefresh: true),
+            ),
+          ],
         ),
-        children: [
-          _SearchAppsCard(query: _query, onOpen: _open),
-          const SizedBox(height: Insets.xl),
-          Text(
-            context.l10n.cookFromYouTube,
-            style: AppText.title.copyWith(color: context.palette.ink),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            Insets.lg,
+            Insets.sm,
+            Insets.lg,
+            Insets.xxl,
           ),
-          const SizedBox(height: Insets.md),
-          if (_loading)
-            const SkeletonRows(count: 3)
-          else if (_results.isEmpty)
-            const _NoResultsNote()
-          else
-            for (final result in _results)
-              _ResultTile(
-                result: result,
-                onMeal: widget.product.mealId != null,
-                mealName: widget.mealName,
-                onOpen: () => _open(result.url),
-                onKeep: () => _keep(result),
-              ),
-        ],
+          children: [
+            _SearchAppsCard(query: _query, onOpen: _open),
+            const SizedBox(height: Insets.xl),
+            Text(
+              context.l10n.cookFromYouTube,
+              style: AppText.title.copyWith(color: context.palette.ink),
+            ),
+            const SizedBox(height: Insets.md),
+            if (_loading)
+              const SkeletonRows(count: 3)
+            else if (_results.isEmpty)
+              const _NoResultsNote()
+            else
+              for (final result in _results)
+                _ResultTile(
+                  result: result,
+                  onMeal: widget.product.mealId != null,
+                  mealName: widget.mealName,
+                  onOpen: () => _open(result.url),
+                  onKeep: () => _keep(result),
+                ),
+          ],
+        ),
       ),
     );
   }

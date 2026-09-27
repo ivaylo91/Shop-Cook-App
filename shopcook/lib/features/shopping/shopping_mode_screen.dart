@@ -25,21 +25,25 @@ class ShoppingModeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final productsAsync = ref.watch(_shopProductsProvider(list.id));
-    final meals = ref.watch(_shopMealsProvider(list.id)).valueOrNull ?? const [];
+    final meals =
+        ref.watch(_shopMealsProvider(list.id)).valueOrNull ?? const [];
     final mealNames = {for (final meal in meals) meal.id: meal.name};
 
-    return Scaffold(
-      appBar: AppBar(title: Text(list.name)),
-      // The composer stays reachable while shopping: remembering something
-      // mid-aisle should not mean backing out of the view you are using.
-      body: Column(
-        children: [
-          Expanded(child: _body(context, ref, productsAsync, mealNames)),
-          ItemComposer(
-            listId: list.id,
-            hintText: context.l10n.shopComposerHint,
-          ),
-        ],
+    return Backdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: Text(list.name)),
+        // The composer stays reachable while shopping: remembering something
+        // mid-aisle should not mean backing out of the view you are using.
+        body: Column(
+          children: [
+            Expanded(child: _body(context, ref, productsAsync, mealNames)),
+            ItemComposer(
+              listId: list.id,
+              hintText: context.l10n.shopComposerHint,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -54,82 +58,82 @@ class ShoppingModeScreen extends ConsumerWidget {
     final l10n = context.l10n;
 
     return productsAsync.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.all(Insets.lg),
-          child: SkeletonRows(count: 4),
-        ),
-        error: (_, __) => ErrorState(
-          title: l10n.shopListError,
-          details: l10n.shopListErrorDetail,
-          onRetry: () => ref.invalidate(_shopProductsProvider(list.id)),
-        ),
-        data: (products) {
-          if (products.isEmpty) {
-            return EmptyState(
-              icon: FontAwesomeIcons.cartShopping,
-              title: l10n.shopEmptyTitle,
-              message: l10n.shopEmptyMessage,
-              actionLabel: l10n.shopEmptyAction,
-              onAction: () => Navigator.pop(context),
-            );
-          }
-
-          final remaining = products.where((p) => !p.isChecked).toList();
-          final picked = products.where((p) => p.isChecked).toList();
-
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(
-              Insets.lg,
-              Insets.sm,
-              Insets.lg,
-              Insets.xxl,
-            ),
-            children: [
-              _ProgressHero(
-                picked: picked.length,
-                total: products.length,
-                pickedSpend: _sum(picked),
-                listSpend: _sum(products),
-                unpriced: products.where((p) => p.price == null).length,
-              ),
-              if (remaining.isEmpty) ...[
-                const SizedBox(height: Insets.xl),
-                _DonePeak(
-                  total: products.length,
-                  // Only the list's own items clear; a meal's ingredients go
-                  // with the meal once it is cooked.
-                  onClear: picked.any((p) => p.mealId == null)
-                      ? () => _clearTicked(context, ref)
-                      : null,
-                ),
-              ],
-              // The user's own aisle order, so the list matches the shop
-              // they actually walk rather than the enum's declaration order.
-              for (final category in ref.watch(aisleOrderProvider))
-                ..._aisle(context, ref, category, remaining, mealNames),
-              if (picked.isNotEmpty) ...[
-                const SizedBox(height: Insets.xl),
-                SectionLabel(
-                  icon: FontAwesomeIcons.basketShopping,
-                  label: l10n.shopInBasket,
-                  count: picked.length,
-                  color: palette.inkMuted,
-                ),
-                const SizedBox(height: Insets.md),
-                // Done work should recede so the eye stays on what's left.
-                Opacity(
-                  opacity: 0.6,
-                  child: _ItemGroup(
-                    tint: palette.ink,
-                    products: picked,
-                    mealNames: mealNames,
-                    onToggle: (product, value) => _toggle(ref, product, value),
-                  ),
-                ),
-              ],
-            ],
+      loading: () => const Padding(
+        padding: EdgeInsets.all(Insets.lg),
+        child: SkeletonRows(count: 4),
+      ),
+      error: (_, __) => ErrorState(
+        title: l10n.shopListError,
+        details: l10n.shopListErrorDetail,
+        onRetry: () => ref.invalidate(_shopProductsProvider(list.id)),
+      ),
+      data: (products) {
+        if (products.isEmpty) {
+          return EmptyState(
+            icon: FontAwesomeIcons.cartShopping,
+            title: l10n.shopEmptyTitle,
+            message: l10n.shopEmptyMessage,
+            actionLabel: l10n.shopEmptyAction,
+            onAction: () => Navigator.pop(context),
           );
-        },
+        }
+
+        final remaining = products.where((p) => !p.isChecked).toList();
+        final picked = products.where((p) => p.isChecked).toList();
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(
+            Insets.lg,
+            Insets.sm,
+            Insets.lg,
+            Insets.xxl,
+          ),
+          children: [
+            _ProgressHero(
+              picked: picked.length,
+              total: products.length,
+              pickedSpend: _sum(picked),
+              listSpend: _sum(products),
+              unpriced: products.where((p) => p.price == null).length,
+            ),
+            if (remaining.isEmpty) ...[
+              const SizedBox(height: Insets.xl),
+              _DonePeak(
+                total: products.length,
+                // Only the list's own items clear; a meal's ingredients go
+                // with the meal once it is cooked.
+                onClear: picked.any((p) => p.mealId == null)
+                    ? () => _clearTicked(context, ref)
+                    : null,
+              ),
+            ],
+            // The user's own aisle order, so the list matches the shop
+            // they actually walk rather than the enum's declaration order.
+            for (final category in ref.watch(aisleOrderProvider))
+              ..._aisle(context, ref, category, remaining, mealNames),
+            if (picked.isNotEmpty) ...[
+              const SizedBox(height: Insets.xl),
+              SectionLabel(
+                icon: FontAwesomeIcons.basketShopping,
+                label: l10n.shopInBasket,
+                count: picked.length,
+                color: palette.inkMuted,
+              ),
+              const SizedBox(height: Insets.md),
+              // Done work should recede so the eye stays on what's left.
+              Opacity(
+                opacity: 0.6,
+                child: _ItemGroup(
+                  tint: palette.ink,
+                  products: picked,
+                  mealNames: mealNames,
+                  onToggle: (product, value) => _toggle(ref, product, value),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -167,10 +171,8 @@ class ShoppingModeScreen extends ConsumerWidget {
 
   /// Total of the priced rows only. Unpriced items are not zero — they are
   /// unknown — which is why the hero also says how many are missing.
-  static double _sum(List<Product> products) => products.fold(
-    0,
-    (total, product) => total + (product.price ?? 0),
-  );
+  static double _sum(List<Product> products) =>
+      products.fold(0, (total, product) => total + (product.price ?? 0));
 
   /// Takes the bought items off the list once the shop is done, so the
   /// list starts the next week empty, with an undo.
@@ -325,7 +327,9 @@ class _DonePeak extends StatelessWidget {
           color: palette.accent.withValues(alpha: palette.isDark ? 0.14 : 0.08),
           borderRadius: BorderRadius.circular(Radii.card),
           border: Border.all(
-            color: palette.accent.withValues(alpha: palette.isDark ? 0.28 : 0.16),
+            color: palette.accent.withValues(
+              alpha: palette.isDark ? 0.28 : 0.16,
+            ),
           ),
         ),
         child: Column(

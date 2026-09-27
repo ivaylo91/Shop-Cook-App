@@ -17,8 +17,7 @@ class RecipeSearchScreen extends ConsumerStatefulWidget {
   const RecipeSearchScreen({super.key, required this.meal});
 
   @override
-  ConsumerState<RecipeSearchScreen> createState() =>
-      _RecipeSearchScreenState();
+  ConsumerState<RecipeSearchScreen> createState() => _RecipeSearchScreenState();
 }
 
 class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
@@ -71,49 +70,54 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
     final link = await promptForRecipeLink(context, title: widget.meal.name);
     if (link == null) return;
 
-    await ref.read(recipeRepositoryProvider).attachRecipe(
-      mealId: widget.meal.id,
-      userId: userId,
-      title: link.title,
-      sourceUrl: link.url,
-      sourceType: RecipeRepository.typeOfUrl(link.url),
-    );
+    await ref
+        .read(recipeRepositoryProvider)
+        .attachRecipe(
+          mealId: widget.meal.id,
+          userId: userId,
+          title: link.title,
+          sourceUrl: link.url,
+          sourceType: RecipeRepository.typeOfUrl(link.url),
+        );
     if (mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.recipeSearchTitle)),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(Insets.md),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      hintText: context.l10n.recipeSearchHint,
-                      prefixIcon: const FaIcon(
-                        FontAwesomeIcons.magnifyingGlass,
-                        size: 15,
+    return Backdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: Text(context.l10n.recipeSearchTitle)),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(Insets.md),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      decoration: InputDecoration(
+                        hintText: context.l10n.recipeSearchHint,
+                        prefixIcon: const FaIcon(
+                          FontAwesomeIcons.magnifyingGlass,
+                          size: 15,
+                        ),
                       ),
+                      onSubmitted: _runSearch,
                     ),
-                    onSubmitted: _runSearch,
                   ),
-                ),
-                IconButton(
-                  icon: const FaIcon(FontAwesomeIcons.link, size: 18),
-                  tooltip: context.l10n.recipeAttachManual,
-                  onPressed: _attachManualLink,
-                ),
-              ],
+                  IconButton(
+                    icon: const FaIcon(FontAwesomeIcons.link, size: 18),
+                    tooltip: context.l10n.recipeAttachManual,
+                    onPressed: _attachManualLink,
+                  ),
+                ],
+              ),
             ),
-          ),
-          Expanded(child: _buildResults()),
-        ],
+            Expanded(child: _buildResults()),
+          ],
+        ),
       ),
     );
   }
@@ -169,11 +173,13 @@ class _RecipeSearchScreenState extends ConsumerState<RecipeSearchScreen> {
           onTap: () async {
             final userId = ref.read(currentUserIdProvider);
             if (userId == null) return;
-            await ref.read(recipeRepositoryProvider).attachFromSearchResult(
-              mealId: widget.meal.id,
-              userId: userId,
-              result: r,
-            );
+            await ref
+                .read(recipeRepositoryProvider)
+                .attachFromSearchResult(
+                  mealId: widget.meal.id,
+                  userId: userId,
+                  result: r,
+                );
             if (context.mounted) Navigator.pop(context);
           },
         );

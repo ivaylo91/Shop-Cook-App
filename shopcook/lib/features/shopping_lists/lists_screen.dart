@@ -58,7 +58,12 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         VerticalDivider(width: 1, color: palette.divider),
         Expanded(
           child: selected == null
-              ? const Scaffold(body: SizedBox.shrink())
+              ? const Backdrop(
+                  child: Scaffold(
+                    backgroundColor: Colors.transparent,
+                    body: SizedBox.shrink(),
+                  ),
+                )
               : ListDetailScreen(key: ValueKey(selected.id), list: selected),
         ),
       ],
@@ -78,80 +83,83 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
     final shared = ref.watch(sharedListsProvider).valueOrNull ?? const {};
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.navLists),
-        actions: [
-          TextButton.icon(
-            onPressed: () => joinSharedList(context, ref),
-            icon: const FaIcon(FontAwesomeIcons.userPlus, size: 14),
-            label: Text(l10n.joinAction),
-          ),
-          const SizedBox(width: Insets.sm),
-        ],
-      ),
-      body: listsAsync.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.all(Insets.lg),
-          child: SkeletonRows(count: 3),
-        ),
-        error: (_, __) => ErrorState(
-          title: l10n.listsLoadError,
-          details: l10n.listsLoadErrorDetail,
-          onRetry: () => ref.invalidate(_listsStreamProvider),
-        ),
-        data: (lists) {
-          if (lists.isEmpty) {
-            return EmptyState(
-              icon: FontAwesomeIcons.rectangleList,
-              title: l10n.listsEmptyTitle,
-              message: l10n.listsEmptyMessage,
-              actionLabel: l10n.listsEmptyAction,
-              onAction: () => _createList(context, ref),
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(
-              Insets.lg,
-              Insets.lg,
-              Insets.lg,
-              96,
+    return Backdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(l10n.navLists),
+          actions: [
+            TextButton.icon(
+              onPressed: () => joinSharedList(context, ref),
+              icon: const FaIcon(FontAwesomeIcons.userPlus, size: 14),
+              label: Text(l10n.joinAction),
             ),
-            itemCount: lists.length,
-            separatorBuilder: (_, __) => const SizedBox(height: Insets.md),
-            itemBuilder: (context, index) {
-              final list = lists[index];
-              return Dismissible(
-                key: ValueKey(list.id),
-                direction: DismissDirection.endToStart,
-                background: const _DeleteBackground(),
-                // Deleting a list cascades to every meal, product and recipe
-                // under it, so it both asks first and offers an undo.
-                confirmDismiss: (_) => confirmAction(
-                  context,
-                  title: l10n.listsDeleteTitle(list.name),
-                  message: shared.containsKey(list.id)
-                      ? l10n.listsDeleteSharedMessage
-                      : l10n.listsDeleteMessage,
-                  confirmLabel: l10n.actionDelete,
-                  destructive: true,
-                ),
-                onDismissed: (_) => _deleteWithUndo(context, ref, list),
-                child: _ListCard(
-                  list: list,
-                  shared: shared.containsKey(list.id),
-                  selected: list.id == selectedId,
-                  onOpen: onOpen == null ? null : () => onOpen(list),
-                ),
+            const SizedBox(width: Insets.sm),
+          ],
+        ),
+        body: listsAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(Insets.lg),
+            child: SkeletonRows(count: 3),
+          ),
+          error: (_, __) => ErrorState(
+            title: l10n.listsLoadError,
+            details: l10n.listsLoadErrorDetail,
+            onRetry: () => ref.invalidate(_listsStreamProvider),
+          ),
+          data: (lists) {
+            if (lists.isEmpty) {
+              return EmptyState(
+                icon: FontAwesomeIcons.rectangleList,
+                title: l10n.listsEmptyTitle,
+                message: l10n.listsEmptyMessage,
+                actionLabel: l10n.listsEmptyAction,
+                onAction: () => _createList(context, ref),
               );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _createList(context, ref),
-        tooltip: l10n.listsNewTitle,
-        child: const FaIcon(FontAwesomeIcons.plus, size: 18),
+            }
+            return ListView.separated(
+              padding: const EdgeInsets.fromLTRB(
+                Insets.lg,
+                Insets.lg,
+                Insets.lg,
+                96,
+              ),
+              itemCount: lists.length,
+              separatorBuilder: (_, __) => const SizedBox(height: Insets.md),
+              itemBuilder: (context, index) {
+                final list = lists[index];
+                return Dismissible(
+                  key: ValueKey(list.id),
+                  direction: DismissDirection.endToStart,
+                  background: const _DeleteBackground(),
+                  // Deleting a list cascades to every meal, product and recipe
+                  // under it, so it both asks first and offers an undo.
+                  confirmDismiss: (_) => confirmAction(
+                    context,
+                    title: l10n.listsDeleteTitle(list.name),
+                    message: shared.containsKey(list.id)
+                        ? l10n.listsDeleteSharedMessage
+                        : l10n.listsDeleteMessage,
+                    confirmLabel: l10n.actionDelete,
+                    destructive: true,
+                  ),
+                  onDismissed: (_) => _deleteWithUndo(context, ref, list),
+                  child: _ListCard(
+                    list: list,
+                    shared: shared.containsKey(list.id),
+                    selected: list.id == selectedId,
+                    onOpen: onOpen == null ? null : () => onOpen(list),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _createList(context, ref),
+          tooltip: l10n.listsNewTitle,
+          child: const FaIcon(FontAwesomeIcons.plus, size: 18),
+        ),
       ),
     );
   }

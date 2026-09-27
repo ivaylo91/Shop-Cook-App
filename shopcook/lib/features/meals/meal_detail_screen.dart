@@ -31,149 +31,152 @@ class MealDetailScreen extends ConsumerWidget {
     final productsAsync = ref.watch(_mealProductsProvider(meal.id));
     final recipesAsync = ref.watch(_mealRecipesProvider(meal.id));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(meal.name),
-        actions: [
-          IconButton(
-            icon: FaIcon(
-              meal.plannedFor == null
-                  ? FontAwesomeIcons.calendarPlus
-                  : FontAwesomeIcons.calendarCheck,
-              size: 17,
-            ),
-            tooltip: meal.plannedFor == null
-                ? l10n.mealPlanDay
-                : l10n.mealPlannedFor(
-                    DateFormat('EEE d MMM', locale).format(meal.plannedFor!),
-                  ),
-            onPressed: () => _plan(context, ref),
-          ),
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 17),
-            tooltip: l10n.mealFindRecipe,
-            onPressed: () => context.push(
-              '/list/$listId/meal/${meal.id}/search',
-              extra: meal,
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                Insets.lg,
-                Insets.lg,
-                Insets.lg,
-                Insets.xl,
+    return Backdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(meal.name),
+          actions: [
+            IconButton(
+              icon: FaIcon(
+                meal.plannedFor == null
+                    ? FontAwesomeIcons.calendarPlus
+                    : FontAwesomeIcons.calendarCheck,
+                size: 17,
               ),
-              children: [
-                SectionLabel(
-                  icon: FontAwesomeIcons.carrot,
-                  label: l10n.mealIngredients,
-                  // Null rather than 0: a bare "0" beside a heading whose
-                  // own empty state already says so is just noise.
-                  count: switch (productsAsync.valueOrNull?.length) {
-                    null || 0 => null,
-                    final count => count,
-                  },
-                  color: palette.accent,
-                ),
-                const SizedBox(height: Insets.md),
-                productsAsync.when(
-                  loading: () => const SkeletonRows(count: 3),
-                  error: (_, __) => ErrorState(
-                    title: l10n.mealIngredientsError,
-                    onRetry: () =>
-                        ref.invalidate(_mealProductsProvider(meal.id)),
-                  ),
-                  data: (products) {
-                    if (products.isEmpty) {
-                      return InlineNote(message: l10n.mealIngredientsEmpty);
-                    }
-                    return AppCardList(
-                      tint: palette.accent,
-                      children: [
-                        for (final product in products)
-                          ProductRow(
-                            name: product.name,
-                            details: [
-                              '${product.quantity} ${product.unit}'.trim(),
-                              if (product.price != null)
-                                context.money(product.price!),
-                            ].where((part) => part.isNotEmpty).join(' · '),
-                            checked: product.isChecked,
-                            onToggle: (value) => ref
-                                .read(shoppingListRepositoryProvider)
-                                .toggleProductChecked(product.id, value),
-                            onLongPress: () =>
-                                _openItemSheet(context, ref, product),
-                            trailing: IconButton(
-                              icon: const FaIcon(
-                                FontAwesomeIcons.ellipsisVertical,
-                                size: 16,
-                              ),
-                              tooltip: l10n.itemActions,
-                              onPressed: () =>
-                                  _openItemSheet(context, ref, product),
-                            ),
-                          ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: Insets.xl),
-                SectionLabel(
-                  icon: FontAwesomeIcons.bookOpen,
-                  label: l10n.mealRecipe,
-                  color: palette.aisle(_recipeSectionHue),
-                  trailing: TextButton.icon(
-                    onPressed: () => _addFromLibrary(
-                      context,
-                      ref,
-                      recipesAsync.valueOrNull ?? const [],
+              tooltip: meal.plannedFor == null
+                  ? l10n.mealPlanDay
+                  : l10n.mealPlannedFor(
+                      DateFormat('EEE d MMM', locale).format(meal.plannedFor!),
                     ),
-                    icon: const FaIcon(FontAwesomeIcons.bookOpen, size: 13),
-                    label: Text(l10n.mealFromLibrary),
-                  ),
-                ),
-                const SizedBox(height: Insets.md),
-                recipesAsync.when(
-                  loading: () => const SkeletonRows(count: 1),
-                  error: (_, __) => ErrorState(
-                    title: l10n.mealRecipeError,
-                    onRetry: () =>
-                        ref.invalidate(_mealRecipesProvider(meal.id)),
-                  ),
-                  data: (recipes) {
-                    if (recipes.isEmpty) {
-                      return InlineNote(message: l10n.mealRecipeEmpty);
-                    }
-                    return Column(
-                      children: [
-                        for (final recipe in recipes) ...[
-                          _RecipeCard(
-                            recipe: recipe,
-                            listId: listId,
-                            mealId: meal.id,
-                          ),
-                          const SizedBox(height: Insets.md),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-              ],
+              onPressed: () => _plan(context, ref),
             ),
-          ),
-          ItemComposer(
-            listId: listId,
-            mealId: meal.id,
-            hintText: l10n.mealComposerHint,
-          ),
-        ],
+            IconButton(
+              icon: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 17),
+              tooltip: l10n.mealFindRecipe,
+              onPressed: () => context.push(
+                '/list/$listId/meal/${meal.id}/search',
+                extra: meal,
+              ),
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  Insets.lg,
+                  Insets.lg,
+                  Insets.lg,
+                  Insets.xl,
+                ),
+                children: [
+                  SectionLabel(
+                    icon: FontAwesomeIcons.carrot,
+                    label: l10n.mealIngredients,
+                    // Null rather than 0: a bare "0" beside a heading whose
+                    // own empty state already says so is just noise.
+                    count: switch (productsAsync.valueOrNull?.length) {
+                      null || 0 => null,
+                      final count => count,
+                    },
+                    color: palette.accent,
+                  ),
+                  const SizedBox(height: Insets.md),
+                  productsAsync.when(
+                    loading: () => const SkeletonRows(count: 3),
+                    error: (_, __) => ErrorState(
+                      title: l10n.mealIngredientsError,
+                      onRetry: () =>
+                          ref.invalidate(_mealProductsProvider(meal.id)),
+                    ),
+                    data: (products) {
+                      if (products.isEmpty) {
+                        return InlineNote(message: l10n.mealIngredientsEmpty);
+                      }
+                      return AppCardList(
+                        tint: palette.accent,
+                        children: [
+                          for (final product in products)
+                            ProductRow(
+                              name: product.name,
+                              details: [
+                                '${product.quantity} ${product.unit}'.trim(),
+                                if (product.price != null)
+                                  context.money(product.price!),
+                              ].where((part) => part.isNotEmpty).join(' · '),
+                              checked: product.isChecked,
+                              onToggle: (value) => ref
+                                  .read(shoppingListRepositoryProvider)
+                                  .toggleProductChecked(product.id, value),
+                              onLongPress: () =>
+                                  _openItemSheet(context, ref, product),
+                              trailing: IconButton(
+                                icon: const FaIcon(
+                                  FontAwesomeIcons.ellipsisVertical,
+                                  size: 16,
+                                ),
+                                tooltip: l10n.itemActions,
+                                onPressed: () =>
+                                    _openItemSheet(context, ref, product),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: Insets.xl),
+                  SectionLabel(
+                    icon: FontAwesomeIcons.bookOpen,
+                    label: l10n.mealRecipe,
+                    color: palette.aisle(_recipeSectionHue),
+                    trailing: TextButton.icon(
+                      onPressed: () => _addFromLibrary(
+                        context,
+                        ref,
+                        recipesAsync.valueOrNull ?? const [],
+                      ),
+                      icon: const FaIcon(FontAwesomeIcons.bookOpen, size: 13),
+                      label: Text(l10n.mealFromLibrary),
+                    ),
+                  ),
+                  const SizedBox(height: Insets.md),
+                  recipesAsync.when(
+                    loading: () => const SkeletonRows(count: 1),
+                    error: (_, __) => ErrorState(
+                      title: l10n.mealRecipeError,
+                      onRetry: () =>
+                          ref.invalidate(_mealRecipesProvider(meal.id)),
+                    ),
+                    data: (recipes) {
+                      if (recipes.isEmpty) {
+                        return InlineNote(message: l10n.mealRecipeEmpty);
+                      }
+                      return Column(
+                        children: [
+                          for (final recipe in recipes) ...[
+                            _RecipeCard(
+                              recipe: recipe,
+                              listId: listId,
+                              mealId: meal.id,
+                            ),
+                            const SizedBox(height: Insets.md),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            ItemComposer(
+              listId: listId,
+              mealId: meal.id,
+              hintText: l10n.mealComposerHint,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -44,67 +44,73 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           .fillMissingDetails(library.map((e) => e.recipe));
     });
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.navRecipes),
-        actions: [
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.link, size: 17),
-            tooltip: l10n.libraryAddLink,
-            onPressed: () => addLinkToLibrary(context, ref),
-          ),
-        ],
-      ),
-      body: libraryAsync.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.all(Insets.lg),
-          child: SkeletonRows(count: 3),
+    return Backdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(l10n.navRecipes),
+          actions: [
+            IconButton(
+              icon: const FaIcon(FontAwesomeIcons.link, size: 17),
+              tooltip: l10n.libraryAddLink,
+              onPressed: () => addLinkToLibrary(context, ref),
+            ),
+          ],
         ),
-        error: (_, __) =>
-            ErrorState(onRetry: () => ref.invalidate(libraryProvider)),
-        data: (library) {
-          if (library.isEmpty) {
-            return EmptyState(
-              icon: FontAwesomeIcons.bookOpen,
-              title: l10n.libraryEmptyTitle,
-              message: l10n.libraryEmptyMessage,
-              actionLabel: l10n.libraryAddLink,
-              actionIcon: FontAwesomeIcons.link,
-              onAction: () => addLinkToLibrary(context, ref),
-            );
-          }
+        body: libraryAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(Insets.lg),
+            child: SkeletonRows(count: 3),
+          ),
+          error: (_, __) =>
+              ErrorState(onRetry: () => ref.invalidate(libraryProvider)),
+          data: (library) {
+            if (library.isEmpty) {
+              return EmptyState(
+                icon: FontAwesomeIcons.bookOpen,
+                title: l10n.libraryEmptyTitle,
+                message: l10n.libraryEmptyMessage,
+                actionLabel: l10n.libraryAddLink,
+                actionIcon: FontAwesomeIcons.link,
+                onAction: () => addLinkToLibrary(context, ref),
+              );
+            }
 
-          final searchable = library.length >= _searchFrom;
-          final shown = searchable
-              ? library.where((e) => recipeMatches(e.recipe, _query)).toList()
-              : library;
+            final searchable = library.length >= _searchFrom;
+            final shown = searchable
+                ? library.where((e) => recipeMatches(e.recipe, _query)).toList()
+                : library;
 
-          return ListView(
-            padding: const EdgeInsets.all(Insets.lg),
-            children: [
-              if (searchable) ...[
-                TextField(
-                  onChanged: (value) => setState(() => _query = value),
-                  textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(
-                    hintText: l10n.librarySearchHint,
-                    prefixIcon: const Padding(
-                      padding: EdgeInsets.all(Insets.md),
-                      child: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 15),
+            return ListView(
+              padding: const EdgeInsets.all(Insets.lg),
+              children: [
+                if (searchable) ...[
+                  TextField(
+                    onChanged: (value) => setState(() => _query = value),
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      hintText: l10n.librarySearchHint,
+                      prefixIcon: const Padding(
+                        padding: EdgeInsets.all(Insets.md),
+                        child: FaIcon(
+                          FontAwesomeIcons.magnifyingGlass,
+                          size: 15,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: Insets.lg),
+                  const SizedBox(height: Insets.lg),
+                ],
+                if (shown.isEmpty)
+                  InlineNote(message: l10n.libraryNoMatch(_query.trim())),
+                for (final (index, entry) in shown.indexed) ...[
+                  if (index > 0) const SizedBox(height: Insets.md),
+                  _LibraryCard(entry: entry),
+                ],
               ],
-              if (shown.isEmpty)
-                InlineNote(message: l10n.libraryNoMatch(_query.trim())),
-              for (final (index, entry) in shown.indexed) ...[
-                if (index > 0) const SizedBox(height: Insets.md),
-                _LibraryCard(entry: entry),
-              ],
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

@@ -7,6 +7,7 @@ library;
 
 export 'app_card.dart';
 export 'app_sheet.dart';
+export 'backdrop.dart';
 export 'product_row.dart';
 export 'progress_bar.dart';
 export 'section_label.dart';

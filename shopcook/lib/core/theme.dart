@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'design.dart';
 
@@ -75,8 +76,25 @@ ThemeData buildAppTheme(Brightness brightness) {
     extensions: <ThemeExtension<dynamic>>[palette],
 
     appBarTheme: base.appBarTheme.copyWith(
-      backgroundColor: palette.surface,
+      // Clear at rest, so a screen's backdrop pattern runs up behind the
+      // title instead of stopping at a hard edge under it; solid once
+      // content scrolls underneath, so the title stays readable.
+      backgroundColor: WidgetStateColor.resolveWith(
+        (states) => states.contains(WidgetState.scrolledUnder)
+            ? palette.surface
+            : Colors.transparent,
+      ),
       foregroundColor: palette.ink,
+      // Set outright: from a clear background the app bar would guess the
+      // status bar sits on something dark and turn its icons white, leaving
+      // the clock invisible on the light ground.
+      systemOverlayStyle: palette.isDark
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+            ),
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,

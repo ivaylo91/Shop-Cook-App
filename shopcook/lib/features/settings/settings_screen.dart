@@ -28,197 +28,199 @@ class SettingsScreen extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     final email = ref.watch(authRepositoryProvider).currentUser?.email;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.navSettings)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          Insets.lg,
-          Insets.lg,
-          Insets.lg,
-          Insets.xxl,
-        ),
-        children: [
-          SectionLabel(
-            icon: FontAwesomeIcons.circleHalfStroke,
-            label: l10n.settingsAppearance,
-            color: palette.accent,
+    return Backdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: Text(l10n.navSettings)),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            Insets.lg,
+            Insets.lg,
+            Insets.lg,
+            Insets.xxl,
           ),
-          const SizedBox(height: Insets.md),
-          AppCard(
-            padding: const EdgeInsets.all(Insets.sm),
-            shadowOpacity: 0.07,
-            // The group's value and handler live on the ancestor now; the
-            // per-tile groupValue/onChanged pair is deprecated.
-            child: RadioGroup<ThemeMode>(
-              groupValue: mode,
-              onChanged: (value) {
-                if (value != null) {
-                  ref.read(themeModeProvider.notifier).set(value);
-                }
-              },
-              child: Column(
-                children: [
-                  for (final option in ThemeMode.values)
-                    RadioListTile<ThemeMode>(
-                      value: option,
-                      title: Text(_themeLabel(l10n, option)),
-                      subtitle: option == ThemeMode.system
-                          ? Text(l10n.themeSystemSubtitle)
-                          : null,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: Insets.sm,
+          children: [
+            SectionLabel(
+              icon: FontAwesomeIcons.circleHalfStroke,
+              label: l10n.settingsAppearance,
+              color: palette.accent,
+            ),
+            const SizedBox(height: Insets.md),
+            AppCard(
+              padding: const EdgeInsets.all(Insets.sm),
+              shadowOpacity: 0.07,
+              // The group's value and handler live on the ancestor now; the
+              // per-tile groupValue/onChanged pair is deprecated.
+              child: RadioGroup<ThemeMode>(
+                groupValue: mode,
+                onChanged: (value) {
+                  if (value != null) {
+                    ref.read(themeModeProvider.notifier).set(value);
+                  }
+                },
+                child: Column(
+                  children: [
+                    for (final option in ThemeMode.values)
+                      RadioListTile<ThemeMode>(
+                        value: option,
+                        title: Text(_themeLabel(l10n, option)),
+                        subtitle: option == ThemeMode.system
+                            ? Text(l10n.themeSystemSubtitle)
+                            : null,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: Insets.sm,
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: Insets.xl),
-          SectionLabel(
-            icon: FontAwesomeIcons.language,
-            label: l10n.settingsLanguage,
-            color: palette.accent,
-          ),
-          const SizedBox(height: Insets.md),
-          AppCard(
-            padding: const EdgeInsets.all(Insets.sm),
-            shadowOpacity: 0.07,
-            // Null means "follow the phone", which is the default: a Bulgarian
-            // phone should open the app in Bulgarian without anyone choosing.
-            child: RadioGroup<Locale?>(
-              groupValue: locale,
-              onChanged: (value) =>
-                  ref.read(localeProvider.notifier).set(value),
-              child: Column(
-                children: [
-                  RadioListTile<Locale?>(
-                    value: null,
-                    title: Text(l10n.languageSystem),
-                    subtitle: Text(l10n.themeSystemSubtitle),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: Insets.sm,
-                    ),
-                  ),
-                  for (final option in supportedAppLocales)
+            const SizedBox(height: Insets.xl),
+            SectionLabel(
+              icon: FontAwesomeIcons.language,
+              label: l10n.settingsLanguage,
+              color: palette.accent,
+            ),
+            const SizedBox(height: Insets.md),
+            AppCard(
+              padding: const EdgeInsets.all(Insets.sm),
+              shadowOpacity: 0.07,
+              // Null means "follow the phone", which is the default: a Bulgarian
+              // phone should open the app in Bulgarian without anyone choosing.
+              child: RadioGroup<Locale?>(
+                groupValue: locale,
+                onChanged: (value) =>
+                    ref.read(localeProvider.notifier).set(value),
+                child: Column(
+                  children: [
                     RadioListTile<Locale?>(
-                      value: option,
-                      // Each language named in itself, so someone who has the
-                      // app in a language they cannot read can still find the
-                      // way out.
-                      title: Text(localeEndonym(option)),
+                      value: null,
+                      title: Text(l10n.languageSystem),
+                      subtitle: Text(l10n.themeSystemSubtitle),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: Insets.sm,
                       ),
                     ),
+                    for (final option in supportedAppLocales)
+                      RadioListTile<Locale?>(
+                        value: option,
+                        // Each language named in itself, so someone who has the
+                        // app in a language they cannot read can still find the
+                        // way out.
+                        title: Text(localeEndonym(option)),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: Insets.sm,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: Insets.xl),
+            SectionLabel(
+              icon: FontAwesomeIcons.arrowDownUpAcrossLine,
+              label: l10n.settingsAisleOrder,
+              color: palette.accent,
+            ),
+            const SizedBox(height: Insets.sm),
+            Text(
+              l10n.settingsAisleOrderNote,
+              style: AppText.caption.copyWith(color: palette.inkMuted),
+            ),
+            const SizedBox(height: Insets.md),
+            const _AisleOrderCard(),
+            const SizedBox(height: Insets.xl),
+            SectionLabel(
+              icon: FontAwesomeIcons.user,
+              label: l10n.settingsAccount,
+              color: palette.inkMuted,
+            ),
+            const SizedBox(height: Insets.md),
+            AppCard(
+              padding: const EdgeInsets.all(Insets.lg),
+              tint: palette.ink,
+              shadowOpacity: 0.06,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    email ?? l10n.settingsSignedIn,
+                    style: AppText.body.copyWith(
+                      color: palette.ink,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: Insets.xs),
+                  Text(
+                    // Being honest about this matters: someone who signs in on a
+                    // new phone and finds it empty would otherwise assume the
+                    // app lost their data.
+                    l10n.settingsDeviceOnly,
+                    style: AppText.caption.copyWith(color: palette.inkMuted),
+                  ),
+                  const SizedBox(height: Insets.lg),
+                  OutlinedButton.icon(
+                    onPressed: () => _signOut(context, ref),
+                    icon: const FaIcon(
+                      FontAwesomeIcons.rightFromBracket,
+                      size: 14,
+                    ),
+                    label: Text(l10n.settingsSignOut),
+                  ),
+                  const SizedBox(height: Insets.sm),
+                  const _DeleteAccountButton(),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: Insets.xl),
-          SectionLabel(
-            icon: FontAwesomeIcons.arrowDownUpAcrossLine,
-            label: l10n.settingsAisleOrder,
-            color: palette.accent,
-          ),
-          const SizedBox(height: Insets.sm),
-          Text(
-            l10n.settingsAisleOrderNote,
-            style: AppText.caption.copyWith(color: palette.inkMuted),
-          ),
-          const SizedBox(height: Insets.md),
-          const _AisleOrderCard(),
-          const SizedBox(height: Insets.xl),
-          SectionLabel(
-            icon: FontAwesomeIcons.user,
-            label: l10n.settingsAccount,
-            color: palette.inkMuted,
-          ),
-          const SizedBox(height: Insets.md),
-          AppCard(
-            padding: const EdgeInsets.all(Insets.lg),
-            tint: palette.ink,
-            shadowOpacity: 0.06,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  email ?? l10n.settingsSignedIn,
-                  style: AppText.body.copyWith(
-                    color: palette.ink,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: Insets.xs),
-                Text(
-                  // Being honest about this matters: someone who signs in on a
-                  // new phone and finds it empty would otherwise assume the
-                  // app lost their data.
-                  l10n.settingsDeviceOnly,
-                  style: AppText.caption.copyWith(color: palette.inkMuted),
-                ),
-                const SizedBox(height: Insets.lg),
-                OutlinedButton.icon(
-                  onPressed: () => _signOut(context, ref),
-                  icon: const FaIcon(
-                    FontAwesomeIcons.rightFromBracket,
-                    size: 14,
-                  ),
-                  label: Text(l10n.settingsSignOut),
-                ),
-                const SizedBox(height: Insets.sm),
-                const _DeleteAccountButton(),
-              ],
+            const SizedBox(height: Insets.xl),
+            SectionLabel(
+              icon: FontAwesomeIcons.circleInfo,
+              label: l10n.settingsAbout,
+              color: palette.inkMuted,
             ),
-          ),
-          const SizedBox(height: Insets.xl),
-          SectionLabel(
-            icon: FontAwesomeIcons.circleInfo,
-            label: l10n.settingsAbout,
-            color: palette.inkMuted,
-          ),
-          const SizedBox(height: Insets.md),
-          AppCard(
-            padding: const EdgeInsets.all(Insets.lg),
-            tint: palette.ink,
-            shadowOpacity: 0.06,
-            child: Row(
-              children: [
-                const ShopCookLogoBadge(size: 44),
-                const SizedBox(width: Insets.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.appTitle,
-                        style: AppText.body.copyWith(
-                          color: palette.ink,
-                          fontWeight: FontWeight.w600,
+            const SizedBox(height: Insets.md),
+            AppCard(
+              padding: const EdgeInsets.all(Insets.lg),
+              tint: palette.ink,
+              shadowOpacity: 0.06,
+              child: Row(
+                children: [
+                  const ShopCookLogoBadge(size: 44),
+                  const SizedBox(width: Insets.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.appTitle,
+                          style: AppText.body.copyWith(
+                            color: palette.ink,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Text(
-                        l10n.appTagline,
-                        style: AppText.caption.copyWith(
-                          color: palette.inkMuted,
+                        Text(
+                          l10n.appTagline,
+                          style: AppText.caption.copyWith(
+                            color: palette.inkMuted,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  String _themeLabel(AppLocalizations l10n, ThemeMode mode) =>
-      switch (mode) {
-        ThemeMode.system => l10n.themeSystem,
-        ThemeMode.light => l10n.themeLight,
-        ThemeMode.dark => l10n.themeDark,
-      };
+  String _themeLabel(AppLocalizations l10n, ThemeMode mode) => switch (mode) {
+    ThemeMode.system => l10n.themeSystem,
+    ThemeMode.light => l10n.themeLight,
+    ThemeMode.dark => l10n.themeDark,
+  };
 
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
     final l10n = context.l10n;
@@ -370,13 +372,9 @@ class _AisleOrderCard extends ConsumerWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Padding(
-              padding: const EdgeInsets.only(
-                right: Insets.sm,
-                top: Insets.xs,
-              ),
+              padding: const EdgeInsets.only(right: Insets.sm, top: Insets.xs),
               child: TextButton(
-                onPressed: () =>
-                    ref.read(aisleOrderProvider.notifier).reset(),
+                onPressed: () => ref.read(aisleOrderProvider.notifier).reset(),
                 child: Text(l10n.settingsAisleOrderReset),
               ),
             ),

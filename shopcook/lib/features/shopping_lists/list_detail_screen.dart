@@ -35,154 +35,159 @@ class ListDetailScreen extends ConsumerWidget {
     // The name from the database rather than the one pushed with the route,
     // so a rename — here or by someone the list is shared with — shows.
     final name =
-        ref
-            .watch(_listProvider(list.id))
-            .valueOrNull
-            ?.name ??
-        list.name;
+        ref.watch(_listProvider(list.id)).valueOrNull?.name ?? list.name;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Flexible(child: Text(name, overflow: TextOverflow.ellipsis)),
-            if (shared) ...[
-              const SizedBox(width: Insets.sm),
-              Tooltip(
-                message: l10n.listShared,
-                child: FaIcon(
-                  FontAwesomeIcons.userGroup,
-                  size: 14,
-                  color: palette.accent,
+    return Backdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Flexible(child: Text(name, overflow: TextOverflow.ellipsis)),
+              if (shared) ...[
+                const SizedBox(width: Insets.sm),
+                Tooltip(
+                  message: l10n.listShared,
+                  child: FaIcon(
+                    FontAwesomeIcons.userGroup,
+                    size: 14,
+                    color: palette.accent,
+                  ),
                 ),
-              ),
+              ],
             ],
+          ),
+          actions: [
+            IconButton(
+              icon: const FaIcon(FontAwesomeIcons.shareNodes, size: 17),
+              tooltip: l10n.shareList,
+              onPressed: () => showShareActions(context, ref, list),
+            ),
+            IconButton(
+              icon: const FaIcon(FontAwesomeIcons.star, size: 16),
+              tooltip: l10n.staplesRestock,
+              onPressed: () => _restock(context, ref),
+            ),
+            IconButton(
+              icon: const FaIcon(FontAwesomeIcons.utensils, size: 17),
+              tooltip: l10n.mealNewTitle,
+              onPressed: () => _createMeal(context, ref),
+            ),
+            IconButton(
+              icon: const FaIcon(FontAwesomeIcons.cartShopping, size: 18),
+              tooltip: l10n.listDetailShoppingMode,
+              onPressed: () =>
+                  context.push('/list/${list.id}/shop', extra: list),
+            ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.shareNodes, size: 17),
-            tooltip: l10n.shareList,
-            onPressed: () => showShareActions(context, ref, list),
-          ),
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.star, size: 16),
-            tooltip: l10n.staplesRestock,
-            onPressed: () => _restock(context, ref),
-          ),
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.utensils, size: 17),
-            tooltip: l10n.mealNewTitle,
-            onPressed: () => _createMeal(context, ref),
-          ),
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.cartShopping, size: 18),
-            tooltip: l10n.listDetailShoppingMode,
-            onPressed: () => context.push('/list/${list.id}/shop', extra: list),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                Insets.lg,
-                Insets.lg,
-                Insets.lg,
-                Insets.xl,
-              ),
-              children: [
-                mealsAsync.when(
-                  loading: () => const SkeletonRows(count: 2),
-                  error: (_, __) => ErrorState(
-                    title: l10n.listDetailMealsError,
-                    onRetry: () => ref.invalidate(_mealsProvider(list.id)),
-                  ),
-                  data: (meals) {
-                    if (meals.isEmpty) return const SizedBox.shrink();
-                    return Column(
-                      children: [
-                        for (final meal in meals) ...[
-                          _MealCard(list: list, meal: meal),
-                          const SizedBox(height: Insets.md),
+        body: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  Insets.lg,
+                  Insets.lg,
+                  Insets.lg,
+                  Insets.xl,
+                ),
+                children: [
+                  mealsAsync.when(
+                    loading: () => const SkeletonRows(count: 2),
+                    error: (_, __) => ErrorState(
+                      title: l10n.listDetailMealsError,
+                      onRetry: () => ref.invalidate(_mealsProvider(list.id)),
+                    ),
+                    data: (meals) {
+                      if (meals.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        children: [
+                          for (final meal in meals) ...[
+                            _MealCard(list: list, meal: meal),
+                            const SizedBox(height: Insets.md),
+                          ],
                         ],
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: Insets.sm),
-                SectionLabel(
-                  icon: FontAwesomeIcons.basketShopping,
-                  label: l10n.listDetailOtherItems,
-                  color: palette.inkMuted,
-                  trailing: ticked == 0
-                      ? null
-                      : TextButton.icon(
-                          onPressed: () => _clearTicked(context, ref),
-                          icon: const FaIcon(
-                            FontAwesomeIcons.broom,
-                            size: 13,
-                          ),
-                          label: Text(l10n.listClearTicked),
-                        ),
-                ),
-                const SizedBox(height: Insets.md),
-                unassignedAsync.when(
-                  loading: () => const SkeletonRows(count: 2),
-                  error: (_, __) => ErrorState(
-                    title: l10n.listDetailItemsError,
-                    onRetry: () =>
-                        ref.invalidate(_unassignedProductsProvider(list.id)),
+                      );
+                    },
                   ),
-                  data: (products) {
-                    if (products.isEmpty) {
-                      return InlineNote(message: l10n.listDetailUnassignedNote);
-                    }
-                    return AppCardList(
-                      tint: palette.inkMuted,
-                      children: [
-                        for (final product in products)
-                          ProductRow(
-                            name: product.name,
-                            details: [
-                              '${product.quantity} ${product.unit}'.trim(),
-                              if (product.price != null)
-                                context.money(product.price!),
-                            ].where((part) => part.isNotEmpty).join(' · '),
-                            checked: product.isChecked,
-                            onToggle: (value) => ref
-                                .read(shoppingListRepositoryProvider)
-                                .toggleProductChecked(product.id, value),
-                            onLongPress: () => _openItemSheet(
-                              context,
-                              ref,
-                              product,
-                              mealsAsync.valueOrNull ?? const [],
+                  const SizedBox(height: Insets.sm),
+                  SectionLabel(
+                    icon: FontAwesomeIcons.basketShopping,
+                    label: l10n.listDetailOtherItems,
+                    color: palette.inkMuted,
+                    trailing: ticked == 0
+                        ? null
+                        : TextButton.icon(
+                            onPressed: () => _clearTicked(context, ref),
+                            icon: const FaIcon(
+                              FontAwesomeIcons.broom,
+                              size: 13,
                             ),
-                            trailing: IconButton(
-                              icon: const FaIcon(
-                                FontAwesomeIcons.ellipsisVertical,
-                                size: 16,
-                              ),
-                              tooltip: l10n.itemActions,
-                              onPressed: () => _openItemSheet(
+                            label: Text(l10n.listClearTicked),
+                          ),
+                  ),
+                  const SizedBox(height: Insets.md),
+                  unassignedAsync.when(
+                    loading: () => const SkeletonRows(count: 2),
+                    error: (_, __) => ErrorState(
+                      title: l10n.listDetailItemsError,
+                      onRetry: () =>
+                          ref.invalidate(_unassignedProductsProvider(list.id)),
+                    ),
+                    data: (products) {
+                      if (products.isEmpty) {
+                        return InlineNote(
+                          message: l10n.listDetailUnassignedNote,
+                        );
+                      }
+                      return AppCardList(
+                        tint: palette.inkMuted,
+                        children: [
+                          for (final product in products)
+                            ProductRow(
+                              name: product.name,
+                              details: [
+                                '${product.quantity} ${product.unit}'.trim(),
+                                if (product.price != null)
+                                  context.money(product.price!),
+                              ].where((part) => part.isNotEmpty).join(' · '),
+                              checked: product.isChecked,
+                              onToggle: (value) => ref
+                                  .read(shoppingListRepositoryProvider)
+                                  .toggleProductChecked(product.id, value),
+                              onLongPress: () => _openItemSheet(
                                 context,
                                 ref,
                                 product,
                                 mealsAsync.valueOrNull ?? const [],
                               ),
+                              trailing: IconButton(
+                                icon: const FaIcon(
+                                  FontAwesomeIcons.ellipsisVertical,
+                                  size: 16,
+                                ),
+                                tooltip: l10n.itemActions,
+                                onPressed: () => _openItemSheet(
+                                  context,
+                                  ref,
+                                  product,
+                                  mealsAsync.valueOrNull ?? const [],
+                                ),
+                              ),
                             ),
-                          ),
-                      ],
-                    );
-                  },
-                ),
-              ],
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-          ItemComposer(listId: list.id, hintText: l10n.listDetailComposerHint),
-        ],
+            ItemComposer(
+              listId: list.id,
+              hintText: l10n.listDetailComposerHint,
+            ),
+          ],
+        ),
       ),
     );
   }

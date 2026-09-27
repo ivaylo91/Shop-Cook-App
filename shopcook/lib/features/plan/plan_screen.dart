@@ -29,94 +29,97 @@ class PlanScreen extends ConsumerWidget {
     final unplanned = ref.watch(unplannedMealsProvider).valueOrNull ?? const [];
     final cooked = ref.watch(cookedMealsProvider).valueOrNull ?? const [];
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.navPlan)),
-      body: plannedAsync.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.all(Insets.lg),
-          child: SkeletonRows(count: 4),
-        ),
-        error: (_, __) => ErrorState(
-          title: l10n.planError,
-          onRetry: () => ref.invalidate(plannedMealsProvider),
-        ),
-        data: (planned) {
-          final byDay = <DateTime, List<Meal>>{};
-          for (final meal in planned) {
-            final day = ShoppingListRepository.dayOf(meal.plannedFor!);
-            byDay.putIfAbsent(day, () => []).add(meal);
-          }
+    return Backdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: Text(l10n.navPlan)),
+        body: plannedAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(Insets.lg),
+            child: SkeletonRows(count: 4),
+          ),
+          error: (_, __) => ErrorState(
+            title: l10n.planError,
+            onRetry: () => ref.invalidate(plannedMealsProvider),
+          ),
+          data: (planned) {
+            final byDay = <DateTime, List<Meal>>{};
+            for (final meal in planned) {
+              final day = ShoppingListRepository.dayOf(meal.plannedFor!);
+              byDay.putIfAbsent(day, () => []).add(meal);
+            }
 
-          if (planned.isEmpty && unplanned.isEmpty && cooked.isEmpty) {
-            return EmptyState(
-              icon: FontAwesomeIcons.calendarDays,
-              title: l10n.planEmptyTitle,
-              message: l10n.planEmptyMessage,
-              actionLabel: l10n.planEmptyAction,
-              actionIcon: FontAwesomeIcons.rectangleList,
-              onAction: () => context.go('/lists'),
+            if (planned.isEmpty && unplanned.isEmpty && cooked.isEmpty) {
+              return EmptyState(
+                icon: FontAwesomeIcons.calendarDays,
+                title: l10n.planEmptyTitle,
+                message: l10n.planEmptyMessage,
+                actionLabel: l10n.planEmptyAction,
+                actionIcon: FontAwesomeIcons.rectangleList,
+                onAction: () => context.go('/lists'),
+              );
+            }
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(
+                Insets.lg,
+                Insets.lg,
+                Insets.lg,
+                Insets.xxl,
+              ),
+              children: [
+                for (var offset = 0; offset < 7; offset++)
+                  _DaySection(
+                    day: DateTime(today.year, today.month, today.day + offset),
+                    isToday: offset == 0,
+                    meals:
+                        byDay[DateTime(
+                          today.year,
+                          today.month,
+                          today.day + offset,
+                        )] ??
+                        const [],
+                    hasIdeas: unplanned.isNotEmpty,
+                  ),
+                if (unplanned.isNotEmpty) ...[
+                  const SizedBox(height: Insets.xl),
+                  SectionLabel(
+                    icon: FontAwesomeIcons.lightbulb,
+                    label: l10n.planUnplanned,
+                    count: unplanned.length,
+                    color: palette.inkMuted,
+                  ),
+                  const SizedBox(height: Insets.md),
+                  AppCardList(
+                    tint: palette.inkMuted,
+                    dividerIndent: Insets.lg,
+                    children: [
+                      for (final meal in unplanned)
+                        _MealRow(meal: meal, showDay: false),
+                    ],
+                  ),
+                ],
+                if (cooked.isNotEmpty) ...[
+                  const SizedBox(height: Insets.xl),
+                  SectionLabel(
+                    icon: FontAwesomeIcons.circleCheck,
+                    label: l10n.planRecentlyCooked,
+                    color: palette.inkMuted,
+                  ),
+                  const SizedBox(height: Insets.md),
+                  AppCardList(
+                    tint: palette.inkMuted,
+                    dividerIndent: Insets.lg,
+                    children: [
+                      for (final meal in cooked)
+                        _MealRow(meal: meal, showDay: false),
+                    ],
+                  ),
+                ],
+              ],
             );
-          }
-
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(
-              Insets.lg,
-              Insets.lg,
-              Insets.lg,
-              Insets.xxl,
-            ),
-            children: [
-              for (var offset = 0; offset < 7; offset++)
-                _DaySection(
-                  day: DateTime(today.year, today.month, today.day + offset),
-                  isToday: offset == 0,
-                  meals:
-                      byDay[DateTime(
-                        today.year,
-                        today.month,
-                        today.day + offset,
-                      )] ??
-                      const [],
-                  hasIdeas: unplanned.isNotEmpty,
-                ),
-              if (unplanned.isNotEmpty) ...[
-                const SizedBox(height: Insets.xl),
-                SectionLabel(
-                  icon: FontAwesomeIcons.lightbulb,
-                  label: l10n.planUnplanned,
-                  count: unplanned.length,
-                  color: palette.inkMuted,
-                ),
-                const SizedBox(height: Insets.md),
-                AppCardList(
-                  tint: palette.inkMuted,
-                  dividerIndent: Insets.lg,
-                  children: [
-                    for (final meal in unplanned)
-                      _MealRow(meal: meal, showDay: false),
-                  ],
-                ),
-              ],
-              if (cooked.isNotEmpty) ...[
-                const SizedBox(height: Insets.xl),
-                SectionLabel(
-                  icon: FontAwesomeIcons.circleCheck,
-                  label: l10n.planRecentlyCooked,
-                  color: palette.inkMuted,
-                ),
-                const SizedBox(height: Insets.md),
-                AppCardList(
-                  tint: palette.inkMuted,
-                  dividerIndent: Insets.lg,
-                  children: [
-                    for (final meal in cooked)
-                      _MealRow(meal: meal, showDay: false),
-                  ],
-                ),
-              ],
-            ],
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -274,10 +277,8 @@ class _MealRow extends ConsumerWidget {
         tooltip: l10n.mealActions,
         onPressed: () => _actions(context, ref),
       ),
-      onTap: () => context.push(
-        '/list/${meal.listId}/meal/${meal.id}',
-        extra: meal,
-      ),
+      onTap: () =>
+          context.push('/list/${meal.listId}/meal/${meal.id}', extra: meal),
     );
   }
 

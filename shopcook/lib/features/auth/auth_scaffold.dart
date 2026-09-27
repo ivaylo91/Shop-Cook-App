@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/brand/shopcook_logo.dart';
 import '../../core/design.dart';
 import '../../core/localization.dart';
+import '../../core/ui/ui.dart';
 
 /// Shared frame for the sign in and register screens, so the two feel like
 /// one flow rather than two separately built pages.
@@ -26,39 +27,43 @@ class AuthScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(Insets.xl),
-            child: ConstrainedBox(
-              // Long lines are hard to read; keep the form column narrow
-              // even on a tablet.
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const _Brand(),
-                  const SizedBox(height: Insets.xxl),
-                  Text(
-                    title,
-                    style: AppText.display.copyWith(
-                      fontSize: 26,
-                      color: palette.ink,
-                    ),
-                  ),
-                  const SizedBox(height: Insets.sm),
-                  Text(
-                    subtitle,
-                    style: AppText.body.copyWith(color: palette.inkMuted),
-                  ),
-                  const SizedBox(height: Insets.xl),
-                  ...children,
-                  if (footer != null) ...[
+    return Backdrop(
+      intensity: 1.6,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(Insets.xl),
+              child: ConstrainedBox(
+                // Long lines are hard to read; keep the form column narrow
+                // even on a tablet.
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _Brand(),
                     const SizedBox(height: Insets.xxl),
-                    footer!,
+                    Text(
+                      title,
+                      style: AppText.display.copyWith(
+                        fontSize: 26,
+                        color: palette.ink,
+                      ),
+                    ),
+                    const SizedBox(height: Insets.sm),
+                    Text(
+                      subtitle,
+                      style: AppText.body.copyWith(color: palette.inkMuted),
+                    ),
+                    const SizedBox(height: Insets.xl),
+                    ...children,
+                    if (footer != null) ...[
+                      const SizedBox(height: Insets.xxl),
+                      footer!,
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
