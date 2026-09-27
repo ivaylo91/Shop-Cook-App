@@ -55,6 +55,12 @@
   "mealCardNoIngredients": "No ingredients yet — open it to add some or find a recipe.",
 
   "itemActions": "Item actions",
+  "itemEdit": "Edit",
+  "itemEditTitle": "Edit item",
+  "itemEditHint": "e.g. 2 kg potatoes",
+  "listClearTicked": "Clear ticked",
+  "listClearedTicked": "{count, plural, =1{Cleared 1 ticked item} other{Cleared {count} ticked items}}",
+  "@listClearedTicked": { "placeholders": { "count": { "type": "int" } } },
   "itemFindRecipes": "Find recipes",
   "itemFindRecipesFromList": "What can I cook with this?",
   "itemFindRecipesFromMeal": "What else can I cook with this?",

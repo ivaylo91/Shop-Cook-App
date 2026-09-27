@@ -55,6 +55,12 @@
   "mealCardNoIngredients": "Още няма съставки — отвори го, за да добавиш или да намериш рецепта.",
 
   "itemActions": "Действия с продукта",
+  "itemEdit": "Редактирай",
+  "itemEditTitle": "Редактиране на продукт",
+  "itemEditHint": "напр. 2 кг картофи",
+  "listClearTicked": "Изчисти отметнатите",
+  "listClearedTicked": "{count, plural, =1{Изчистен е 1 отметнат продукт} other{Изчистени са {count} отметнати продукта}}",
+  "@listClearedTicked": { "placeholders": { "count": { "type": "int" } } },
   "itemFindRecipes": "Намери рецепти",
   "itemFindRecipesFromList": "Какво да сготвя с това?",
   "itemFindRecipesFromMeal": "Какво друго да сготвя с това?",

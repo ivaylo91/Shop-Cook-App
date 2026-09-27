@@ -352,6 +352,45 @@ class ShoppingListRepository {
     return categorize(product.name);
   }
 
+  /// Clears the ticked items off the list itself, and returns their ids so
+  /// an undo can put them back.
+  ///
+  /// Meal ingredients stay: a meal is still to be cooked after the shop, and
+  /// what it needed goes when the meal does.
+  Future<List<String>> clearChecked(String listId) async {
+    final ids = [
+      for (final product in await _db.checkedLooseProducts(listId)) product.id,
+    ];
+    if (ids.isNotEmpty) await _db.setProductsCleared(ids, DateTime.now());
+    return ids;
+  }
+
+  Future<void> restoreCleared(List<String> ids) =>
+      _db.setProductsCleared(ids, null);
+
+  /// Changes an item's name and amount.
+  ///
+  /// A new name takes the aisle the user last filed that name in, if any —
+  /// the old name's hand-filed aisle belonged to the old name.
+  Future<void> editProduct(
+    Product product, {
+    required String userId,
+    required String name,
+    required String quantity,
+    required String unit,
+  }) async {
+    final renamed = foldName(name) != foldName(product.name);
+    await _db.editProduct(
+      product.id,
+      name: name,
+      quantity: quantity,
+      unit: unit,
+      categoryOverride: renamed
+          ? await _db.rememberedCategory(userId: userId, name: name)
+          : product.categoryOverride,
+    );
+  }
+
   Future<void> moveProductToMeal(String productId, String? mealId) =>
       _db.setProductMeal(productId, mealId);
 

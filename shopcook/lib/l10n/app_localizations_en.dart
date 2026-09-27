@@ -160,6 +160,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get itemActions => 'Item actions';
 
   @override
+  String get itemEdit => 'Edit';
+
+  @override
+  String get itemEditTitle => 'Edit item';
+
+  @override
+  String get itemEditHint => 'e.g. 2 kg potatoes';
+
+  @override
+  String get listClearTicked => 'Clear ticked';
+
+  @override
+  String listClearedTicked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Cleared $count ticked items',
+      one: 'Cleared 1 ticked item',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get itemFindRecipes => 'Find recipes';
 
   @override

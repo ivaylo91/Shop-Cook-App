@@ -806,6 +806,17 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _clearedAtMeta = const VerificationMeta(
+    'clearedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> clearedAt = GeneratedColumn<DateTime>(
+    'cleared_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -829,6 +840,7 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     price,
     categoryOverride,
     isStaple,
+    clearedAt,
     createdAt,
   ];
   @override
@@ -909,6 +921,12 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         isStaple.isAcceptableOrUnknown(data['is_staple']!, _isStapleMeta),
       );
     }
+    if (data.containsKey('cleared_at')) {
+      context.handle(
+        _clearedAtMeta,
+        clearedAt.isAcceptableOrUnknown(data['cleared_at']!, _clearedAtMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -966,6 +984,10 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_staple'],
       )!,
+      clearedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}cleared_at'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1000,6 +1022,14 @@ class Product extends DataClass implements Insertable<Product> {
 
   /// Something you re-buy routinely, offered by the restock action.
   final bool isStaple;
+
+  /// When the item was cleared off its list after being bought, or null
+  /// while it is still on it.
+  ///
+  /// Cleared rather than deleted because the rows are the user's history:
+  /// suggestions count them, staples and hand-filed aisles are read from
+  /// them. Deleting last week's milk would forget that milk is a staple.
+  final DateTime? clearedAt;
   final DateTime createdAt;
   const Product({
     required this.id,
@@ -1012,6 +1042,7 @@ class Product extends DataClass implements Insertable<Product> {
     this.price,
     this.categoryOverride,
     required this.isStaple,
+    this.clearedAt,
     required this.createdAt,
   });
   @override
@@ -1033,6 +1064,9 @@ class Product extends DataClass implements Insertable<Product> {
       map['category_override'] = Variable<String>(categoryOverride);
     }
     map['is_staple'] = Variable<bool>(isStaple);
+    if (!nullToAbsent || clearedAt != null) {
+      map['cleared_at'] = Variable<DateTime>(clearedAt);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -1055,6 +1089,9 @@ class Product extends DataClass implements Insertable<Product> {
           ? const Value.absent()
           : Value(categoryOverride),
       isStaple: Value(isStaple),
+      clearedAt: clearedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clearedAt),
       createdAt: Value(createdAt),
     );
   }
@@ -1075,6 +1112,7 @@ class Product extends DataClass implements Insertable<Product> {
       price: serializer.fromJson<double?>(json['price']),
       categoryOverride: serializer.fromJson<String?>(json['categoryOverride']),
       isStaple: serializer.fromJson<bool>(json['isStaple']),
+      clearedAt: serializer.fromJson<DateTime?>(json['clearedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -1092,6 +1130,7 @@ class Product extends DataClass implements Insertable<Product> {
       'price': serializer.toJson<double?>(price),
       'categoryOverride': serializer.toJson<String?>(categoryOverride),
       'isStaple': serializer.toJson<bool>(isStaple),
+      'clearedAt': serializer.toJson<DateTime?>(clearedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -1107,6 +1146,7 @@ class Product extends DataClass implements Insertable<Product> {
     Value<double?> price = const Value.absent(),
     Value<String?> categoryOverride = const Value.absent(),
     bool? isStaple,
+    Value<DateTime?> clearedAt = const Value.absent(),
     DateTime? createdAt,
   }) => Product(
     id: id ?? this.id,
@@ -1121,6 +1161,7 @@ class Product extends DataClass implements Insertable<Product> {
         ? categoryOverride.value
         : this.categoryOverride,
     isStaple: isStaple ?? this.isStaple,
+    clearedAt: clearedAt.present ? clearedAt.value : this.clearedAt,
     createdAt: createdAt ?? this.createdAt,
   );
   Product copyWithCompanion(ProductsCompanion data) {
@@ -1137,6 +1178,7 @@ class Product extends DataClass implements Insertable<Product> {
           ? data.categoryOverride.value
           : this.categoryOverride,
       isStaple: data.isStaple.present ? data.isStaple.value : this.isStaple,
+      clearedAt: data.clearedAt.present ? data.clearedAt.value : this.clearedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -1154,6 +1196,7 @@ class Product extends DataClass implements Insertable<Product> {
           ..write('price: $price, ')
           ..write('categoryOverride: $categoryOverride, ')
           ..write('isStaple: $isStaple, ')
+          ..write('clearedAt: $clearedAt, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -1171,6 +1214,7 @@ class Product extends DataClass implements Insertable<Product> {
     price,
     categoryOverride,
     isStaple,
+    clearedAt,
     createdAt,
   );
   @override
@@ -1187,6 +1231,7 @@ class Product extends DataClass implements Insertable<Product> {
           other.price == this.price &&
           other.categoryOverride == this.categoryOverride &&
           other.isStaple == this.isStaple &&
+          other.clearedAt == this.clearedAt &&
           other.createdAt == this.createdAt);
 }
 
@@ -1201,6 +1246,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<double?> price;
   final Value<String?> categoryOverride;
   final Value<bool> isStaple;
+  final Value<DateTime?> clearedAt;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const ProductsCompanion({
@@ -1214,6 +1260,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.price = const Value.absent(),
     this.categoryOverride = const Value.absent(),
     this.isStaple = const Value.absent(),
+    this.clearedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1228,6 +1275,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.price = const Value.absent(),
     this.categoryOverride = const Value.absent(),
     this.isStaple = const Value.absent(),
+    this.clearedAt = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1245,6 +1293,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Expression<double>? price,
     Expression<String>? categoryOverride,
     Expression<bool>? isStaple,
+    Expression<DateTime>? clearedAt,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -1259,6 +1308,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       if (price != null) 'price': price,
       if (categoryOverride != null) 'category_override': categoryOverride,
       if (isStaple != null) 'is_staple': isStaple,
+      if (clearedAt != null) 'cleared_at': clearedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1275,6 +1325,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Value<double?>? price,
     Value<String?>? categoryOverride,
     Value<bool>? isStaple,
+    Value<DateTime?>? clearedAt,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -1289,6 +1340,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       price: price ?? this.price,
       categoryOverride: categoryOverride ?? this.categoryOverride,
       isStaple: isStaple ?? this.isStaple,
+      clearedAt: clearedAt ?? this.clearedAt,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -1327,6 +1379,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     if (isStaple.present) {
       map['is_staple'] = Variable<bool>(isStaple.value);
     }
+    if (clearedAt.present) {
+      map['cleared_at'] = Variable<DateTime>(clearedAt.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1349,6 +1404,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
           ..write('price: $price, ')
           ..write('categoryOverride: $categoryOverride, ')
           ..write('isStaple: $isStaple, ')
+          ..write('clearedAt: $clearedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -3696,6 +3752,7 @@ typedef $$ProductsTableCreateCompanionBuilder =
       Value<double?> price,
       Value<String?> categoryOverride,
       Value<bool> isStaple,
+      Value<DateTime?> clearedAt,
       required DateTime createdAt,
       Value<int> rowid,
     });
@@ -3711,6 +3768,7 @@ typedef $$ProductsTableUpdateCompanionBuilder =
       Value<double?> price,
       Value<String?> categoryOverride,
       Value<bool> isStaple,
+      Value<DateTime?> clearedAt,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -3803,6 +3861,11 @@ class $$ProductsTableFilterComposer
 
   ColumnFilters<bool> get isStaple => $composableBuilder(
     column: $table.isStaple,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get clearedAt => $composableBuilder(
+    column: $table.clearedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3907,6 +3970,11 @@ class $$ProductsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get clearedAt => $composableBuilder(
+    column: $table.clearedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -3993,6 +4061,9 @@ class $$ProductsTableAnnotationComposer
 
   GeneratedColumn<bool> get isStaple =>
       $composableBuilder(column: $table.isStaple, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clearedAt =>
+      $composableBuilder(column: $table.clearedAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -4082,6 +4153,7 @@ class $$ProductsTableTableManager
                 Value<double?> price = const Value.absent(),
                 Value<String?> categoryOverride = const Value.absent(),
                 Value<bool> isStaple = const Value.absent(),
+                Value<DateTime?> clearedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProductsCompanion(
@@ -4095,6 +4167,7 @@ class $$ProductsTableTableManager
                 price: price,
                 categoryOverride: categoryOverride,
                 isStaple: isStaple,
+                clearedAt: clearedAt,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -4110,6 +4183,7 @@ class $$ProductsTableTableManager
                 Value<double?> price = const Value.absent(),
                 Value<String?> categoryOverride = const Value.absent(),
                 Value<bool> isStaple = const Value.absent(),
+                Value<DateTime?> clearedAt = const Value.absent(),
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => ProductsCompanion.insert(
@@ -4123,6 +4197,7 @@ class $$ProductsTableTableManager
                 price: price,
                 categoryOverride: categoryOverride,
                 isStaple: isStaple,
+                clearedAt: clearedAt,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

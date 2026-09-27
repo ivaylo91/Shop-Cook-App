@@ -362,6 +362,36 @@ abstract class AppLocalizations {
   /// **'Item actions'**
   String get itemActions;
 
+  /// No description provided for @itemEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get itemEdit;
+
+  /// No description provided for @itemEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit item'**
+  String get itemEditTitle;
+
+  /// No description provided for @itemEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 2 kg potatoes'**
+  String get itemEditHint;
+
+  /// No description provided for @listClearTicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear ticked'**
+  String get listClearTicked;
+
+  /// No description provided for @listClearedTicked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Cleared 1 ticked item} other{Cleared {count} ticked items}}'**
+  String listClearedTicked(int count);
+
   /// No description provided for @itemFindRecipes.
   ///
   /// In en, this message translates to:

@@ -25,6 +25,9 @@ class ListDetailScreen extends ConsumerWidget {
     final l10n = context.l10n;
     final mealsAsync = ref.watch(_mealsProvider(list.id));
     final unassignedAsync = ref.watch(_unassignedProductsProvider(list.id));
+    final ticked = (unassignedAsync.valueOrNull ?? const <Product>[])
+        .where((p) => p.isChecked)
+        .length;
 
     return Scaffold(
       appBar: AppBar(
@@ -86,6 +89,16 @@ class ListDetailScreen extends ConsumerWidget {
                   icon: FontAwesomeIcons.basketShopping,
                   label: l10n.listDetailOtherItems,
                   color: palette.inkMuted,
+                  trailing: ticked == 0
+                      ? null
+                      : TextButton.icon(
+                          onPressed: () => _clearTicked(context, ref),
+                          icon: const FaIcon(
+                            FontAwesomeIcons.broom,
+                            size: 13,
+                          ),
+                          label: Text(l10n.listClearTicked),
+                        ),
                 ),
                 const SizedBox(height: Insets.md),
                 unassignedAsync.when(
@@ -180,6 +193,29 @@ class ListDetailScreen extends ConsumerWidget {
       list: list,
       products: products,
       aisleOrder: ref.read(aisleOrderProvider),
+    );
+  }
+
+  /// Takes what has been bought off the list, with an undo.
+  ///
+  /// No confirmation first: the undo covers a mis-tap, and a dialog in front
+  /// of something done after every shop would soon be dismissed unread.
+  Future<void> _clearTicked(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final repository = ref.read(shoppingListRepositoryProvider);
+
+    final cleared = await repository.clearChecked(list.id);
+    if (cleared.isEmpty) return;
+
+    messenger.replaceSnackBar(
+      SnackBar(
+        content: Text(l10n.listClearedTicked(cleared.length)),
+        action: SnackBarAction(
+          label: l10n.actionUndo,
+          onPressed: () => repository.restoreCleared(cleared),
+        ),
+      ),
     );
   }
 

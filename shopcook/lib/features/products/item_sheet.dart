@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/shopping_list_repository.dart';
+import '../recipes/ingredient_parser.dart';
 import '../shopping/category_label.dart';
 import '../shopping/product_category.dart';
 
@@ -41,6 +42,11 @@ Future<void> showItemSheet(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          ListTile(
+            leading: const FaIcon(FontAwesomeIcons.pen, size: 15),
+            title: Text(l10n.itemEdit),
+            onTap: () => Navigator.pop(context, 'edit'),
+          ),
           if (onFindRecipes != null)
             ListTile(
               leading: const FaIcon(
@@ -107,6 +113,9 @@ Future<void> showItemSheet(
   final repository = ref.read(shoppingListRepositoryProvider);
 
   switch (action) {
+    case 'edit':
+      await _edit(context, ref, product);
+
     case 'recipes':
       onFindRecipes?.call();
 
@@ -132,6 +141,44 @@ Future<void> showItemSheet(
     case 'aisle':
       await _pickAisle(context, ref, product);
   }
+}
+
+/// Rewrites the item as one line, the way it was typed into the composer.
+///
+/// One field rather than separate name, amount and unit fields: the same
+/// parser that read "2 kg potatoes" on the way in reads the correction, so
+/// editing works the way adding does.
+Future<void> _edit(BuildContext context, WidgetRef ref, Product product) async {
+  final l10n = context.l10n;
+  final original = [
+    product.quantity,
+    product.unit,
+    product.name,
+  ].where((part) => part.isNotEmpty).join(' ');
+
+  final text = await promptForText(
+    context,
+    title: l10n.itemEditTitle,
+    hint: l10n.itemEditHint,
+    initialValue: original,
+  );
+  // Saving the untouched line would re-parse a name the parser might split
+  // differently from how it was stored ("7up"), so leave it alone.
+  if (text == null || text.trim().isEmpty || text.trim() == original) return;
+
+  final userId = ref.read(currentUserIdProvider);
+  if (userId == null) return;
+
+  final parsed = parseIngredient(text.trim());
+  if (parsed.name.isEmpty) return;
+
+  await ref.read(shoppingListRepositoryProvider).editProduct(
+    product,
+    userId: userId,
+    name: parsed.name,
+    quantity: parsed.quantity,
+    unit: parsed.unit,
+  );
 }
 
 /// Files the item in an aisle by hand.

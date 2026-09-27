@@ -4,6 +4,7 @@ import 'package:shopcook/data/local/database.dart';
 import 'package:shopcook/data/remote/recipe_search_api.dart';
 import 'package:shopcook/data/repositories/recipe_repository.dart';
 import 'package:shopcook/data/repositories/shopping_list_repository.dart';
+import 'package:shopcook/features/shopping/product_category.dart';
 
 void main() {
   late AppDatabase db;
@@ -336,6 +337,165 @@ void main() {
 
       expect(names.take(3), ['milk', 'bread', 'capers']);
       expect(suggestions.first.uses, 3);
+    });
+  });
+
+  group('clearChecked', () {
+    /// The unchecked, uncleared rows a list shows.
+    Future<List<String>> shown(String listId) async => [
+      for (final p in await repo.watchAllProducts(listId).first) p.name,
+    ];
+
+    Future<Product> named(String listId, String name) async =>
+        (await db.productsForList(listId)).firstWhere((p) => p.name == name);
+
+    test('takes ticked loose items off the list and leaves the rest', () async {
+      final listId = await aList();
+      await repo.createMeal(listId, 'Curry');
+      final mealId = (await repo.watchMeals(listId).first).single.id;
+
+      await repo.addProduct(listId: listId, name: 'Milk');
+      await repo.addProduct(listId: listId, name: 'Bread');
+      await repo.addProduct(listId: listId, mealId: mealId, name: 'Rice');
+      await repo.toggleProductChecked((await named(listId, 'Milk')).id, true);
+      await repo.toggleProductChecked((await named(listId, 'Rice')).id, true);
+
+      final cleared = await repo.clearChecked(listId);
+
+      expect(cleared, hasLength(1));
+      expect(await shown(listId), unorderedEquals(['Bread', 'Rice']));
+      expect(
+        (await repo.watchProductsForMeal(mealId).first).single.name,
+        'Rice',
+        reason: 'a meal keeps what it needed until the meal itself goes',
+      );
+    });
+
+    test('undo puts them back', () async {
+      final listId = await aList();
+      await repo.addProduct(listId: listId, name: 'Milk');
+      await repo.toggleProductChecked((await named(listId, 'Milk')).id, true);
+
+      final cleared = await repo.clearChecked(listId);
+      expect(await shown(listId), isEmpty);
+
+      await repo.restoreCleared(cleared);
+      final back = (await repo.watchAllProducts(listId).first).single;
+      expect(back.name, 'Milk');
+      expect(back.isChecked, isTrue);
+    });
+
+    test('a cleared item is still history', () async {
+      final listId = await aList();
+      await repo.addProduct(listId: listId, name: 'Milk');
+      final milk = await named(listId, 'Milk');
+      await repo.setStaple(milk.id, true);
+      await repo.toggleProductChecked(milk.id, true);
+
+      await repo.clearChecked(listId);
+
+      expect(
+        (await repo.watchStaples(user).first).single.name,
+        'Milk',
+        reason: 'clearing last week’s milk must not forget it is a staple',
+      );
+      expect((await repo.watchSuggestions(user).first).single.name, 'Milk');
+
+      // And, no longer on the list, it is what restocking adds back.
+      expect(await repo.restockStaples(listId: listId, userId: user), 1);
+      expect(await shown(listId), ['Milk']);
+    });
+
+    test('a cleared row is not topped up by a new add', () async {
+      final listId = await aList();
+      await repo.addProduct(listId: listId, name: 'Eggs', quantity: '6');
+      await repo.toggleProductChecked((await named(listId, 'Eggs')).id, true);
+      await repo.clearChecked(listId);
+      await repo.toggleProductChecked(
+        (await db.productsForList(listId)).single.id,
+        false,
+      );
+
+      // Unticked but still cleared: a new add must start a fresh row rather
+      // than merge into one nobody can see.
+      final outcome = await repo.addOrMergeProduct(
+        listId: listId,
+        name: 'Eggs',
+        quantity: '6',
+      );
+      expect(outcome.didMerge, isFalse);
+      expect(await shown(listId), ['Eggs']);
+    });
+  });
+
+  group('editProduct', () {
+    test('rewrites name and amount', () async {
+      final listId = await aList();
+      await repo.addProduct(listId: listId, name: 'Potatos', quantity: '1');
+      final row = (await db.productsForList(listId)).single;
+
+      await repo.editProduct(
+        row,
+        userId: user,
+        name: 'Potatoes',
+        quantity: '2',
+        unit: 'kg',
+      );
+
+      final edited = (await db.productsForList(listId)).single;
+      expect(edited.name, 'Potatoes');
+      expect(edited.quantity, '2');
+      expect(edited.unit, 'kg');
+    });
+
+    test('a new name takes that name’s hand-filed aisle', () async {
+      final listId = await aList();
+      await repo.addProduct(listId: listId, name: 'Halloumi');
+      await repo.setAisle(
+        userId: user,
+        name: 'Halloumi',
+        category: ProductCategory.frozen,
+      );
+      await repo.addProduct(listId: listId, name: 'Haloumi');
+      final typo = (await db.productsForList(listId)).firstWhere(
+        (p) => p.name == 'Haloumi',
+      );
+
+      await repo.editProduct(
+        typo,
+        userId: user,
+        name: 'Halloumi',
+        quantity: '',
+        unit: '',
+      );
+
+      final fixed = await db.productById(typo.id);
+      expect(
+        ShoppingListRepository.aisleOf(fixed!),
+        ProductCategory.frozen,
+      );
+    });
+
+    test('keeping the name keeps its aisle', () async {
+      final listId = await aList();
+      await repo.addProduct(listId: listId, name: 'Tofu');
+      await repo.setAisle(
+        userId: user,
+        name: 'Tofu',
+        category: ProductCategory.produce,
+      );
+      final row = (await db.productsForList(listId)).single;
+
+      await repo.editProduct(
+        row,
+        userId: user,
+        name: 'tofu',
+        quantity: '400',
+        unit: 'g',
+      );
+
+      final edited = await db.productById(row.id);
+      expect(edited!.categoryOverride, ProductCategory.produce.name);
     });
   });
 }

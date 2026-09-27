@@ -69,6 +69,14 @@ class Products extends Table {
   /// Something you re-buy routinely, offered by the restock action.
   BoolColumn get isStaple => boolean().withDefault(const Constant(false))();
 
+  /// When the item was cleared off its list after being bought, or null
+  /// while it is still on it.
+  ///
+  /// Cleared rather than deleted because the rows are the user's history:
+  /// suggestions count them, staples and hand-filed aisles are read from
+  /// them. Deleting last week's milk would forget that milk is a staple.
+  DateTimeColumn get clearedAt => dateTime().nullable()();
+
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -179,7 +187,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   /// The migration ladder. Every step has to be additive and idempotent in
   /// order, because an install can be on any earlier version — a phone that
@@ -271,6 +279,10 @@ class AppDatabase extends _$AppDatabase {
       // v7: names for scanned barcodes.
       if (from < 7) {
         await m.createTable(barcodeProducts);
+      }
+      // v8: bought items can be cleared off a list without being forgotten.
+      if (from < 8) {
+        await m.addColumn(products, products.clearedAt);
       }
     },
     beforeOpen: (details) async {
@@ -402,19 +414,28 @@ class AppDatabase extends _$AppDatabase {
       );
 
   // Products
+  //
+  // The watch* queries below are what the screens show, so they leave out
+  // cleared rows. The cross-list history queries (suggestions, staples,
+  // remembered aisles) and the undo snapshots deliberately do not.
   Stream<List<Product>> watchProductsForList(String listId) =>
       (select(products)
-        ..where((t) => t.listId.equals(listId))
+        ..where((t) => t.listId.equals(listId) & t.clearedAt.isNull())
         ..orderBy([(t) => OrderingTerm.asc(t.createdAt)])).watch();
 
   Stream<List<Product>> watchProductsForMeal(String mealId) =>
       (select(products)
-        ..where((t) => t.mealId.equals(mealId))
+        ..where((t) => t.mealId.equals(mealId) & t.clearedAt.isNull())
         ..orderBy([(t) => OrderingTerm.asc(t.createdAt)])).watch();
 
   Stream<List<Product>> watchUnassignedProducts(String listId) =>
       (select(products)
-        ..where((t) => t.listId.equals(listId) & t.mealId.isNull())
+        ..where(
+          (t) =>
+              t.listId.equals(listId) &
+              t.mealId.isNull() &
+              t.clearedAt.isNull(),
+        )
         ..orderBy([(t) => OrderingTerm.asc(t.createdAt)])).watch();
 
   Future<void> insertProduct(ProductsCompanion entry) =>
@@ -469,7 +490,8 @@ class AppDatabase extends _$AppDatabase {
       (t) =>
           t.listId.equals(listId) &
           (mealId == null ? t.mealId.isNull() : t.mealId.equals(mealId)) &
-          t.isChecked.equals(false),
+          t.isChecked.equals(false) &
+          t.clearedAt.isNull(),
     )).get();
 
     final needle = foldName(name);
@@ -478,6 +500,42 @@ class AppDatabase extends _$AppDatabase {
     }
     return null;
   }
+
+  /// Ticked items on the list itself (not in a meal) that are still showing.
+  Future<List<Product>> checkedLooseProducts(String listId) =>
+      (select(products)..where(
+            (t) =>
+                t.listId.equals(listId) &
+                t.mealId.isNull() &
+                t.isChecked.equals(true) &
+                t.clearedAt.isNull(),
+          ))
+          .get();
+
+  /// Clears the given rows off their list at [at], or puts them back when
+  /// [at] is null.
+  Future<void> setProductsCleared(List<String> ids, DateTime? at) =>
+      (update(products)..where((t) => t.id.isIn(ids))).write(
+        ProductsCompanion(clearedAt: Value(at)),
+      );
+
+  /// Rewrites what an item is. The aisle is passed in whole because a new
+  /// name can mean a different hand-filed aisle, or none.
+  Future<void> editProduct(
+    String id, {
+    required String name,
+    required String quantity,
+    required String unit,
+    required String? categoryOverride,
+  }) =>
+      (update(products)..where((t) => t.id.equals(id))).write(
+        ProductsCompanion(
+          name: Value(name),
+          quantity: Value(quantity),
+          unit: Value(unit),
+          categoryOverride: Value(categoryOverride),
+        ),
+      );
 
   Future<void> setProductQuantity(String id, String quantity) =>
       (update(products)..where((t) => t.id.equals(id))).write(

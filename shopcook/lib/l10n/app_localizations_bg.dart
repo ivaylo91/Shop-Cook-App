@@ -161,6 +161,29 @@ class AppLocalizationsBg extends AppLocalizations {
   String get itemActions => 'Действия с продукта';
 
   @override
+  String get itemEdit => 'Редактирай';
+
+  @override
+  String get itemEditTitle => 'Редактиране на продукт';
+
+  @override
+  String get itemEditHint => 'напр. 2 кг картофи';
+
+  @override
+  String get listClearTicked => 'Изчисти отметнатите';
+
+  @override
+  String listClearedTicked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Изчистени са $count отметнати продукта',
+      one: 'Изчистен е 1 отметнат продукт',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get itemFindRecipes => 'Намери рецепти';
 
   @override

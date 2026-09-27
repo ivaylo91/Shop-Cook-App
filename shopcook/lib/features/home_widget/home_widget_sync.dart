@@ -22,7 +22,12 @@ final _widgetListsProvider = StreamProvider<List<ShoppingList>>((ref) {
 final _widgetProductsProvider = StreamProvider<List<Product>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value(const []);
-  return ref.watch(databaseProvider).watchAllProductsForUser(userId);
+  // The history query, so cleared rows are dropped here: the widget shows
+  // what is on the lists now.
+  return ref
+      .watch(databaseProvider)
+      .watchAllProductsForUser(userId)
+      .map((rows) => [for (final p in rows) if (p.clearedAt == null) p]);
 });
 
 final widgetSnapshotProvider = Provider<WidgetSnapshot?>((ref) {
