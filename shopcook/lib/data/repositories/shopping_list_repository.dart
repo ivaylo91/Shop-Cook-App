@@ -31,6 +31,24 @@ class ShoppingListRepository {
     );
   }
 
+  /// Copies [listId] under [name]; see [AppDatabase.copyList] for what
+  /// comes along. Returns the new list's id.
+  Future<String> duplicateList(
+    String listId, {
+    required String name,
+    required String userId,
+  }) async {
+    final id = _uuid.v4();
+    await _db.copyList(
+      fromId: listId,
+      toId: id,
+      name: name,
+      userId: userId,
+      newId: _uuid.v4,
+    );
+    return id;
+  }
+
   Future<void> renameList(String id, String name) =>
       _db.renameList(id, name.trim());
 
@@ -119,14 +137,43 @@ class ShoppingListRepository {
   /// The range is built with calendar arithmetic rather than by adding a
   /// Duration, so a clock change during the week does not shift the last day
   /// out of the window.
-  Stream<List<Meal>> watchPlannedMeals(DateTime from, {int days = 7}) {
+  Stream<List<Meal>> watchPlannedMeals(
+    String userId,
+    DateTime from, {
+    int days = 7,
+  }) {
     final start = dayOf(from);
     final end = DateTime(start.year, start.month, start.day + days);
-    return _db.watchMealsPlannedBetween(start, end);
+    return _db.watchMealsPlannedBetween(userId, start, end);
   }
 
   /// Meals with no day yet — ideas waiting to be scheduled.
-  Stream<List<Meal>> watchUnplannedMeals() => _db.watchUnplannedMeals();
+  Stream<List<Meal>> watchUnplannedMeals(String userId) =>
+      _db.watchUnplannedMeals(userId);
+
+  Stream<List<Meal>> watchCookedMeals(String userId) =>
+      _db.watchCookedMeals(userId);
+
+  /// Marks a meal cooked: it leaves its list and the ideas pile, and its
+  /// ingredients are cleared off the shopping list with it. Returns what an
+  /// undo needs to put back.
+  Future<CookedMeal> markCooked(String mealId) async {
+    final products = await _db.visibleProductsForMeal(mealId);
+    final ids = [for (final p in products) p.id];
+    await _db.transaction(() async {
+      final now = DateTime.now();
+      await _db.setMealCooked(mealId, now);
+      if (ids.isNotEmpty) await _db.setProductsCleared(ids, now);
+    });
+    return CookedMeal(mealId: mealId, productIds: ids);
+  }
+
+  Future<void> undoCooked(CookedMeal cooked) => _db.transaction(() async {
+    await _db.setMealCooked(cooked.mealId, null);
+    if (cooked.productIds.isNotEmpty) {
+      await _db.setProductsCleared(cooked.productIds, null);
+    }
+  });
 
   /// Puts a meal on a day, or back in the ideas pile when [day] is null.
   Future<void> planMeal(String mealId, DateTime? day) =>
@@ -417,6 +464,14 @@ class DeletedTree {
 
   bool get isEmpty =>
       list == null && meals.isEmpty && products.isEmpty && links.isEmpty;
+}
+
+/// A meal just marked cooked, with the ingredients cleared alongside it.
+class CookedMeal {
+  final String mealId;
+  final List<String> productIds;
+
+  const CookedMeal({required this.mealId, required this.productIds});
 }
 
 /// Whether an add created a row or topped up an existing one.

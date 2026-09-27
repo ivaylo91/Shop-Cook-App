@@ -498,6 +498,151 @@ void main() {
       expect(edited!.categoryOverride, ProductCategory.produce.name);
     });
   });
+
+  group('duplicateList', () {
+    test('copies meals, items and recipe links, all fresh', () async {
+      final listId = await aList('Week 39');
+      await repo.createMeal(listId, 'Curry');
+      final meal = (await repo.watchMeals(listId).first).single;
+      await repo.planMeal(meal.id, DateTime(2026, 9, 24));
+      await repo.addProduct(listId: listId, mealId: meal.id, name: 'Rice');
+      await repo.addProduct(listId: listId, name: 'Milk');
+      await repo.addProduct(listId: listId, name: 'Bread');
+      final milk = (await db.productsForList(listId))
+          .firstWhere((p) => p.name == 'Milk');
+      await repo.setPrice(milk.id, 1.5);
+      await repo.toggleProductChecked(milk.id, true);
+      final bread = (await db.productsForList(listId))
+          .firstWhere((p) => p.name == 'Bread');
+      await repo.toggleProductChecked(bread.id, true);
+      await repo.clearChecked(listId); // clears milk and bread
+      await repo.toggleProductChecked(milk.id, false);
+      await repo.restoreCleared([milk.id]); // milk back, unticked
+
+      final recipes = RecipeRepository(db, _NoSearch());
+      final recipeId = await recipes.saveRecipe(
+        userId: user,
+        title: 'Curry',
+        sourceUrl: 'https://example.com/curry',
+      );
+      await recipes.linkToMeal(mealId: meal.id, recipeId: recipeId);
+
+      final copyId = await repo.duplicateList(
+        listId,
+        name: 'Week 40',
+        userId: user,
+      );
+
+      final copyMeal = (await repo.watchMeals(copyId).first).single;
+      expect(copyMeal.name, 'Curry');
+      expect(copyMeal.id, isNot(meal.id));
+      expect(copyMeal.plannedFor, isNull, reason: 'not last week’s day');
+      expect(
+        (await repo.watchProductsForMeal(copyMeal.id).first).single.name,
+        'Rice',
+      );
+      expect(
+        (await db.watchRecipesForMeal(copyMeal.id).first).single.id,
+        recipeId,
+      );
+
+      final loose = await repo.watchUnassignedProducts(copyId).first;
+      expect(loose.map((p) => p.name), ['Milk'], reason: 'bread was cleared');
+      expect(loose.single.price, 1.5);
+      expect(loose.single.isChecked, isFalse);
+
+      // The original is untouched.
+      expect((await repo.watchMeals(listId).first).single.id, meal.id);
+    });
+
+    test('leaves cooked meals behind', () async {
+      final listId = await aList();
+      await repo.createMeal(listId, 'Soup');
+      final soup = (await repo.watchMeals(listId).first).single;
+      await repo.markCooked(soup.id);
+
+      final copyId = await repo.duplicateList(
+        listId,
+        name: 'Copy',
+        userId: user,
+      );
+      expect(await db.mealsForList(copyId), isEmpty);
+    });
+  });
+
+  group('markCooked', () {
+    test('takes the meal and its ingredients off the list', () async {
+      final listId = await aList();
+      await repo.createMeal(listId, 'Curry');
+      final meal = (await repo.watchMeals(listId).first).single;
+      await repo.addProduct(listId: listId, mealId: meal.id, name: 'Rice');
+
+      final cooked = await repo.markCooked(meal.id);
+
+      expect(await repo.watchMeals(listId).first, isEmpty);
+      expect(await repo.watchAllProducts(listId).first, isEmpty);
+      expect(
+        (await repo.watchCookedMeals(user).first).single.name,
+        'Curry',
+      );
+      expect(
+        (await repo.watchSuggestions(user).first).single.name,
+        'Rice',
+        reason: 'what was bought for it is still history',
+      );
+
+      await repo.undoCooked(cooked);
+      expect((await repo.watchMeals(listId).first).single.name, 'Curry');
+      expect(
+        (await repo.watchAllProducts(listId).first).single.name,
+        'Rice',
+      );
+      expect(await repo.watchCookedMeals(user).first, isEmpty);
+    });
+
+    test('a cooked meal is not an idea any more', () async {
+      final listId = await aList();
+      await repo.createMeal(listId, 'Stew');
+      final stew = (await repo.watchMeals(listId).first).single;
+      expect(await repo.watchUnplannedMeals(user).first, hasLength(1));
+
+      await repo.markCooked(stew.id);
+      expect(await repo.watchUnplannedMeals(user).first, isEmpty);
+    });
+
+    test('a planned meal stays on its day once cooked', () async {
+      final listId = await aList();
+      await repo.createMeal(listId, 'Pasta');
+      final pasta = (await repo.watchMeals(listId).first).single;
+      final today = ShoppingListRepository.dayOf(DateTime.now());
+      await repo.planMeal(pasta.id, today);
+
+      await repo.markCooked(pasta.id);
+
+      final week = await repo.watchPlannedMeals(user, today).first;
+      expect(week.single.cookedAt, isNotNull);
+    });
+  });
+
+  test('the plan shows only the signed-in user’s meals', () async {
+    final mine = await aList('Mine', user);
+    final theirs = await aList('Theirs', otherUser);
+    await repo.createMeal(mine, 'My idea');
+    await repo.createMeal(theirs, 'Their idea');
+    final today = ShoppingListRepository.dayOf(DateTime.now());
+    final theirMeal = (await repo.watchMeals(theirs).first).single;
+    await repo.planMeal(theirMeal.id, today);
+
+    expect(
+      (await repo.watchUnplannedMeals(user).first).map((m) => m.name),
+      ['My idea'],
+    );
+    expect(await repo.watchPlannedMeals(user, today).first, isEmpty);
+    expect(
+      (await repo.watchPlannedMeals(otherUser, today).first).single.name,
+      'Their idea',
+    );
+  });
 }
 
 /// The search API is irrelevant to these tests and must not touch a network.

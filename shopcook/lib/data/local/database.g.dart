@@ -366,6 +366,17 @@ class $MealsTable extends Meals with TableInfo<$MealsTable, Meal> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _cookedAtMeta = const VerificationMeta(
+    'cookedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> cookedAt = GeneratedColumn<DateTime>(
+    'cooked_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -383,6 +394,7 @@ class $MealsTable extends Meals with TableInfo<$MealsTable, Meal> {
     listId,
     name,
     plannedFor,
+    cookedAt,
     createdAt,
   ];
   @override
@@ -424,6 +436,12 @@ class $MealsTable extends Meals with TableInfo<$MealsTable, Meal> {
         plannedFor.isAcceptableOrUnknown(data['planned_for']!, _plannedForMeta),
       );
     }
+    if (data.containsKey('cooked_at')) {
+      context.handle(
+        _cookedAtMeta,
+        cookedAt.isAcceptableOrUnknown(data['cooked_at']!, _cookedAtMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -457,6 +475,10 @@ class $MealsTable extends Meals with TableInfo<$MealsTable, Meal> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}planned_for'],
       ),
+      cookedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}cooked_at'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -479,12 +501,18 @@ class Meal extends DataClass implements Insertable<Meal> {
   /// idea. Date-only in intent: stored at midnight local time so two meals on
   /// the same day compare equal.
   final DateTime? plannedFor;
+
+  /// When the meal was marked cooked, or null while it is still to come.
+  /// A cooked meal leaves its list and the ideas pile but is kept, as the
+  /// Plan screen's record of what was eaten.
+  final DateTime? cookedAt;
   final DateTime createdAt;
   const Meal({
     required this.id,
     required this.listId,
     required this.name,
     this.plannedFor,
+    this.cookedAt,
     required this.createdAt,
   });
   @override
@@ -495,6 +523,9 @@ class Meal extends DataClass implements Insertable<Meal> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || plannedFor != null) {
       map['planned_for'] = Variable<DateTime>(plannedFor);
+    }
+    if (!nullToAbsent || cookedAt != null) {
+      map['cooked_at'] = Variable<DateTime>(cookedAt);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -508,6 +539,9 @@ class Meal extends DataClass implements Insertable<Meal> {
       plannedFor: plannedFor == null && nullToAbsent
           ? const Value.absent()
           : Value(plannedFor),
+      cookedAt: cookedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cookedAt),
       createdAt: Value(createdAt),
     );
   }
@@ -522,6 +556,7 @@ class Meal extends DataClass implements Insertable<Meal> {
       listId: serializer.fromJson<String>(json['listId']),
       name: serializer.fromJson<String>(json['name']),
       plannedFor: serializer.fromJson<DateTime?>(json['plannedFor']),
+      cookedAt: serializer.fromJson<DateTime?>(json['cookedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -533,6 +568,7 @@ class Meal extends DataClass implements Insertable<Meal> {
       'listId': serializer.toJson<String>(listId),
       'name': serializer.toJson<String>(name),
       'plannedFor': serializer.toJson<DateTime?>(plannedFor),
+      'cookedAt': serializer.toJson<DateTime?>(cookedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -542,12 +578,14 @@ class Meal extends DataClass implements Insertable<Meal> {
     String? listId,
     String? name,
     Value<DateTime?> plannedFor = const Value.absent(),
+    Value<DateTime?> cookedAt = const Value.absent(),
     DateTime? createdAt,
   }) => Meal(
     id: id ?? this.id,
     listId: listId ?? this.listId,
     name: name ?? this.name,
     plannedFor: plannedFor.present ? plannedFor.value : this.plannedFor,
+    cookedAt: cookedAt.present ? cookedAt.value : this.cookedAt,
     createdAt: createdAt ?? this.createdAt,
   );
   Meal copyWithCompanion(MealsCompanion data) {
@@ -558,6 +596,7 @@ class Meal extends DataClass implements Insertable<Meal> {
       plannedFor: data.plannedFor.present
           ? data.plannedFor.value
           : this.plannedFor,
+      cookedAt: data.cookedAt.present ? data.cookedAt.value : this.cookedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -569,13 +608,15 @@ class Meal extends DataClass implements Insertable<Meal> {
           ..write('listId: $listId, ')
           ..write('name: $name, ')
           ..write('plannedFor: $plannedFor, ')
+          ..write('cookedAt: $cookedAt, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, listId, name, plannedFor, createdAt);
+  int get hashCode =>
+      Object.hash(id, listId, name, plannedFor, cookedAt, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -584,6 +625,7 @@ class Meal extends DataClass implements Insertable<Meal> {
           other.listId == this.listId &&
           other.name == this.name &&
           other.plannedFor == this.plannedFor &&
+          other.cookedAt == this.cookedAt &&
           other.createdAt == this.createdAt);
 }
 
@@ -592,6 +634,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
   final Value<String> listId;
   final Value<String> name;
   final Value<DateTime?> plannedFor;
+  final Value<DateTime?> cookedAt;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const MealsCompanion({
@@ -599,6 +642,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
     this.listId = const Value.absent(),
     this.name = const Value.absent(),
     this.plannedFor = const Value.absent(),
+    this.cookedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -607,6 +651,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
     required String listId,
     required String name,
     this.plannedFor = const Value.absent(),
+    this.cookedAt = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -618,6 +663,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
     Expression<String>? listId,
     Expression<String>? name,
     Expression<DateTime>? plannedFor,
+    Expression<DateTime>? cookedAt,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -626,6 +672,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
       if (listId != null) 'list_id': listId,
       if (name != null) 'name': name,
       if (plannedFor != null) 'planned_for': plannedFor,
+      if (cookedAt != null) 'cooked_at': cookedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -636,6 +683,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
     Value<String>? listId,
     Value<String>? name,
     Value<DateTime?>? plannedFor,
+    Value<DateTime?>? cookedAt,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -644,6 +692,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
       listId: listId ?? this.listId,
       name: name ?? this.name,
       plannedFor: plannedFor ?? this.plannedFor,
+      cookedAt: cookedAt ?? this.cookedAt,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -664,6 +713,9 @@ class MealsCompanion extends UpdateCompanion<Meal> {
     if (plannedFor.present) {
       map['planned_for'] = Variable<DateTime>(plannedFor.value);
     }
+    if (cookedAt.present) {
+      map['cooked_at'] = Variable<DateTime>(cookedAt.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -680,6 +732,7 @@ class MealsCompanion extends UpdateCompanion<Meal> {
           ..write('listId: $listId, ')
           ..write('name: $name, ')
           ..write('plannedFor: $plannedFor, ')
+          ..write('cookedAt: $cookedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2789,6 +2842,835 @@ class BarcodeProductsCompanion extends UpdateCompanion<ScannedProduct> {
   }
 }
 
+class $SharedListsTable extends SharedLists
+    with TableInfo<$SharedListsTable, SharedListMark> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SharedListsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _listIdMeta = const VerificationMeta('listId');
+  @override
+  late final GeneratedColumn<String> listId = GeneratedColumn<String>(
+    'list_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES shopping_lists (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _isOwnerMeta = const VerificationMeta(
+    'isOwner',
+  );
+  @override
+  late final GeneratedColumn<bool> isOwner = GeneratedColumn<bool>(
+    'is_owner',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_owner" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _cursorMeta = const VerificationMeta('cursor');
+  @override
+  late final GeneratedColumn<String> cursor = GeneratedColumn<String>(
+    'cursor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [listId, isOwner, cursor];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'shared_lists';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SharedListMark> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('list_id')) {
+      context.handle(
+        _listIdMeta,
+        listId.isAcceptableOrUnknown(data['list_id']!, _listIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_listIdMeta);
+    }
+    if (data.containsKey('is_owner')) {
+      context.handle(
+        _isOwnerMeta,
+        isOwner.isAcceptableOrUnknown(data['is_owner']!, _isOwnerMeta),
+      );
+    }
+    if (data.containsKey('cursor')) {
+      context.handle(
+        _cursorMeta,
+        cursor.isAcceptableOrUnknown(data['cursor']!, _cursorMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {listId};
+  @override
+  SharedListMark map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SharedListMark(
+      listId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}list_id'],
+      )!,
+      isOwner: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_owner'],
+      )!,
+      cursor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cursor'],
+      ),
+    );
+  }
+
+  @override
+  $SharedListsTable createAlias(String alias) {
+    return $SharedListsTable(attachedDatabase, alias);
+  }
+}
+
+class SharedListMark extends DataClass implements Insertable<SharedListMark> {
+  final String listId;
+
+  /// Whether this user shared it (and so may stop sharing it for everyone)
+  /// or joined it with a code.
+  final bool isOwner;
+
+  /// The server's updated_at of the newest change pulled so far, as the
+  /// server wrote it. Null until the first pull.
+  final String? cursor;
+  const SharedListMark({
+    required this.listId,
+    required this.isOwner,
+    this.cursor,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['list_id'] = Variable<String>(listId);
+    map['is_owner'] = Variable<bool>(isOwner);
+    if (!nullToAbsent || cursor != null) {
+      map['cursor'] = Variable<String>(cursor);
+    }
+    return map;
+  }
+
+  SharedListsCompanion toCompanion(bool nullToAbsent) {
+    return SharedListsCompanion(
+      listId: Value(listId),
+      isOwner: Value(isOwner),
+      cursor: cursor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cursor),
+    );
+  }
+
+  factory SharedListMark.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SharedListMark(
+      listId: serializer.fromJson<String>(json['listId']),
+      isOwner: serializer.fromJson<bool>(json['isOwner']),
+      cursor: serializer.fromJson<String?>(json['cursor']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'listId': serializer.toJson<String>(listId),
+      'isOwner': serializer.toJson<bool>(isOwner),
+      'cursor': serializer.toJson<String?>(cursor),
+    };
+  }
+
+  SharedListMark copyWith({
+    String? listId,
+    bool? isOwner,
+    Value<String?> cursor = const Value.absent(),
+  }) => SharedListMark(
+    listId: listId ?? this.listId,
+    isOwner: isOwner ?? this.isOwner,
+    cursor: cursor.present ? cursor.value : this.cursor,
+  );
+  SharedListMark copyWithCompanion(SharedListsCompanion data) {
+    return SharedListMark(
+      listId: data.listId.present ? data.listId.value : this.listId,
+      isOwner: data.isOwner.present ? data.isOwner.value : this.isOwner,
+      cursor: data.cursor.present ? data.cursor.value : this.cursor,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SharedListMark(')
+          ..write('listId: $listId, ')
+          ..write('isOwner: $isOwner, ')
+          ..write('cursor: $cursor')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(listId, isOwner, cursor);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SharedListMark &&
+          other.listId == this.listId &&
+          other.isOwner == this.isOwner &&
+          other.cursor == this.cursor);
+}
+
+class SharedListsCompanion extends UpdateCompanion<SharedListMark> {
+  final Value<String> listId;
+  final Value<bool> isOwner;
+  final Value<String?> cursor;
+  final Value<int> rowid;
+  const SharedListsCompanion({
+    this.listId = const Value.absent(),
+    this.isOwner = const Value.absent(),
+    this.cursor = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SharedListsCompanion.insert({
+    required String listId,
+    this.isOwner = const Value.absent(),
+    this.cursor = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : listId = Value(listId);
+  static Insertable<SharedListMark> custom({
+    Expression<String>? listId,
+    Expression<bool>? isOwner,
+    Expression<String>? cursor,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (listId != null) 'list_id': listId,
+      if (isOwner != null) 'is_owner': isOwner,
+      if (cursor != null) 'cursor': cursor,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SharedListsCompanion copyWith({
+    Value<String>? listId,
+    Value<bool>? isOwner,
+    Value<String?>? cursor,
+    Value<int>? rowid,
+  }) {
+    return SharedListsCompanion(
+      listId: listId ?? this.listId,
+      isOwner: isOwner ?? this.isOwner,
+      cursor: cursor ?? this.cursor,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (listId.present) {
+      map['list_id'] = Variable<String>(listId.value);
+    }
+    if (isOwner.present) {
+      map['is_owner'] = Variable<bool>(isOwner.value);
+    }
+    if (cursor.present) {
+      map['cursor'] = Variable<String>(cursor.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SharedListsCompanion(')
+          ..write('listId: $listId, ')
+          ..write('isOwner: $isOwner, ')
+          ..write('cursor: $cursor, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncOutboxTable extends SyncOutbox
+    with TableInfo<$SyncOutboxTable, OutboxEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncOutboxTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _entityMeta = const VerificationMeta('entity');
+  @override
+  late final GeneratedColumn<String> entity = GeneratedColumn<String>(
+    'entity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rowIdMeta = const VerificationMeta('rowId');
+  @override
+  late final GeneratedColumn<String> rowId = GeneratedColumn<String>(
+    'row_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _listIdMeta = const VerificationMeta('listId');
+  @override
+  late final GeneratedColumn<String> listId = GeneratedColumn<String>(
+    'list_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, entity, rowId, listId, deleted];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_outbox';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<OutboxEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('entity')) {
+      context.handle(
+        _entityMeta,
+        entity.isAcceptableOrUnknown(data['entity']!, _entityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityMeta);
+    }
+    if (data.containsKey('row_id')) {
+      context.handle(
+        _rowIdMeta,
+        rowId.isAcceptableOrUnknown(data['row_id']!, _rowIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rowIdMeta);
+    }
+    if (data.containsKey('list_id')) {
+      context.handle(
+        _listIdMeta,
+        listId.isAcceptableOrUnknown(data['list_id']!, _listIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_listIdMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deletedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  OutboxEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OutboxEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      entity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity'],
+      )!,
+      rowId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}row_id'],
+      )!,
+      listId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}list_id'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncOutboxTable createAlias(String alias) {
+    return $SyncOutboxTable(attachedDatabase, alias);
+  }
+}
+
+class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
+  final int id;
+
+  /// 'list', 'meal' or 'product'.
+  final String entity;
+  final String rowId;
+  final String listId;
+  final bool deleted;
+  const OutboxEntry({
+    required this.id,
+    required this.entity,
+    required this.rowId,
+    required this.listId,
+    required this.deleted,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['entity'] = Variable<String>(entity);
+    map['row_id'] = Variable<String>(rowId);
+    map['list_id'] = Variable<String>(listId);
+    map['deleted'] = Variable<bool>(deleted);
+    return map;
+  }
+
+  SyncOutboxCompanion toCompanion(bool nullToAbsent) {
+    return SyncOutboxCompanion(
+      id: Value(id),
+      entity: Value(entity),
+      rowId: Value(rowId),
+      listId: Value(listId),
+      deleted: Value(deleted),
+    );
+  }
+
+  factory OutboxEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OutboxEntry(
+      id: serializer.fromJson<int>(json['id']),
+      entity: serializer.fromJson<String>(json['entity']),
+      rowId: serializer.fromJson<String>(json['rowId']),
+      listId: serializer.fromJson<String>(json['listId']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'entity': serializer.toJson<String>(entity),
+      'rowId': serializer.toJson<String>(rowId),
+      'listId': serializer.toJson<String>(listId),
+      'deleted': serializer.toJson<bool>(deleted),
+    };
+  }
+
+  OutboxEntry copyWith({
+    int? id,
+    String? entity,
+    String? rowId,
+    String? listId,
+    bool? deleted,
+  }) => OutboxEntry(
+    id: id ?? this.id,
+    entity: entity ?? this.entity,
+    rowId: rowId ?? this.rowId,
+    listId: listId ?? this.listId,
+    deleted: deleted ?? this.deleted,
+  );
+  OutboxEntry copyWithCompanion(SyncOutboxCompanion data) {
+    return OutboxEntry(
+      id: data.id.present ? data.id.value : this.id,
+      entity: data.entity.present ? data.entity.value : this.entity,
+      rowId: data.rowId.present ? data.rowId.value : this.rowId,
+      listId: data.listId.present ? data.listId.value : this.listId,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OutboxEntry(')
+          ..write('id: $id, ')
+          ..write('entity: $entity, ')
+          ..write('rowId: $rowId, ')
+          ..write('listId: $listId, ')
+          ..write('deleted: $deleted')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, entity, rowId, listId, deleted);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OutboxEntry &&
+          other.id == this.id &&
+          other.entity == this.entity &&
+          other.rowId == this.rowId &&
+          other.listId == this.listId &&
+          other.deleted == this.deleted);
+}
+
+class SyncOutboxCompanion extends UpdateCompanion<OutboxEntry> {
+  final Value<int> id;
+  final Value<String> entity;
+  final Value<String> rowId;
+  final Value<String> listId;
+  final Value<bool> deleted;
+  const SyncOutboxCompanion({
+    this.id = const Value.absent(),
+    this.entity = const Value.absent(),
+    this.rowId = const Value.absent(),
+    this.listId = const Value.absent(),
+    this.deleted = const Value.absent(),
+  });
+  SyncOutboxCompanion.insert({
+    this.id = const Value.absent(),
+    required String entity,
+    required String rowId,
+    required String listId,
+    required bool deleted,
+  }) : entity = Value(entity),
+       rowId = Value(rowId),
+       listId = Value(listId),
+       deleted = Value(deleted);
+  static Insertable<OutboxEntry> custom({
+    Expression<int>? id,
+    Expression<String>? entity,
+    Expression<String>? rowId,
+    Expression<String>? listId,
+    Expression<bool>? deleted,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (entity != null) 'entity': entity,
+      if (rowId != null) 'row_id': rowId,
+      if (listId != null) 'list_id': listId,
+      if (deleted != null) 'deleted': deleted,
+    });
+  }
+
+  SyncOutboxCompanion copyWith({
+    Value<int>? id,
+    Value<String>? entity,
+    Value<String>? rowId,
+    Value<String>? listId,
+    Value<bool>? deleted,
+  }) {
+    return SyncOutboxCompanion(
+      id: id ?? this.id,
+      entity: entity ?? this.entity,
+      rowId: rowId ?? this.rowId,
+      listId: listId ?? this.listId,
+      deleted: deleted ?? this.deleted,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (entity.present) {
+      map['entity'] = Variable<String>(entity.value);
+    }
+    if (rowId.present) {
+      map['row_id'] = Variable<String>(rowId.value);
+    }
+    if (listId.present) {
+      map['list_id'] = Variable<String>(listId.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncOutboxCompanion(')
+          ..write('id: $id, ')
+          ..write('entity: $entity, ')
+          ..write('rowId: $rowId, ')
+          ..write('listId: $listId, ')
+          ..write('deleted: $deleted')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncFlagsTable extends SyncFlags
+    with TableInfo<$SyncFlagsTable, SyncFlag> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncFlagsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<int> value = GeneratedColumn<int>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [name, value];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_flags';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncFlag> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {name};
+  @override
+  SyncFlag map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncFlag(
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}value'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncFlagsTable createAlias(String alias) {
+    return $SyncFlagsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncFlag extends DataClass implements Insertable<SyncFlag> {
+  final String name;
+  final int value;
+  const SyncFlag({required this.name, required this.value});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['name'] = Variable<String>(name);
+    map['value'] = Variable<int>(value);
+    return map;
+  }
+
+  SyncFlagsCompanion toCompanion(bool nullToAbsent) {
+    return SyncFlagsCompanion(name: Value(name), value: Value(value));
+  }
+
+  factory SyncFlag.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncFlag(
+      name: serializer.fromJson<String>(json['name']),
+      value: serializer.fromJson<int>(json['value']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'name': serializer.toJson<String>(name),
+      'value': serializer.toJson<int>(value),
+    };
+  }
+
+  SyncFlag copyWith({String? name, int? value}) =>
+      SyncFlag(name: name ?? this.name, value: value ?? this.value);
+  SyncFlag copyWithCompanion(SyncFlagsCompanion data) {
+    return SyncFlag(
+      name: data.name.present ? data.name.value : this.name,
+      value: data.value.present ? data.value.value : this.value,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncFlag(')
+          ..write('name: $name, ')
+          ..write('value: $value')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(name, value);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncFlag &&
+          other.name == this.name &&
+          other.value == this.value);
+}
+
+class SyncFlagsCompanion extends UpdateCompanion<SyncFlag> {
+  final Value<String> name;
+  final Value<int> value;
+  final Value<int> rowid;
+  const SyncFlagsCompanion({
+    this.name = const Value.absent(),
+    this.value = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncFlagsCompanion.insert({
+    required String name,
+    required int value,
+    this.rowid = const Value.absent(),
+  }) : name = Value(name),
+       value = Value(value);
+  static Insertable<SyncFlag> custom({
+    Expression<String>? name,
+    Expression<int>? value,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (name != null) 'name': name,
+      if (value != null) 'value': value,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncFlagsCompanion copyWith({
+    Value<String>? name,
+    Value<int>? value,
+    Value<int>? rowid,
+  }) {
+    return SyncFlagsCompanion(
+      name: name ?? this.name,
+      value: value ?? this.value,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<int>(value.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncFlagsCompanion(')
+          ..write('name: $name, ')
+          ..write('value: $value, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2801,6 +3683,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BarcodeProductsTable barcodeProducts = $BarcodeProductsTable(
     this,
   );
+  late final $SharedListsTable sharedLists = $SharedListsTable(this);
+  late final $SyncOutboxTable syncOutbox = $SyncOutboxTable(this);
+  late final $SyncFlagsTable syncFlags = $SyncFlagsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2813,6 +3698,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     mealRecipes,
     recipeSearches,
     barcodeProducts,
+    sharedLists,
+    syncOutbox,
+    syncFlags,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2850,6 +3738,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('meal_recipes', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'shopping_lists',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('shared_lists', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -2912,6 +3807,24 @@ final class $$ShoppingListsTableReferences
     ).filter((f) => f.listId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_productsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SharedListsTable, List<SharedListMark>>
+  _sharedListsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.sharedLists,
+    aliasName: $_aliasNameGenerator(db.shoppingLists.id, db.sharedLists.listId),
+  );
+
+  $$SharedListsTableProcessedTableManager get sharedListsRefs {
+    final manager = $$SharedListsTableTableManager(
+      $_db,
+      $_db.sharedLists,
+    ).filter((f) => f.listId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_sharedListsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -2988,6 +3901,31 @@ class $$ShoppingListsTableFilterComposer
           }) => $$ProductsTableFilterComposer(
             $db: $db,
             $table: $db.products,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> sharedListsRefs(
+    Expression<bool> Function($$SharedListsTableFilterComposer f) f,
+  ) {
+    final $$SharedListsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.sharedLists,
+      getReferencedColumn: (t) => t.listId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SharedListsTableFilterComposer(
+            $db: $db,
+            $table: $db.sharedLists,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3098,6 +4036,31 @@ class $$ShoppingListsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> sharedListsRefs<T extends Object>(
+    Expression<T> Function($$SharedListsTableAnnotationComposer a) f,
+  ) {
+    final $$SharedListsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.sharedLists,
+      getReferencedColumn: (t) => t.listId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SharedListsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sharedLists,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ShoppingListsTableTableManager
@@ -3113,7 +4076,11 @@ class $$ShoppingListsTableTableManager
           $$ShoppingListsTableUpdateCompanionBuilder,
           (ShoppingList, $$ShoppingListsTableReferences),
           ShoppingList,
-          PrefetchHooks Function({bool mealsRefs, bool productsRefs})
+          PrefetchHooks Function({
+            bool mealsRefs,
+            bool productsRefs,
+            bool sharedListsRefs,
+          })
         > {
   $$ShoppingListsTableTableManager(_$AppDatabase db, $ShoppingListsTable table)
     : super(
@@ -3162,58 +4129,89 @@ class $$ShoppingListsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({mealsRefs = false, productsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (mealsRefs) db.meals,
-                if (productsRefs) db.products,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (mealsRefs)
-                    await $_getPrefetchedData<
-                      ShoppingList,
-                      $ShoppingListsTable,
-                      Meal
-                    >(
-                      currentTable: table,
-                      referencedTable: $$ShoppingListsTableReferences
-                          ._mealsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$ShoppingListsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).mealsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.listId == item.id),
-                      typedResults: items,
-                    ),
-                  if (productsRefs)
-                    await $_getPrefetchedData<
-                      ShoppingList,
-                      $ShoppingListsTable,
-                      Product
-                    >(
-                      currentTable: table,
-                      referencedTable: $$ShoppingListsTableReferences
-                          ._productsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$ShoppingListsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).productsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.listId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({
+                mealsRefs = false,
+                productsRefs = false,
+                sharedListsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (mealsRefs) db.meals,
+                    if (productsRefs) db.products,
+                    if (sharedListsRefs) db.sharedLists,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (mealsRefs)
+                        await $_getPrefetchedData<
+                          ShoppingList,
+                          $ShoppingListsTable,
+                          Meal
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ShoppingListsTableReferences
+                              ._mealsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ShoppingListsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).mealsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.listId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (productsRefs)
+                        await $_getPrefetchedData<
+                          ShoppingList,
+                          $ShoppingListsTable,
+                          Product
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ShoppingListsTableReferences
+                              ._productsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ShoppingListsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).productsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.listId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (sharedListsRefs)
+                        await $_getPrefetchedData<
+                          ShoppingList,
+                          $ShoppingListsTable,
+                          SharedListMark
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ShoppingListsTableReferences
+                              ._sharedListsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ShoppingListsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).sharedListsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.listId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -3230,7 +4228,11 @@ typedef $$ShoppingListsTableProcessedTableManager =
       $$ShoppingListsTableUpdateCompanionBuilder,
       (ShoppingList, $$ShoppingListsTableReferences),
       ShoppingList,
-      PrefetchHooks Function({bool mealsRefs, bool productsRefs})
+      PrefetchHooks Function({
+        bool mealsRefs,
+        bool productsRefs,
+        bool sharedListsRefs,
+      })
     >;
 typedef $$MealsTableCreateCompanionBuilder =
     MealsCompanion Function({
@@ -3238,6 +4240,7 @@ typedef $$MealsTableCreateCompanionBuilder =
       required String listId,
       required String name,
       Value<DateTime?> plannedFor,
+      Value<DateTime?> cookedAt,
       required DateTime createdAt,
       Value<int> rowid,
     });
@@ -3247,6 +4250,7 @@ typedef $$MealsTableUpdateCompanionBuilder =
       Value<String> listId,
       Value<String> name,
       Value<DateTime?> plannedFor,
+      Value<DateTime?> cookedAt,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -3330,6 +4334,11 @@ class $$MealsTableFilterComposer extends Composer<_$AppDatabase, $MealsTable> {
 
   ColumnFilters<DateTime> get plannedFor => $composableBuilder(
     column: $table.plannedFor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get cookedAt => $composableBuilder(
+    column: $table.cookedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3436,6 +4445,11 @@ class $$MealsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get cookedAt => $composableBuilder(
+    column: $table.cookedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -3484,6 +4498,9 @@ class $$MealsTableAnnotationComposer
     column: $table.plannedFor,
     builder: (column) => column,
   );
+
+  GeneratedColumn<DateTime> get cookedAt =>
+      $composableBuilder(column: $table.cookedAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -3598,6 +4615,7 @@ class $$MealsTableTableManager
                 Value<String> listId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<DateTime?> plannedFor = const Value.absent(),
+                Value<DateTime?> cookedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MealsCompanion(
@@ -3605,6 +4623,7 @@ class $$MealsTableTableManager
                 listId: listId,
                 name: name,
                 plannedFor: plannedFor,
+                cookedAt: cookedAt,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -3614,6 +4633,7 @@ class $$MealsTableTableManager
                 required String listId,
                 required String name,
                 Value<DateTime?> plannedFor = const Value.absent(),
+                Value<DateTime?> cookedAt = const Value.absent(),
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => MealsCompanion.insert(
@@ -3621,6 +4641,7 @@ class $$MealsTableTableManager
                 listId: listId,
                 name: name,
                 plannedFor: plannedFor,
+                cookedAt: cookedAt,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -5363,6 +6384,614 @@ typedef $$BarcodeProductsTableProcessedTableManager =
       ScannedProduct,
       PrefetchHooks Function()
     >;
+typedef $$SharedListsTableCreateCompanionBuilder =
+    SharedListsCompanion Function({
+      required String listId,
+      Value<bool> isOwner,
+      Value<String?> cursor,
+      Value<int> rowid,
+    });
+typedef $$SharedListsTableUpdateCompanionBuilder =
+    SharedListsCompanion Function({
+      Value<String> listId,
+      Value<bool> isOwner,
+      Value<String?> cursor,
+      Value<int> rowid,
+    });
+
+final class $$SharedListsTableReferences
+    extends BaseReferences<_$AppDatabase, $SharedListsTable, SharedListMark> {
+  $$SharedListsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ShoppingListsTable _listIdTable(_$AppDatabase db) =>
+      db.shoppingLists.createAlias(
+        $_aliasNameGenerator(db.sharedLists.listId, db.shoppingLists.id),
+      );
+
+  $$ShoppingListsTableProcessedTableManager get listId {
+    final $_column = $_itemColumn<String>('list_id')!;
+
+    final manager = $$ShoppingListsTableTableManager(
+      $_db,
+      $_db.shoppingLists,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_listIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SharedListsTableFilterComposer
+    extends Composer<_$AppDatabase, $SharedListsTable> {
+  $$SharedListsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<bool> get isOwner => $composableBuilder(
+    column: $table.isOwner,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cursor => $composableBuilder(
+    column: $table.cursor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ShoppingListsTableFilterComposer get listId {
+    final $$ShoppingListsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.listId,
+      referencedTable: $db.shoppingLists,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShoppingListsTableFilterComposer(
+            $db: $db,
+            $table: $db.shoppingLists,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SharedListsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SharedListsTable> {
+  $$SharedListsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<bool> get isOwner => $composableBuilder(
+    column: $table.isOwner,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cursor => $composableBuilder(
+    column: $table.cursor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ShoppingListsTableOrderingComposer get listId {
+    final $$ShoppingListsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.listId,
+      referencedTable: $db.shoppingLists,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShoppingListsTableOrderingComposer(
+            $db: $db,
+            $table: $db.shoppingLists,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SharedListsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SharedListsTable> {
+  $$SharedListsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<bool> get isOwner =>
+      $composableBuilder(column: $table.isOwner, builder: (column) => column);
+
+  GeneratedColumn<String> get cursor =>
+      $composableBuilder(column: $table.cursor, builder: (column) => column);
+
+  $$ShoppingListsTableAnnotationComposer get listId {
+    final $$ShoppingListsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.listId,
+      referencedTable: $db.shoppingLists,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShoppingListsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.shoppingLists,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SharedListsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SharedListsTable,
+          SharedListMark,
+          $$SharedListsTableFilterComposer,
+          $$SharedListsTableOrderingComposer,
+          $$SharedListsTableAnnotationComposer,
+          $$SharedListsTableCreateCompanionBuilder,
+          $$SharedListsTableUpdateCompanionBuilder,
+          (SharedListMark, $$SharedListsTableReferences),
+          SharedListMark,
+          PrefetchHooks Function({bool listId})
+        > {
+  $$SharedListsTableTableManager(_$AppDatabase db, $SharedListsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SharedListsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SharedListsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SharedListsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> listId = const Value.absent(),
+                Value<bool> isOwner = const Value.absent(),
+                Value<String?> cursor = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SharedListsCompanion(
+                listId: listId,
+                isOwner: isOwner,
+                cursor: cursor,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String listId,
+                Value<bool> isOwner = const Value.absent(),
+                Value<String?> cursor = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SharedListsCompanion.insert(
+                listId: listId,
+                isOwner: isOwner,
+                cursor: cursor,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SharedListsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({listId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (listId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.listId,
+                                referencedTable: $$SharedListsTableReferences
+                                    ._listIdTable(db),
+                                referencedColumn: $$SharedListsTableReferences
+                                    ._listIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SharedListsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SharedListsTable,
+      SharedListMark,
+      $$SharedListsTableFilterComposer,
+      $$SharedListsTableOrderingComposer,
+      $$SharedListsTableAnnotationComposer,
+      $$SharedListsTableCreateCompanionBuilder,
+      $$SharedListsTableUpdateCompanionBuilder,
+      (SharedListMark, $$SharedListsTableReferences),
+      SharedListMark,
+      PrefetchHooks Function({bool listId})
+    >;
+typedef $$SyncOutboxTableCreateCompanionBuilder =
+    SyncOutboxCompanion Function({
+      Value<int> id,
+      required String entity,
+      required String rowId,
+      required String listId,
+      required bool deleted,
+    });
+typedef $$SyncOutboxTableUpdateCompanionBuilder =
+    SyncOutboxCompanion Function({
+      Value<int> id,
+      Value<String> entity,
+      Value<String> rowId,
+      Value<String> listId,
+      Value<bool> deleted,
+    });
+
+class $$SyncOutboxTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncOutboxTable> {
+  $$SyncOutboxTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rowId => $composableBuilder(
+    column: $table.rowId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get listId => $composableBuilder(
+    column: $table.listId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncOutboxTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncOutboxTable> {
+  $$SyncOutboxTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rowId => $composableBuilder(
+    column: $table.rowId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get listId => $composableBuilder(
+    column: $table.listId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncOutboxTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncOutboxTable> {
+  $$SyncOutboxTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get entity =>
+      $composableBuilder(column: $table.entity, builder: (column) => column);
+
+  GeneratedColumn<String> get rowId =>
+      $composableBuilder(column: $table.rowId, builder: (column) => column);
+
+  GeneratedColumn<String> get listId =>
+      $composableBuilder(column: $table.listId, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+}
+
+class $$SyncOutboxTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncOutboxTable,
+          OutboxEntry,
+          $$SyncOutboxTableFilterComposer,
+          $$SyncOutboxTableOrderingComposer,
+          $$SyncOutboxTableAnnotationComposer,
+          $$SyncOutboxTableCreateCompanionBuilder,
+          $$SyncOutboxTableUpdateCompanionBuilder,
+          (
+            OutboxEntry,
+            BaseReferences<_$AppDatabase, $SyncOutboxTable, OutboxEntry>,
+          ),
+          OutboxEntry,
+          PrefetchHooks Function()
+        > {
+  $$SyncOutboxTableTableManager(_$AppDatabase db, $SyncOutboxTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncOutboxTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncOutboxTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncOutboxTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> entity = const Value.absent(),
+                Value<String> rowId = const Value.absent(),
+                Value<String> listId = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+              }) => SyncOutboxCompanion(
+                id: id,
+                entity: entity,
+                rowId: rowId,
+                listId: listId,
+                deleted: deleted,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String entity,
+                required String rowId,
+                required String listId,
+                required bool deleted,
+              }) => SyncOutboxCompanion.insert(
+                id: id,
+                entity: entity,
+                rowId: rowId,
+                listId: listId,
+                deleted: deleted,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncOutboxTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncOutboxTable,
+      OutboxEntry,
+      $$SyncOutboxTableFilterComposer,
+      $$SyncOutboxTableOrderingComposer,
+      $$SyncOutboxTableAnnotationComposer,
+      $$SyncOutboxTableCreateCompanionBuilder,
+      $$SyncOutboxTableUpdateCompanionBuilder,
+      (
+        OutboxEntry,
+        BaseReferences<_$AppDatabase, $SyncOutboxTable, OutboxEntry>,
+      ),
+      OutboxEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$SyncFlagsTableCreateCompanionBuilder =
+    SyncFlagsCompanion Function({
+      required String name,
+      required int value,
+      Value<int> rowid,
+    });
+typedef $$SyncFlagsTableUpdateCompanionBuilder =
+    SyncFlagsCompanion Function({
+      Value<String> name,
+      Value<int> value,
+      Value<int> rowid,
+    });
+
+class $$SyncFlagsTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncFlagsTable> {
+  $$SyncFlagsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncFlagsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncFlagsTable> {
+  $$SyncFlagsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncFlagsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncFlagsTable> {
+  $$SyncFlagsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+}
+
+class $$SyncFlagsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncFlagsTable,
+          SyncFlag,
+          $$SyncFlagsTableFilterComposer,
+          $$SyncFlagsTableOrderingComposer,
+          $$SyncFlagsTableAnnotationComposer,
+          $$SyncFlagsTableCreateCompanionBuilder,
+          $$SyncFlagsTableUpdateCompanionBuilder,
+          (SyncFlag, BaseReferences<_$AppDatabase, $SyncFlagsTable, SyncFlag>),
+          SyncFlag,
+          PrefetchHooks Function()
+        > {
+  $$SyncFlagsTableTableManager(_$AppDatabase db, $SyncFlagsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncFlagsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncFlagsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncFlagsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> name = const Value.absent(),
+                Value<int> value = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncFlagsCompanion(name: name, value: value, rowid: rowid),
+          createCompanionCallback:
+              ({
+                required String name,
+                required int value,
+                Value<int> rowid = const Value.absent(),
+              }) => SyncFlagsCompanion.insert(
+                name: name,
+                value: value,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncFlagsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncFlagsTable,
+      SyncFlag,
+      $$SyncFlagsTableFilterComposer,
+      $$SyncFlagsTableOrderingComposer,
+      $$SyncFlagsTableAnnotationComposer,
+      $$SyncFlagsTableCreateCompanionBuilder,
+      $$SyncFlagsTableUpdateCompanionBuilder,
+      (SyncFlag, BaseReferences<_$AppDatabase, $SyncFlagsTable, SyncFlag>),
+      SyncFlag,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5381,4 +7010,10 @@ class $AppDatabaseManager {
       $$RecipeSearchesTableTableManager(_db, _db.recipeSearches);
   $$BarcodeProductsTableTableManager get barcodeProducts =>
       $$BarcodeProductsTableTableManager(_db, _db.barcodeProducts);
+  $$SharedListsTableTableManager get sharedLists =>
+      $$SharedListsTableTableManager(_db, _db.sharedLists);
+  $$SyncOutboxTableTableManager get syncOutbox =>
+      $$SyncOutboxTableTableManager(_db, _db.syncOutbox);
+  $$SyncFlagsTableTableManager get syncFlags =>
+      $$SyncFlagsTableTableManager(_db, _db.syncFlags);
 }

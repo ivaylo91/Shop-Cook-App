@@ -123,14 +123,19 @@ void main() {
     addTearDown(db.close);
 
     final day = DateTime(2026, 9, 14);
+    await db.claimUnownedLists('user-1');
     await db.setMealPlannedFor('meal-1', day);
 
     final planned = await db
-        .watchMealsPlannedBetween(day, day.add(const Duration(days: 1)))
+        .watchMealsPlannedBetween(
+          'user-1',
+          day,
+          day.add(const Duration(days: 1)),
+        )
         .first;
 
     expect(planned.single.id, 'meal-1');
-    expect(await db.watchUnplannedMeals().first, isEmpty);
+    expect(await db.watchUnplannedMeals('user-1').first, isEmpty);
   });
 
   test('foreign keys still cascade after an upgrade', () async {

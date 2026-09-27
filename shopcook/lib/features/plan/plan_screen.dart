@@ -27,6 +27,7 @@ class PlanScreen extends ConsumerWidget {
     final today = ShoppingListRepository.dayOf(DateTime.now());
     final plannedAsync = ref.watch(plannedMealsProvider);
     final unplanned = ref.watch(unplannedMealsProvider).valueOrNull ?? const [];
+    final cooked = ref.watch(cookedMealsProvider).valueOrNull ?? const [];
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.navPlan)),
@@ -46,7 +47,7 @@ class PlanScreen extends ConsumerWidget {
             byDay.putIfAbsent(day, () => []).add(meal);
           }
 
-          if (planned.isEmpty && unplanned.isEmpty) {
+          if (planned.isEmpty && unplanned.isEmpty && cooked.isEmpty) {
             return EmptyState(
               icon: FontAwesomeIcons.calendarDays,
               title: l10n.planEmptyTitle,
@@ -92,6 +93,23 @@ class PlanScreen extends ConsumerWidget {
                   dividerIndent: Insets.lg,
                   children: [
                     for (final meal in unplanned)
+                      _MealRow(meal: meal, showDay: false),
+                  ],
+                ),
+              ],
+              if (cooked.isNotEmpty) ...[
+                const SizedBox(height: Insets.xl),
+                SectionLabel(
+                  icon: FontAwesomeIcons.circleCheck,
+                  label: l10n.planRecentlyCooked,
+                  color: palette.inkMuted,
+                ),
+                const SizedBox(height: Insets.md),
+                AppCardList(
+                  tint: palette.inkMuted,
+                  dividerIndent: Insets.lg,
+                  children: [
+                    for (final meal in cooked)
                       _MealRow(meal: meal, showDay: false),
                   ],
                 ),
@@ -179,8 +197,11 @@ class _DaySection extends ConsumerWidget {
   }
 
   Future<void> _assign(BuildContext context, WidgetRef ref) async {
-    final ideas = await ref.read(shoppingListRepositoryProvider)
-        .watchUnplannedMeals()
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final ideas = await ref
+        .read(shoppingListRepositoryProvider)
+        .watchUnplannedMeals(userId)
         .first;
     if (!context.mounted || ideas.isEmpty) return;
 
@@ -226,7 +247,11 @@ class _MealRow extends ConsumerWidget {
     final checked = products.where((p) => p.isChecked).length;
 
     final l10n = context.l10n;
-    final detail = products.isEmpty
+    final cookedAt = meal.cookedAt;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final detail = cookedAt != null
+        ? l10n.planCookedOn(DateFormat('EEEE d MMM', locale).format(cookedAt))
+        : products.isEmpty
         ? l10n.planNoIngredients
         : l10n.planBought(checked, products.length);
 
@@ -236,9 +261,11 @@ class _MealRow extends ConsumerWidget {
         vertical: Insets.xs,
       ),
       leading: FaIcon(
-        FontAwesomeIcons.utensils,
+        cookedAt != null
+            ? FontAwesomeIcons.circleCheck
+            : FontAwesomeIcons.utensils,
         size: 16,
-        color: palette.inkMuted,
+        color: cookedAt != null ? palette.accent : palette.inkMuted,
       ),
       title: Text(meal.name),
       subtitle: Text(detail),
@@ -262,6 +289,18 @@ class _MealRow extends ConsumerWidget {
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (meal.cookedAt == null)
+            ListTile(
+              leading: const FaIcon(FontAwesomeIcons.circleCheck, size: 16),
+              title: Text(l10n.mealMarkCooked),
+              onTap: () => Navigator.pop(context, 'cooked'),
+            )
+          else
+            ListTile(
+              leading: const FaIcon(FontAwesomeIcons.rotateLeft, size: 16),
+              title: Text(l10n.mealUnmarkCooked),
+              onTap: () => Navigator.pop(context, 'uncooked'),
+            ),
           ListTile(
             leading: const FaIcon(FontAwesomeIcons.calendarDay, size: 16),
             title: Text(showDay ? l10n.mealMoveDay : l10n.mealGiveDay),
@@ -280,6 +319,15 @@ class _MealRow extends ConsumerWidget {
     if (action == null || !context.mounted) return;
     final repository = ref.read(shoppingListRepositoryProvider);
 
+    if (action == 'cooked') {
+      await markMealCooked(context, ref, meal);
+      return;
+    }
+    if (action == 'uncooked') {
+      // Back on its list. Its ingredients stay cleared: they were bought.
+      await repository.undoCooked(CookedMeal(mealId: meal.id, productIds: []));
+      return;
+    }
     if (action == 'clear') {
       await repository.planMeal(meal.id, null);
       return;
@@ -299,14 +347,47 @@ class _MealRow extends ConsumerWidget {
   }
 }
 
+/// Marks [meal] cooked, with an undo. Shared by every screen that offers
+/// the action on a meal.
+Future<void> markMealCooked(
+  BuildContext context,
+  WidgetRef ref,
+  Meal meal,
+) async {
+  final l10n = context.l10n;
+  final messenger = ScaffoldMessenger.of(context);
+  final repository = ref.read(shoppingListRepositoryProvider);
+
+  final cooked = await repository.markCooked(meal.id);
+  messenger.replaceSnackBar(
+    SnackBar(
+      content: Text(l10n.mealCooked(meal.name)),
+      action: SnackBarAction(
+        label: l10n.actionUndo,
+        onPressed: () => repository.undoCooked(cooked),
+      ),
+    ),
+  );
+}
+
 final plannedMealsProvider = StreamProvider<List<Meal>>((ref) {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return Stream.value(const []);
   return ref
       .watch(shoppingListRepositoryProvider)
-      .watchPlannedMeals(DateTime.now());
+      .watchPlannedMeals(userId, DateTime.now());
 });
 
 final unplannedMealsProvider = StreamProvider<List<Meal>>((ref) {
-  return ref.watch(shoppingListRepositoryProvider).watchUnplannedMeals();
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return Stream.value(const []);
+  return ref.watch(shoppingListRepositoryProvider).watchUnplannedMeals(userId);
+});
+
+final cookedMealsProvider = StreamProvider<List<Meal>>((ref) {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return Stream.value(const []);
+  return ref.watch(shoppingListRepositoryProvider).watchCookedMeals(userId);
 });
 
 final mealProductsProvider = StreamProvider.family<List<Product>, String>((

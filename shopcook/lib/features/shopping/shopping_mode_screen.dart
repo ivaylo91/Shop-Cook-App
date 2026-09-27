@@ -94,7 +94,14 @@ class ShoppingModeScreen extends ConsumerWidget {
               ),
               if (remaining.isEmpty) ...[
                 const SizedBox(height: Insets.xl),
-                _DonePeak(total: products.length),
+                _DonePeak(
+                  total: products.length,
+                  // Only the list's own items clear; a meal's ingredients go
+                  // with the meal once it is cooked.
+                  onClear: picked.any((p) => p.mealId == null)
+                      ? () => _clearTicked(context, ref)
+                      : null,
+                ),
               ],
               // The user's own aisle order, so the list matches the shop
               // they actually walk rather than the enum's declaration order.
@@ -164,6 +171,27 @@ class ShoppingModeScreen extends ConsumerWidget {
     0,
     (total, product) => total + (product.price ?? 0),
   );
+
+  /// Takes the bought items off the list once the shop is done, so the
+  /// list starts the next week empty, with an undo.
+  Future<void> _clearTicked(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final repository = ref.read(shoppingListRepositoryProvider);
+
+    final cleared = await repository.clearChecked(list.id);
+    if (cleared.isEmpty) return;
+
+    messenger.replaceSnackBar(
+      SnackBar(
+        content: Text(l10n.listClearedTicked(cleared.length)),
+        action: SnackBarAction(
+          label: l10n.actionUndo,
+          onPressed: () => repository.restoreCleared(cleared),
+        ),
+      ),
+    );
+  }
 
   void _toggle(WidgetRef ref, Product product, bool value) {
     ref
@@ -271,7 +299,11 @@ class _ProgressHero extends StatelessWidget {
 class _DonePeak extends StatelessWidget {
   final int total;
 
-  const _DonePeak({required this.total});
+  /// Clears the bought items off the list; null when there are none to
+  /// clear.
+  final VoidCallback? onClear;
+
+  const _DonePeak({required this.total, this.onClear});
 
   @override
   Widget build(BuildContext context) {
@@ -323,6 +355,14 @@ class _DonePeak extends StatelessWidget {
               textAlign: TextAlign.center,
               style: AppText.body.copyWith(color: palette.inkMuted),
             ),
+            if (onClear != null) ...[
+              const SizedBox(height: Insets.lg),
+              FilledButton.icon(
+                onPressed: onClear,
+                icon: const FaIcon(FontAwesomeIcons.broom, size: 14),
+                label: Text(context.l10n.listClearTicked),
+              ),
+            ],
           ],
         ),
       ),

@@ -174,7 +174,8 @@ class ShopCookApp extends ConsumerWidget {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: supportedAppLocales,
       routerConfig: ref.watch(routerProvider),
-      builder: (context, child) => _PhoneWidth(child: child!),
+      builder: (context, child) =>
+          _PhoneWidth(router: ref.watch(routerProvider), child: child!),
     );
   }
 }
@@ -187,26 +188,44 @@ class ShopCookApp extends ConsumerWidget {
 /// deliberate instead, and the layout is the one the app is designed for.
 /// Applied around the router rather than per screen, so dialogs and sheets
 /// sit inside the same column.
+///
+/// The one exception is the Lists tab, which on a wide screen shows the lists
+/// and the open list side by side (see [twoPaneMinWidth]) and so gets the
+/// width for two columns. The router is listened to so the cap follows the
+/// page being shown.
 class _PhoneWidth extends StatelessWidget {
   static const _maxWidth = 620.0;
+  static const _twoPaneMaxWidth = 1240.0;
 
+  final GoRouter router;
   final Widget child;
 
-  const _PhoneWidth({required this.child});
+  const _PhoneWidth({required this.router, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    if (MediaQuery.sizeOf(context).width <= _maxWidth) return child;
+    final width = MediaQuery.sizeOf(context).width;
+    if (width <= _maxWidth) return child;
 
-    return ColoredBox(
-      // The ground around the column, which no Scaffold reaches.
-      color: context.palette.sunken,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: _maxWidth),
-          child: child,
-        ),
-      ),
+    return ListenableBuilder(
+      listenable: router.routerDelegate,
+      builder: (context, _) {
+        final path = router.routerDelegate.currentConfiguration.uri.path;
+        final twoPane = path == '/lists' && width >= twoPaneMinWidth;
+
+        return ColoredBox(
+          // The ground around the column, which no Scaffold reaches.
+          color: context.palette.sunken,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: twoPane ? _twoPaneMaxWidth : _maxWidth,
+              ),
+              child: child,
+            ),
+          ),
+        );
+      },
     );
   }
 }

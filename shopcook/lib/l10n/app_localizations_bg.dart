@@ -83,6 +83,25 @@ class AppLocalizationsBg extends AppLocalizations {
   String get listsRenameTitle => 'Преименувай списъка';
 
   @override
+  String get listsDuplicate => 'Дублирай';
+
+  @override
+  String get listsDuplicateSubtitle => 'Ястия и продукти, всички без отметка';
+
+  @override
+  String get listsDuplicateTitle => 'Дублиране на списък';
+
+  @override
+  String listsCopyName(String name) {
+    return '$name (копие)';
+  }
+
+  @override
+  String listsDuplicated(String name) {
+    return 'Създаден е „$name“';
+  }
+
+  @override
   String listsDeleteTitle(String name) {
     return 'Да изтрия ли „$name“?';
   }
@@ -152,6 +171,25 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get mealActions => 'Действия с ястието';
+
+  @override
+  String get mealMarkCooked => 'Отбележи като сготвено';
+
+  @override
+  String get mealUnmarkCooked => 'Още не е сготвено';
+
+  @override
+  String mealCooked(String name) {
+    return '„$name“ е сготвено. Добър апетит!';
+  }
+
+  @override
+  String get planRecentlyCooked => 'Наскоро сготвени';
+
+  @override
+  String planCookedOn(String date) {
+    return 'Сготвено: $date';
+  }
 
   @override
   String get mealCardNoIngredients =>
@@ -497,7 +535,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get settingsDeviceOnly =>
-      'Списъците се пазят само на това устройство. Влизането още не ги синхронизира никъде, така че на друг телефон приложението ще е празно.';
+      'Списъците ти се пазят на този телефон. Списък, който споделиш, се пази и на сървъра на ShopCook, за да го виждат хората, с които го споделяш; нищо друго.';
 
   @override
   String get settingsSignOut => 'Изход';
@@ -691,6 +729,85 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareList => 'Изпрати списъка';
 
   @override
+  String get shareAsText => 'Изпрати като текст';
+
+  @override
+  String get shareAsTextSubtitle => 'Копие за всяко приложение за съобщения';
+
+  @override
+  String get shareWithSomeone => 'Сподели с някого';
+
+  @override
+  String get shareWithSomeoneSubtitle =>
+      'Двамата виждате и променяте един и същ списък';
+
+  @override
+  String get shareInvite => 'Покани някого';
+
+  @override
+  String shareInviteTitle(String name) {
+    return 'Покана за „$name“';
+  }
+
+  @override
+  String get shareInviteMessage =>
+      'Изпрати му този код. В ShopCook натиска „Присъедини се“ в екрана със списъци и го въвежда. Кодът важи 7 дни.';
+
+  @override
+  String get shareInviteSend => 'Изпрати кода';
+
+  @override
+  String shareInviteText(String name, String code) {
+    return 'Присъедини се към моя списък в ShopCook „$name“: отвори ShopCook, натисни „Присъедини се“ в екрана със списъци и въведи $code. Кодът важи 7 дни.';
+  }
+
+  @override
+  String get shareStop => 'Спри споделянето';
+
+  @override
+  String get shareStopMessage =>
+      'Всеки запазва свое копие, но промените вече няма да стигат един до друг.';
+
+  @override
+  String get shareLeave => 'Напусни списъка';
+
+  @override
+  String get shareLeaveMessage =>
+      'Запазваш копие на този телефон, но вече няма да виждаш промените на другите.';
+
+  @override
+  String get shareStopped => 'Списъкът вече не е споделен';
+
+  @override
+  String get shareOffline =>
+      'Няма връзка със сървъра на ShopCook. Провери връзката си и опитай отново.';
+
+  @override
+  String get joinTitle => 'Присъединяване към споделен списък';
+
+  @override
+  String get joinHint => 'Кодът от 8 знака';
+
+  @override
+  String get joinAction => 'Присъедини се';
+
+  @override
+  String get joinBadCode =>
+      'Този код не става. Може да е изтекъл — поискай нов.';
+
+  @override
+  String joined(String name) {
+    return 'Присъедини се към „$name“';
+  }
+
+  @override
+  String get listShared => 'Споделен';
+
+  @override
+  String get listsDeleteSharedMessage =>
+      'Списъкът е споделен. Изтриването тук го изважда и от споделянето; другите запазват свое копие.';
+
+  @override
   String shareListSubject(String name) {
     return 'Списък за пазаруване: $name';
   }
@@ -776,6 +893,14 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get libraryDeleted => 'Рецептата е изтрита';
+
+  @override
+  String get librarySearchHint => 'Търси по име или съставка';
+
+  @override
+  String libraryNoMatch(String query) {
+    return 'Няма рецепта, която да съвпада с „$query“.';
+  }
 
   @override
   String get libraryAddLink => 'Запази линк';

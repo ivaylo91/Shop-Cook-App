@@ -83,6 +83,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listsRenameTitle => 'Rename list';
 
   @override
+  String get listsDuplicate => 'Duplicate';
+
+  @override
+  String get listsDuplicateSubtitle => 'Meals and items, all unticked';
+
+  @override
+  String get listsDuplicateTitle => 'Duplicate list';
+
+  @override
+  String listsCopyName(String name) {
+    return '$name (copy)';
+  }
+
+  @override
+  String listsDuplicated(String name) {
+    return 'Made “$name”';
+  }
+
+  @override
   String listsDeleteTitle(String name) {
     return 'Delete \"$name\"?';
   }
@@ -151,6 +170,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mealActions => 'Meal actions';
+
+  @override
+  String get mealMarkCooked => 'Mark as cooked';
+
+  @override
+  String get mealUnmarkCooked => 'Not cooked yet';
+
+  @override
+  String mealCooked(String name) {
+    return '$name is cooked. Enjoy!';
+  }
+
+  @override
+  String get planRecentlyCooked => 'Recently cooked';
+
+  @override
+  String planCookedOn(String date) {
+    return 'Cooked $date';
+  }
 
   @override
   String get mealCardNoIngredients =>
@@ -496,7 +534,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsDeviceOnly =>
-      'Your lists are stored on this device only. Signing in does not sync them anywhere yet, so another phone will show an empty app.';
+      'Your lists are stored on this phone. A list you share is also kept on the ShopCook server so the people you share it with can see it; nothing else is.';
 
   @override
   String get settingsSignOut => 'Sign out';
@@ -691,6 +729,85 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareList => 'Share list';
 
   @override
+  String get shareAsText => 'Send as text';
+
+  @override
+  String get shareAsTextSubtitle => 'A copy for any messaging app';
+
+  @override
+  String get shareWithSomeone => 'Share with someone';
+
+  @override
+  String get shareWithSomeoneSubtitle =>
+      'You both see and change the same list';
+
+  @override
+  String get shareInvite => 'Invite someone';
+
+  @override
+  String shareInviteTitle(String name) {
+    return 'Invite to “$name”';
+  }
+
+  @override
+  String get shareInviteMessage =>
+      'Send them this code. In ShopCook they tap Join on the Lists screen and enter it. It works for 7 days.';
+
+  @override
+  String get shareInviteSend => 'Send code';
+
+  @override
+  String shareInviteText(String name, String code) {
+    return 'Join my ShopCook list “$name”: open ShopCook, tap Join on the Lists screen and enter $code. The code works for 7 days.';
+  }
+
+  @override
+  String get shareStop => 'Stop sharing';
+
+  @override
+  String get shareStopMessage =>
+      'Everyone keeps their own copy, but changes will no longer reach each other.';
+
+  @override
+  String get shareLeave => 'Leave list';
+
+  @override
+  String get shareLeaveMessage =>
+      'You keep a copy on this phone, but will no longer see the others’ changes.';
+
+  @override
+  String get shareStopped => 'No longer shared';
+
+  @override
+  String get shareOffline =>
+      'Couldn’t reach the ShopCook server. Check your connection and try again.';
+
+  @override
+  String get joinTitle => 'Join a shared list';
+
+  @override
+  String get joinHint => 'The 8-character code';
+
+  @override
+  String get joinAction => 'Join';
+
+  @override
+  String get joinBadCode =>
+      'That code didn’t work. It may have expired — ask for a new one.';
+
+  @override
+  String joined(String name) {
+    return 'Joined “$name”';
+  }
+
+  @override
+  String get listShared => 'Shared';
+
+  @override
+  String get listsDeleteSharedMessage =>
+      'This list is shared. Deleting it here also takes it out of sharing; the others keep their own copy.';
+
+  @override
   String shareListSubject(String name) {
     return 'Shopping list: $name';
   }
@@ -776,6 +893,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryDeleted => 'Recipe deleted';
+
+  @override
+  String get librarySearchHint => 'Search by name or ingredient';
+
+  @override
+  String libraryNoMatch(String query) {
+    return 'No recipe matches “$query”.';
+  }
 
   @override
   String get libraryAddLink => 'Save a link';

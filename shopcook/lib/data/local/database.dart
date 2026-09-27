@@ -39,6 +39,11 @@ class Meals extends Table {
   /// the same day compare equal.
   DateTimeColumn get plannedFor => dateTime().nullable()();
 
+  /// When the meal was marked cooked, or null while it is still to come.
+  /// A cooked meal leaves its list and the ideas pile but is kept, as the
+  /// Plan screen's record of what was eaten.
+  DateTimeColumn get cookedAt => dateTime().nullable()();
+
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -171,6 +176,55 @@ class BarcodeProducts extends Table {
   Set<Column> get primaryKey => {code};
 }
 
+/// A list shared with other people through the server.
+///
+/// Its presence is what makes the sync triggers queue changes to the list;
+/// see [AppDatabase.createSyncTriggers].
+@DataClassName('SharedListMark')
+class SharedLists extends Table {
+  TextColumn get listId =>
+      text().references(ShoppingLists, #id, onDelete: KeyAction.cascade)();
+
+  /// Whether this user shared it (and so may stop sharing it for everyone)
+  /// or joined it with a code.
+  BoolColumn get isOwner => boolean().withDefault(const Constant(false))();
+
+  /// The server's updated_at of the newest change pulled so far, as the
+  /// server wrote it. Null until the first pull.
+  TextColumn get cursor => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {listId};
+}
+
+/// Changes to shared lists that have not reached the server yet.
+///
+/// Filled by triggers rather than by the repository, so no write path — and
+/// there are many: adds, merges, ticks, undo restores, cascades — can forget
+/// to queue its change. Only the row's identity is kept; the push reads the
+/// row as it is then, so ten edits to one item send one update.
+@DataClassName('OutboxEntry')
+class SyncOutbox extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// 'list', 'meal' or 'product'.
+  TextColumn get entity => text()();
+  TextColumn get rowId => text()();
+  TextColumn get listId => text()();
+  BoolColumn get deleted => boolean()();
+}
+
+/// Switches the triggers read. While `applying` is 1 the sync is writing
+/// what it pulled from the server, which must not be queued to go back up.
+@DataClassName('SyncFlag')
+class SyncFlags extends Table {
+  TextColumn get name => text()();
+  IntColumn get value => integer()();
+
+  @override
+  Set<Column> get primaryKey => {name};
+}
+
 @DriftDatabase(
   tables: [
     ShoppingLists,
@@ -180,6 +234,9 @@ class BarcodeProducts extends Table {
     MealRecipes,
     RecipeSearches,
     BarcodeProducts,
+    SharedLists,
+    SyncOutbox,
+    SyncFlags,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -187,7 +244,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 10;
 
   /// The migration ladder. Every step has to be additive and idempotent in
   /// order, because an install can be on any earlier version — a phone that
@@ -201,7 +258,10 @@ class AppDatabase extends _$AppDatabase {
   /// still count toward the shopping progress.
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) => m.createAll(),
+    onCreate: (m) async {
+      await m.createAll();
+      await createSyncTriggers();
+    },
     onUpgrade: (m, from, to) async {
       // v2: meals can be planned for a day.
       if (from < 2) {
@@ -284,11 +344,153 @@ class AppDatabase extends _$AppDatabase {
       if (from < 8) {
         await m.addColumn(products, products.clearedAt);
       }
+      // v9: meals can be marked cooked.
+      if (from < 9) {
+        await m.addColumn(meals, meals.cookedAt);
+      }
+      // v10: lists can be shared, through a queue of changes to push.
+      if (from < 10) {
+        await m.createTable(sharedLists);
+        await m.createTable(syncOutbox);
+        await m.createTable(syncFlags);
+        await createSyncTriggers();
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// Queues every change to a shared list's name, meals and items.
+  ///
+  /// Written out as SQL, like the v5 rebuild, so the triggers a phone has
+  /// are the ones of the day it upgraded. A change is queued only when its
+  /// list is shared and the sync is not itself applying what it pulled.
+  Future<void> createSyncTriggers() async {
+    await customStatement(
+      "INSERT OR IGNORE INTO sync_flags (name, value) VALUES ('applying', 0)",
+    );
+
+    const quiet =
+        "(SELECT value FROM sync_flags WHERE name = 'applying') = 0";
+    String shared(String row) =>
+        'EXISTS (SELECT 1 FROM shared_lists WHERE list_id = $row.list_id)';
+    String queue(String entity, String row, String listId, int deleted) =>
+        'INSERT INTO sync_outbox (entity, row_id, list_id, deleted) '
+        "VALUES ('$entity', $row.id, $listId, $deleted);";
+
+    for (final (table, entity) in [('meals', 'meal'), ('products', 'product')]) {
+      await customStatement(
+        'CREATE TRIGGER IF NOT EXISTS sync_${table}_insert '
+        'AFTER INSERT ON $table WHEN $quiet AND ${shared('NEW')} '
+        'BEGIN ${queue(entity, 'NEW', 'NEW.list_id', 0)} END',
+      );
+      await customStatement(
+        'CREATE TRIGGER IF NOT EXISTS sync_${table}_update '
+        'AFTER UPDATE ON $table WHEN $quiet AND ${shared('NEW')} '
+        'BEGIN ${queue(entity, 'NEW', 'NEW.list_id', 0)} END',
+      );
+      await customStatement(
+        'CREATE TRIGGER IF NOT EXISTS sync_${table}_delete '
+        'AFTER DELETE ON $table WHEN $quiet AND ${shared('OLD')} '
+        'BEGIN ${queue(entity, 'OLD', 'OLD.list_id', 1)} END',
+      );
+    }
+    await customStatement(
+      'CREATE TRIGGER IF NOT EXISTS sync_lists_rename '
+      'AFTER UPDATE OF name ON shopping_lists '
+      'WHEN $quiet AND EXISTS '
+      '(SELECT 1 FROM shared_lists WHERE list_id = NEW.id) '
+      "BEGIN INSERT INTO sync_outbox (entity, row_id, list_id, deleted) "
+      "VALUES ('list', NEW.id, NEW.id, 0); END",
+    );
+  }
+
+  /// Runs [writes] as the sync applying pulled changes: nothing written in
+  /// it is queued to be pushed back.
+  Future<T> applyingRemote<T>(Future<T> Function() writes) => transaction(
+    () async {
+      await customStatement(
+        "UPDATE sync_flags SET value = 1 WHERE name = 'applying'",
+      );
+      try {
+        return await writes();
+      } finally {
+        await customStatement(
+          "UPDATE sync_flags SET value = 0 WHERE name = 'applying'",
+        );
+      }
+    },
+  );
+
+  // Sharing
+  Stream<List<SharedListMark>> watchSharedLists() =>
+      select(sharedLists).watch();
+
+  Future<SharedListMark?> sharedList(String listId) =>
+      (select(sharedLists)..where((t) => t.listId.equals(listId)))
+          .getSingleOrNull();
+
+  /// The shared lists belonging to [userId] on this phone.
+  Future<List<SharedListMark>> sharedListsFor(String userId) async {
+    final query = select(sharedLists).join([
+      innerJoin(shoppingLists, shoppingLists.id.equalsExp(sharedLists.listId)),
+    ])..where(shoppingLists.userId.equals(userId));
+    return [for (final row in await query.get()) row.readTable(sharedLists)];
+  }
+
+  Future<void> markShared(String listId, {required bool isOwner}) =>
+      into(sharedLists).insertOnConflictUpdate(
+        SharedListsCompanion.insert(listId: listId, isOwner: Value(isOwner)),
+      );
+
+  Future<void> setSharedCursor(String listId, String cursor) =>
+      (update(sharedLists)..where((t) => t.listId.equals(listId))).write(
+        SharedListsCompanion(cursor: Value(cursor)),
+      );
+
+  /// Stops treating a list as shared, and drops what it had queued. The
+  /// list itself stays, as an ordinary list on this phone.
+  Future<void> forgetShared(String listId) => transaction(() async {
+    await (delete(syncOutbox)..where((t) => t.listId.equals(listId))).go();
+    await (delete(sharedLists)..where((t) => t.listId.equals(listId))).go();
+  });
+
+  /// Queued changes to [userId]'s lists, oldest first.
+  Future<List<OutboxEntry>> pendingOutbox(String userId) async {
+    final query = select(syncOutbox).join([
+      innerJoin(shoppingLists, shoppingLists.id.equalsExp(syncOutbox.listId)),
+    ])
+      ..where(shoppingLists.userId.equals(userId))
+      ..orderBy([OrderingTerm.asc(syncOutbox.id)]);
+    return [for (final row in await query.get()) row.readTable(syncOutbox)];
+  }
+
+  Stream<int> watchOutboxSize() => syncOutbox.count().watchSingle();
+
+  Future<void> dropOutbox(Iterable<int> ids) =>
+      (delete(syncOutbox)..where((t) => t.id.isIn(ids))).go();
+
+  /// Ids with a change still waiting to go up. A pulled row must not
+  /// overwrite one of these, or the local edit would be lost.
+  Future<Set<String>> pendingRowIds(String listId) async {
+    final rows = await (select(syncOutbox)
+          ..where((t) => t.listId.equals(listId)))
+        .get();
+    return {for (final row in rows) row.rowId};
+  }
+
+  Future<List<Meal>> allMealsForList(String listId) =>
+      (select(meals)..where((t) => t.listId.equals(listId))).get();
+
+  Future<void> upsertMeal(Meal meal) =>
+      into(meals).insertOnConflictUpdate(meal);
+
+  Future<void> upsertProduct(Product product) =>
+      into(products).insertOnConflictUpdate(product);
+
+  Future<void> upsertList(ShoppingListsCompanion list) =>
+      into(shoppingLists).insertOnConflictUpdate(list);
 
   // ShoppingLists
   Stream<List<ShoppingList>> watchLists(String userId) =>
@@ -321,6 +523,9 @@ class AppDatabase extends _$AppDatabase {
   /// recipes are owned directly. Shared caches (searches, barcode names)
   /// hold nothing personal and stay.
   Future<void> deleteUserData(String userId) => transaction(() async {
+    for (final mark in await sharedListsFor(userId)) {
+      await forgetShared(mark.listId);
+    }
     await (delete(shoppingLists)..where((t) => t.userId.equals(userId))).go();
     await (delete(recipes)..where((t) => t.userId.equals(userId))).go();
   });
@@ -328,13 +533,80 @@ class AppDatabase extends _$AppDatabase {
   Future<void> insertList(ShoppingListsCompanion entry) =>
       into(shoppingLists).insert(entry);
 
-  Future<void> deleteList(String id) =>
-      (delete(shoppingLists)..where((t) => t.id.equals(id))).go();
+  /// Deletes a list from this phone. A shared list is forgotten first, so
+  /// the cascade through its meals and items is not queued as deletions for
+  /// every other member.
+  Future<void> deleteList(String id) => transaction(() async {
+    await forgetShared(id);
+    await (delete(shoppingLists)..where((t) => t.id.equals(id))).go();
+  });
 
   Future<void> renameList(String id, String name) =>
       (update(shoppingLists)..where((t) => t.id.equals(id))).write(
         ShoppingListsCompanion(name: Value(name)),
       );
+
+  /// Copies a list, its meals, their recipe links and every item still on
+  /// it into a new list, as one transaction.
+  ///
+  /// The copy is a fresh start: nothing ticked, no meal pinned to last
+  /// week's day, and items already cleared off the original left behind.
+  /// Prices, aisles and staples come along — they describe the item, not
+  /// the shop. [newId] makes up an id for each copied row.
+  Future<void> copyList({
+    required String fromId,
+    required String toId,
+    required String name,
+    required String userId,
+    required String Function() newId,
+  }) => transaction(() async {
+    final now = DateTime.now();
+    await into(shoppingLists).insert(
+      ShoppingListsCompanion.insert(
+        id: toId,
+        name: name,
+        userId: Value(userId),
+        createdAt: now,
+      ),
+    );
+
+    final mealIds = <String, String>{};
+    for (final meal in await mealsForList(fromId)) {
+      if (meal.cookedAt != null) continue; // already eaten; not next week's
+      final id = newId();
+      mealIds[meal.id] = id;
+      await into(meals).insert(
+        meal.copyWith(id: id, listId: toId, plannedFor: const Value(null)),
+      );
+    }
+
+    for (final link in await linksForMeals(mealIds.keys.toList())) {
+      await into(mealRecipes).insert(
+        link.copyWith(mealId: mealIds[link.mealId]!, createdAt: now),
+      );
+    }
+
+    final kept = (await productsForList(fromId))
+        .where((p) => p.clearedAt == null)
+        .toList();
+    for (final product in kept) {
+      await into(products).insert(
+        product.copyWith(
+          id: newId(),
+          listId: toId,
+          mealId: Value(
+            product.mealId == null ? null : mealIds[product.mealId],
+          ),
+          isChecked: false,
+          createdAt: now,
+        ),
+      );
+    }
+  });
+
+  Stream<ShoppingList?> watchList(String id) =>
+      (select(shoppingLists)..where((t) => t.id.equals(id)))
+          .watchSingleOrNull();
 
   /// One-shot read, for snapshotting a list before it is deleted.
   Future<ShoppingList?> listById(String id) =>
@@ -342,9 +614,10 @@ class AppDatabase extends _$AppDatabase {
           .getSingleOrNull();
 
   // Meals
+  /// The meals still to cook on a list.
   Stream<List<Meal>> watchMealsForList(String listId) =>
       (select(meals)
-        ..where((t) => t.listId.equals(listId))
+        ..where((t) => t.listId.equals(listId) & t.cookedAt.isNull())
         ..orderBy([(t) => OrderingTerm.asc(t.createdAt)])).watch();
 
   Future<void> insertMeal(MealsCompanion entry) => into(meals).insert(entry);
@@ -374,7 +647,7 @@ class AppDatabase extends _$AppDatabase {
     final query = select(meals).join([
       innerJoin(shoppingLists, shoppingLists.id.equalsExp(meals.listId)),
     ])
-      ..where(shoppingLists.userId.equals(userId))
+      ..where(shoppingLists.userId.equals(userId) & meals.cookedAt.isNull())
       ..orderBy([OrderingTerm.desc(meals.createdAt)]);
 
     return [
@@ -386,27 +659,66 @@ class AppDatabase extends _$AppDatabase {
     ];
   }
 
+  /// Meals of [userId] joined to their list, which is where ownership
+  /// lives. The plan queries read across lists, so without the join a phone
+  /// shared by two accounts would show each the other's week.
+  JoinedSelectStatement<HasResultSet, dynamic> _userMeals(String userId) =>
+      select(meals).join([
+        innerJoin(shoppingLists, shoppingLists.id.equalsExp(meals.listId)),
+      ])..where(shoppingLists.userId.equals(userId));
+
+  Stream<List<Meal>> _watchMeals(
+    JoinedSelectStatement<HasResultSet, dynamic> query,
+  ) => query.watch().map(
+    (rows) => [for (final row in rows) row.readTable(meals)],
+  );
+
   /// Every planned meal in a half-open date range, across all lists — the
   /// week view is not scoped to one shopping list, because a week is not.
-  Stream<List<Meal>> watchMealsPlannedBetween(DateTime from, DateTime to) =>
-      (select(meals)
-            ..where(
-              (t) =>
-                  t.plannedFor.isBiggerOrEqualValue(from) &
-                  t.plannedFor.isSmallerThanValue(to),
-            )
-            ..orderBy([
-              (t) => OrderingTerm.asc(t.plannedFor),
-              (t) => OrderingTerm.asc(t.createdAt),
-            ]))
-          .watch();
+  /// Cooked meals stay, so the day shows what was eaten.
+  Stream<List<Meal>> watchMealsPlannedBetween(
+    String userId,
+    DateTime from,
+    DateTime to,
+  ) => _watchMeals(
+    _userMeals(userId)
+      ..where(
+        meals.plannedFor.isBiggerOrEqualValue(from) &
+            meals.plannedFor.isSmallerThanValue(to),
+      )
+      ..orderBy([
+        OrderingTerm.asc(meals.plannedFor),
+        OrderingTerm.asc(meals.createdAt),
+      ]),
+  );
 
   /// Meals that are still just ideas, newest first.
-  Stream<List<Meal>> watchUnplannedMeals() =>
-      (select(meals)
-            ..where((t) => t.plannedFor.isNull())
-            ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
-          .watch();
+  Stream<List<Meal>> watchUnplannedMeals(String userId) => _watchMeals(
+    _userMeals(userId)
+      ..where(meals.plannedFor.isNull() & meals.cookedAt.isNull())
+      ..orderBy([OrderingTerm.desc(meals.createdAt)]),
+  );
+
+  /// The most recently cooked meals, newest first.
+  Stream<List<Meal>> watchCookedMeals(String userId, {int limit = 10}) =>
+      _watchMeals(
+        _userMeals(userId)
+          ..where(meals.cookedAt.isNotNull())
+          ..orderBy([OrderingTerm.desc(meals.cookedAt)])
+          ..limit(limit),
+      );
+
+  /// Marks a meal cooked at [at], or back to still-to-cook when null.
+  Future<void> setMealCooked(String id, DateTime? at) =>
+      (update(meals)..where((t) => t.id.equals(id))).write(
+        MealsCompanion(cookedAt: Value(at)),
+      );
+
+  /// A cooked meal's ingredients that are still showing, to clear with it.
+  Future<List<Product>> visibleProductsForMeal(String mealId) =>
+      (select(products)
+            ..where((t) => t.mealId.equals(mealId) & t.clearedAt.isNull()))
+          .get();
 
   Future<void> setMealPlannedFor(String id, DateTime? day) =>
       (update(meals)..where((t) => t.id.equals(id))).write(

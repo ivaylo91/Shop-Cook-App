@@ -242,6 +242,36 @@ abstract class AppLocalizations {
   /// **'Rename list'**
   String get listsRenameTitle;
 
+  /// No description provided for @listsDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get listsDuplicate;
+
+  /// No description provided for @listsDuplicateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Meals and items, all unticked'**
+  String get listsDuplicateSubtitle;
+
+  /// No description provided for @listsDuplicateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate list'**
+  String get listsDuplicateTitle;
+
+  /// No description provided for @listsCopyName.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (copy)'**
+  String listsCopyName(String name);
+
+  /// No description provided for @listsDuplicated.
+  ///
+  /// In en, this message translates to:
+  /// **'Made “{name}”'**
+  String listsDuplicated(String name);
+
   /// No description provided for @listsDeleteTitle.
   ///
   /// In en, this message translates to:
@@ -349,6 +379,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Meal actions'**
   String get mealActions;
+
+  /// No description provided for @mealMarkCooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as cooked'**
+  String get mealMarkCooked;
+
+  /// No description provided for @mealUnmarkCooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not cooked yet'**
+  String get mealUnmarkCooked;
+
+  /// No description provided for @mealCooked.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is cooked. Enjoy!'**
+  String mealCooked(String name);
+
+  /// No description provided for @planRecentlyCooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently cooked'**
+  String get planRecentlyCooked;
+
+  /// No description provided for @planCookedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooked {date}'**
+  String planCookedOn(String date);
 
   /// No description provided for @mealCardNoIngredients.
   ///
@@ -923,7 +983,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsDeviceOnly.
   ///
   /// In en, this message translates to:
-  /// **'Your lists are stored on this device only. Signing in does not sync them anywhere yet, so another phone will show an empty app.'**
+  /// **'Your lists are stored on this phone. A list you share is also kept on the ShopCook server so the people you share it with can see it; nothing else is.'**
   String get settingsDeviceOnly;
 
   /// No description provided for @settingsSignOut.
@@ -1244,6 +1304,138 @@ abstract class AppLocalizations {
   /// **'Share list'**
   String get shareList;
 
+  /// No description provided for @shareAsText.
+  ///
+  /// In en, this message translates to:
+  /// **'Send as text'**
+  String get shareAsText;
+
+  /// No description provided for @shareAsTextSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A copy for any messaging app'**
+  String get shareAsTextSubtitle;
+
+  /// No description provided for @shareWithSomeone.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with someone'**
+  String get shareWithSomeone;
+
+  /// No description provided for @shareWithSomeoneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You both see and change the same list'**
+  String get shareWithSomeoneSubtitle;
+
+  /// No description provided for @shareInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite someone'**
+  String get shareInvite;
+
+  /// No description provided for @shareInviteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite to “{name}”'**
+  String shareInviteTitle(String name);
+
+  /// No description provided for @shareInviteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Send them this code. In ShopCook they tap Join on the Lists screen and enter it. It works for 7 days.'**
+  String get shareInviteMessage;
+
+  /// No description provided for @shareInviteSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code'**
+  String get shareInviteSend;
+
+  /// No description provided for @shareInviteText.
+  ///
+  /// In en, this message translates to:
+  /// **'Join my ShopCook list “{name}”: open ShopCook, tap Join on the Lists screen and enter {code}. The code works for 7 days.'**
+  String shareInviteText(String name, String code);
+
+  /// No description provided for @shareStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing'**
+  String get shareStop;
+
+  /// No description provided for @shareStopMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone keeps their own copy, but changes will no longer reach each other.'**
+  String get shareStopMessage;
+
+  /// No description provided for @shareLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave list'**
+  String get shareLeave;
+
+  /// No description provided for @shareLeaveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You keep a copy on this phone, but will no longer see the others’ changes.'**
+  String get shareLeaveMessage;
+
+  /// No description provided for @shareStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'No longer shared'**
+  String get shareStopped;
+
+  /// No description provided for @shareOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t reach the ShopCook server. Check your connection and try again.'**
+  String get shareOffline;
+
+  /// No description provided for @joinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Join a shared list'**
+  String get joinTitle;
+
+  /// No description provided for @joinHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The 8-character code'**
+  String get joinHint;
+
+  /// No description provided for @joinAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get joinAction;
+
+  /// No description provided for @joinBadCode.
+  ///
+  /// In en, this message translates to:
+  /// **'That code didn’t work. It may have expired — ask for a new one.'**
+  String get joinBadCode;
+
+  /// No description provided for @joined.
+  ///
+  /// In en, this message translates to:
+  /// **'Joined “{name}”'**
+  String joined(String name);
+
+  /// No description provided for @listShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared'**
+  String get listShared;
+
+  /// No description provided for @listsDeleteSharedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This list is shared. Deleting it here also takes it out of sharing; the others keep their own copy.'**
+  String get listsDeleteSharedMessage;
+
   /// No description provided for @shareListSubject.
   ///
   /// In en, this message translates to:
@@ -1369,6 +1561,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recipe deleted'**
   String get libraryDeleted;
+
+  /// No description provided for @librarySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or ingredient'**
+  String get librarySearchHint;
+
+  /// No description provided for @libraryNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No recipe matches “{query}”.'**
+  String libraryNoMatch(String query);
 
   /// No description provided for @libraryAddLink.
   ///

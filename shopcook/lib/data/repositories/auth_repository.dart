@@ -62,7 +62,7 @@ class AuthRepository {
       );
       return const AuthResult.success();
     } on AuthException catch (error) {
-      return AuthResult.rejected(error.message);
+      return _refused(error);
     } catch (_) {
       return const AuthResult.offline();
     }
@@ -85,11 +85,22 @@ class AuthRepository {
       }
       return const AuthResult.success();
     } on AuthException catch (error) {
-      return AuthResult.rejected(error.message);
+      return _refused(error);
     } catch (_) {
       return const AuthResult.offline();
     }
   }
+
+  /// A refusal from the server, or a request that never got there.
+  ///
+  /// Supabase reports a failed connection as an [AuthException] too — an
+  /// [AuthRetryableFetchException] whose message is the raw socket error —
+  /// which used to be shown on the form as "ClientException with
+  /// SocketException: Failed host lookup…".
+  static AuthResult _refused(AuthException error) =>
+      error is AuthRetryableFetchException
+      ? const AuthResult.offline()
+      : AuthResult.rejected(error.message);
 
   Future<void> signOut() => _client.auth.signOut();
 

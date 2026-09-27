@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Required for Supabase auth, recipe search and recipe import.
          Flutter only declares this in the debug and profile manifests, so
          without it here release builds have no network access at all and
@@ -10,6 +11,13 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
+    <!-- WorkManager arrives with home_widget, for interactive widget buttons
+         this widget does not have, and asks to run at boot and in the
+         foreground. Nothing here schedules background work, so neither is
+         used, and Play review asks about both. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove"/>
 
     <!-- Android 11+ hides other installed apps unless declared here. Needed
          so "Find recipes" can hand its search URL to the YouTube app rather
@@ -31,6 +39,11 @@
         android:icon="@mipmap/ic_launcher"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules">
+        <!-- The barcode model comes from Play services (see gradle.properties);
+             this has it fetched at install rather than on the first scan. -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -9,10 +9,10 @@ import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 import '../../core/money.dart';
-import '../../core/settings.dart';
 import '../products/item_composer.dart';
+import '../plan/plan_screen.dart' show markMealCooked;
 import '../products/item_sheet.dart';
-import 'share_list.dart';
+import '../sharing/share_actions.dart';
 
 class ListDetailScreen extends ConsumerWidget {
   final ShoppingList list;
@@ -29,14 +29,41 @@ class ListDetailScreen extends ConsumerWidget {
         .where((p) => p.isChecked)
         .length;
 
+    final shared =
+        ref.watch(sharedListsProvider).valueOrNull?.containsKey(list.id) ??
+        false;
+    // The name from the database rather than the one pushed with the route,
+    // so a rename — here or by someone the list is shared with — shows.
+    final name =
+        ref
+            .watch(_listProvider(list.id))
+            .valueOrNull
+            ?.name ??
+        list.name;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(list.name),
+        title: Row(
+          children: [
+            Flexible(child: Text(name, overflow: TextOverflow.ellipsis)),
+            if (shared) ...[
+              const SizedBox(width: Insets.sm),
+              Tooltip(
+                message: l10n.listShared,
+                child: FaIcon(
+                  FontAwesomeIcons.userGroup,
+                  size: 14,
+                  color: palette.accent,
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.shareNodes, size: 17),
             tooltip: l10n.shareList,
-            onPressed: () => _share(context, ref),
+            onPressed: () => showShareActions(context, ref, list),
           ),
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.star, size: 16),
@@ -178,21 +205,6 @@ class ListDetailScreen extends ConsumerWidget {
       ),
       onMoveToMeal: () => _moveToMeal(context, ref, product, meals),
       onDelete: () => _deleteItemWithUndo(context, ref, product),
-    );
-  }
-
-  Future<void> _share(BuildContext context, WidgetRef ref) async {
-    final products = await ref
-        .read(shoppingListRepositoryProvider)
-        .watchAllProducts(list.id)
-        .first;
-    if (!context.mounted) return;
-
-    await shareList(
-      context,
-      list: list,
-      products: products,
-      aisleOrder: ref.read(aisleOrderProvider),
     );
   }
 
@@ -400,6 +412,11 @@ class _MealCard extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
+            leading: const FaIcon(FontAwesomeIcons.circleCheck, size: 16),
+            title: Text(l10n.mealMarkCooked),
+            onTap: () => Navigator.pop(context, 'cooked'),
+          ),
+          ListTile(
             leading: const FaIcon(FontAwesomeIcons.pen, size: 16),
             title: Text(l10n.actionRename),
             onTap: () => Navigator.pop(context, 'rename'),
@@ -421,6 +438,11 @@ class _MealCard extends ConsumerWidget {
     );
 
     if (action == null || !context.mounted) return;
+
+    if (action == 'cooked') {
+      await markMealCooked(context, ref, meal);
+      return;
+    }
 
     if (action == 'rename') {
       final name = await promptForText(
@@ -449,6 +471,13 @@ class _MealCard extends ConsumerWidget {
     );
   }
 }
+
+final _listProvider = StreamProvider.family<ShoppingList?, String>((
+  ref,
+  listId,
+) {
+  return ref.watch(databaseProvider).watchList(listId);
+});
 
 final _mealsProvider = StreamProvider.family<List<Meal>, String>((ref, listId) {
   return ref.watch(shoppingListRepositoryProvider).watchMeals(listId);

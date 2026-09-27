@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/recipe_repository.dart';
+import 'library_search.dart';
 import 'recipe_link_dialog.dart';
 import 'recipe_thumbnail.dart';
 
@@ -17,11 +18,22 @@ import 'recipe_thumbnail.dart';
 /// Recipes used to belong to exactly one meal and vanish with it, so the
 /// bolognese found last month had to be found again this month. Here it
 /// stays, and goes onto as many meals as it is cooked for.
-class LibraryScreen extends ConsumerWidget {
+class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
+}
+
+class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+  /// Below this many recipes the whole library fits on a screen, and a
+  /// search field would only push it down.
+  static const _searchFrom = 6;
+
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final libraryAsync = ref.watch(libraryProvider);
     ref.listen(libraryProvider, (_, next) {
@@ -62,12 +74,35 @@ class LibraryScreen extends ConsumerWidget {
             );
           }
 
-          return ListView.separated(
+          final searchable = library.length >= _searchFrom;
+          final shown = searchable
+              ? library.where((e) => recipeMatches(e.recipe, _query)).toList()
+              : library;
+
+          return ListView(
             padding: const EdgeInsets.all(Insets.lg),
-            itemCount: library.length,
-            separatorBuilder: (_, __) => const SizedBox(height: Insets.md),
-            itemBuilder: (context, index) =>
-                _LibraryCard(entry: library[index]),
+            children: [
+              if (searchable) ...[
+                TextField(
+                  onChanged: (value) => setState(() => _query = value),
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: l10n.librarySearchHint,
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.all(Insets.md),
+                      child: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 15),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: Insets.lg),
+              ],
+              if (shown.isEmpty)
+                InlineNote(message: l10n.libraryNoMatch(_query.trim())),
+              for (final (index, entry) in shown.indexed) ...[
+                if (index > 0) const SizedBox(height: Insets.md),
+                _LibraryCard(entry: entry),
+              ],
+            ],
           );
         },
       ),

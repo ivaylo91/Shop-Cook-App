@@ -6,6 +6,7 @@ import '../../core/design.dart';
 import '../../core/localization.dart';
 import '../home_widget/home_widget_sync.dart';
 import '../share_intake/share_intake.dart';
+import '../sharing/list_sync_host.dart';
 
 /// The persistent bottom navigation.
 ///
@@ -27,8 +28,10 @@ class AppShell extends StatelessWidget {
     final palette = context.palette;
 
     return Scaffold(
-      body: HomeWidgetSync(
-        child: ShareIntake(shell: shell, child: shell),
+      body: ListSyncHost(
+        child: HomeWidgetSync(
+          child: ShareIntake(shell: shell, child: shell),
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: shell.currentIndex,

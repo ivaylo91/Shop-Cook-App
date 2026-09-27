@@ -4,9 +4,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/local/database.dart';
 import '../data/remote/recipe_import_api.dart';
 import '../data/remote/recipe_search_api.dart';
+import '../data/remote/shared_list_remote.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/recipe_repository.dart';
 import '../data/repositories/shopping_list_repository.dart';
+import '../data/sync/list_sync.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(Supabase.instance.client);
@@ -53,4 +55,19 @@ final recipeRepositoryProvider = Provider<RecipeRepository>((ref) {
     ref.watch(recipeSearchApiProvider),
     importApi: ref.watch(recipeImportApiProvider),
   );
+});
+
+final listSyncProvider = Provider<ListSync>((ref) {
+  return ListSync(
+    ref.watch(databaseProvider),
+    SupabaseSharedListRemote(Supabase.instance.client),
+  );
+});
+
+/// Which lists are shared, and whether this user shared each one.
+final sharedListsProvider = StreamProvider<Map<String, bool>>((ref) {
+  return ref
+      .watch(databaseProvider)
+      .watchSharedLists()
+      .map((marks) => {for (final m in marks) m.listId: m.isOwner});
 });
