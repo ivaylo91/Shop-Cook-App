@@ -79,6 +79,14 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="text/plain"/>
             </intent-filter>
+            <!-- Invite links to a shared list. The web page a link points to
+                 (docs/join.html) opens shopcook://join/CODE; see MainActivity. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="shopcook" android:host="join"/>
+            </intent-filter>
         </activity>
         <!-- Home screen widget: the list with the most left to buy. -->
         <receiver

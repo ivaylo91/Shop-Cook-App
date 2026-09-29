@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' show Value;
 
 import '../local/database.dart';
@@ -29,6 +31,17 @@ class ListSync {
   bool _running = false;
   bool _again = false;
 
+  /// The name this user shows under to the people they share lists with.
+  /// Set from the settings; pushed on the next sync when it changes.
+  String displayName = '';
+  String? _pushedName;
+
+  final _news = StreamController<SyncNews>.broadcast();
+
+  /// Changes other members made, as they arrive — for a quiet "Anna ticked
+  /// 3 items" rather than items silently changing under the user's thumb.
+  Stream<SyncNews> get news => _news.stream;
+
   /// Shares [list] and returns an invite code for it. Sharing a list that
   /// is already shared only fetches a code.
   Future<String> share(ShoppingList list) async {
@@ -45,6 +58,7 @@ class ListSync {
           productRow(product),
       ]);
     }
+    await _pushName(list.userId, force: true);
     return _remote.createInvite(list.id);
   }
 
@@ -68,9 +82,10 @@ class ListSync {
     if (await _db.sharedList(listId) == null) {
       await _db.markShared(listId, isOwner: false);
     }
+    await _pushName(userId, force: true);
 
     final mark = await _db.sharedList(listId);
-    if (mark != null) await _pull(mark);
+    if (mark != null) await _pull(mark, userId);
     return listId;
   }
 
@@ -103,13 +118,23 @@ class ListSync {
       do {
         _again = false;
         await _push(userId);
-        for (final mark in await _db.sharedListsFor(userId)) {
-          await _pull(mark);
+        final marks = await _db.sharedListsFor(userId);
+        if (marks.isNotEmpty) await _pushName(userId);
+        for (final mark in marks) {
+          await _pull(mark, userId);
         }
       } while (_again);
     } finally {
       _running = false;
     }
+  }
+
+  /// Sends [displayName] when it has changed since it was last sent, or
+  /// always when [force]d (a new membership starts with no name).
+  Future<void> _pushName(String? userId, {bool force = false}) async {
+    if (userId == null || (!force && displayName == _pushedName)) return;
+    await _remote.setMyName(userId, displayName);
+    _pushedName = displayName;
   }
 
   Future<void> _push(String userId) async {
@@ -159,7 +184,7 @@ class ListSync {
     await _db.dropOutbox([for (final entry in pending) entry.id]);
   }
 
-  Future<void> _pull(SharedListMark mark) async {
+  Future<void> _pull(SharedListMark mark, String userId) async {
     final name = await _remote.listName(mark.listId);
     if (name == null) {
       // Unshared by its owner, or this user was removed. Keep the copy.
@@ -179,10 +204,31 @@ class ListSync {
       since,
     );
 
+    await _db.replaceMembers(mark.listId, await _remote.members(mark.listId));
+
     // A row edited here and not yet pushed keeps the local edit: pulling
     // the server's older copy over it would lose it.
     final pending = await _db.pendingRowIds(mark.listId);
     var newest = mark.cursor;
+
+    // Changes by others since the last pull, for the news. Rows re-read in
+    // the overlap were counted last time. The first pull after joining is
+    // the whole list arriving, not news; the owner's first pull after
+    // sharing is news, since everything in it came from the others.
+    final previous = mark.cursor == null ? null : DateTime.parse(mark.cursor!);
+    final joining = previous == null && !mark.isOwner;
+    final changedBy = <String>{};
+    var changes = 0;
+    void note(Map<String, dynamic> row) {
+      final by = row['updated_by'] as String?;
+      if (joining || by == null || by == userId) return;
+      if (previous != null &&
+          !DateTime.parse(row['updated_at'] as String).isAfter(previous)) {
+        return;
+      }
+      changedBy.add(by);
+      changes++;
+    }
 
     await _db.applyingRemote(() async {
       final list = await _db.listById(mark.listId);
@@ -192,6 +238,7 @@ class ListSync {
 
       for (final row in meals) {
         newest = _later(newest, row['updated_at'] as String);
+        note(row);
         final id = row['id'] as String;
         if (pending.contains(id)) continue;
         if (row['deleted_at'] != null) {
@@ -203,6 +250,7 @@ class ListSync {
 
       for (final row in products) {
         newest = _later(newest, row['updated_at'] as String);
+        note(row);
         final id = row['id'] as String;
         if (pending.contains(id)) continue;
         if (row['deleted_at'] != null) {
@@ -222,6 +270,16 @@ class ListSync {
 
     if (newest != null && newest != mark.cursor) {
       await _db.setSharedCursor(mark.listId, newest!);
+    }
+    if (changes > 0) {
+      _news.add(
+        SyncNews(
+          listId: mark.listId,
+          listName: name,
+          by: changedBy,
+          count: changes,
+        ),
+      );
     }
   }
 
@@ -296,6 +354,26 @@ class ListSync {
     categoryOverride: row['category_override'] as String?,
     isStaple: row['is_staple'] as bool? ?? false,
     clearedAt: row['cleared_at'] == null ? null : _local(row['cleared_at']),
+    changedBy: row['updated_by'] as String?,
     createdAt: _local(row['created_at']),
   );
+}
+
+/// Other members changed a shared list.
+class SyncNews {
+  final String listId;
+  final String listName;
+
+  /// Account ids of who changed it.
+  final Set<String> by;
+
+  /// How many meals and items changed.
+  final int count;
+
+  const SyncNews({
+    required this.listId,
+    required this.listName,
+    required this.by,
+    required this.count,
+  });
 }

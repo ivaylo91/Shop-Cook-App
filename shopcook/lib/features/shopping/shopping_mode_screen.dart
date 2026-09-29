@@ -12,6 +12,7 @@ import '../../data/local/database.dart';
 import '../../data/repositories/shopping_list_repository.dart';
 import '../products/item_composer.dart';
 import '../products/item_sheet.dart';
+import '../sharing/changed_by.dart';
 import 'category_label.dart';
 import 'product_category.dart';
 
@@ -401,6 +402,16 @@ class _ItemGroup extends ConsumerWidget {
             details: [
               '${product.quantity} ${product.unit}'.trim(),
               if (product.price != null) context.money(product.price!),
+              ?changedByLabel(
+                context,
+                product,
+                names:
+                    ref
+                        .watch(memberNamesProvider(product.listId))
+                        .valueOrNull ??
+                    const {},
+                me: ref.watch(currentUserIdProvider),
+              ),
               if (product.mealId != null) mealNames[product.mealId] ?? '',
             ].where((part) => part.isNotEmpty).join(' · '),
             checked: product.isChecked,

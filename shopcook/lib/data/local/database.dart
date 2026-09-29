@@ -82,6 +82,11 @@ class Products extends Table {
   /// them. Deleting last week's milk would forget that milk is a staple.
   DateTimeColumn get clearedAt => dateTime().nullable()();
 
+  /// In a shared list, the account that last changed this item, as the
+  /// server recorded it; null for items only ever changed on this phone.
+  /// Shown as "by Anna" when it is someone else.
+  TextColumn get changedBy => text().nullable()();
+
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -197,6 +202,37 @@ class SharedLists extends Table {
   Set<Column> get primaryKey => {listId};
 }
 
+/// The people a shared list is shared with, by the name each chose.
+@DataClassName('SharedMember')
+class SharedMembers extends Table {
+  TextColumn get listId =>
+      text().references(ShoppingLists, #id, onDelete: KeyAction.cascade)();
+  TextColumn get userId => text()();
+
+  /// Empty when they have not set one.
+  TextColumn get name => text()();
+
+  @override
+  Set<Column> get primaryKey => {listId, userId};
+}
+
+/// Things the user has at home, so recipe imports and the week's shop can
+/// leave them off.
+@DataClassName('PantryItem')
+class PantryItems extends Table {
+  TextColumn get userId => text()();
+
+  /// The folded name the item is matched by; see [foldName].
+  TextColumn get key => text()();
+
+  /// The name as the user last wrote it.
+  TextColumn get name => text()();
+  DateTimeColumn get addedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {userId, key};
+}
+
 /// Changes to shared lists that have not reached the server yet.
 ///
 /// Filled by triggers rather than by the repository, so no write path — and
@@ -237,6 +273,8 @@ class SyncFlags extends Table {
     SharedLists,
     SyncOutbox,
     SyncFlags,
+    SharedMembers,
+    PantryItems,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -244,7 +282,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   /// The migration ladder. Every step has to be additive and idempotent in
   /// order, because an install can be on any earlier version — a phone that
@@ -355,6 +393,12 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(syncFlags);
         await createSyncTriggers();
       }
+      // v11: who changed what in a shared list, and things at home.
+      if (from < 11) {
+        await m.addColumn(products, products.changedBy);
+        await m.createTable(sharedMembers);
+        await m.createTable(pantryItems);
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -444,6 +488,51 @@ class AppDatabase extends _$AppDatabase {
         SharedListsCompanion.insert(listId: listId, isOwner: Value(isOwner)),
       );
 
+  /// Replaces who a shared list's members are, as last pulled.
+  Future<void> replaceMembers(
+    String listId,
+    List<({String userId, String name})> members,
+  ) => transaction(() async {
+    await (delete(sharedMembers)..where((t) => t.listId.equals(listId))).go();
+    for (final member in members) {
+      await into(sharedMembers).insert(
+        SharedMembersCompanion.insert(
+          listId: listId,
+          userId: member.userId,
+          name: member.name,
+        ),
+      );
+    }
+  });
+
+  /// Member names of a shared list, by account id.
+  Stream<Map<String, String>> watchMemberNames(String listId) =>
+      (select(sharedMembers)..where((t) => t.listId.equals(listId)))
+          .watch()
+          .map((rows) => {for (final row in rows) row.userId: row.name});
+
+  // Pantry
+  Stream<List<PantryItem>> watchPantry(String userId) =>
+      (select(pantryItems)
+            ..where((t) => t.userId.equals(userId))
+            ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+          .watch();
+
+  Future<void> addToPantry(String userId, String name) =>
+      into(pantryItems).insertOnConflictUpdate(
+        PantryItemsCompanion.insert(
+          userId: userId,
+          key: foldName(name),
+          name: name.trim(),
+          addedAt: DateTime.now(),
+        ),
+      );
+
+  Future<void> removeFromPantry(String userId, String key) =>
+      (delete(pantryItems)
+            ..where((t) => t.userId.equals(userId) & t.key.equals(key)))
+          .go();
+
   Future<void> setSharedCursor(String listId, String cursor) =>
       (update(sharedLists)..where((t) => t.listId.equals(listId))).write(
         SharedListsCompanion(cursor: Value(cursor)),
@@ -527,6 +616,7 @@ class AppDatabase extends _$AppDatabase {
       await forgetShared(mark.listId);
     }
     await (delete(shoppingLists)..where((t) => t.userId.equals(userId))).go();
+    await (delete(pantryItems)..where((t) => t.userId.equals(userId))).go();
     await (delete(recipes)..where((t) => t.userId.equals(userId))).go();
   });
 
@@ -598,6 +688,7 @@ class AppDatabase extends _$AppDatabase {
             product.mealId == null ? null : mealIds[product.mealId],
           ),
           isChecked: false,
+          changedBy: const Value(null),
           createdAt: now,
         ),
       );

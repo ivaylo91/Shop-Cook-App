@@ -15,6 +15,8 @@ import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
 import 'features/cooking/cooking_mode_screen.dart';
 import 'features/meals/meal_detail_screen.dart';
+import 'features/pantry/pantry_screen.dart';
+import 'features/spending/spending_screen.dart';
 import 'features/plan/plan_screen.dart';
 import 'features/recipes/library_screen.dart';
 import 'features/settings/settings_screen.dart';
@@ -130,6 +132,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/cook',
         builder: (context, state) =>
             CookingModeScreen(recipe: state.extra as Recipe),
+      ),
+      GoRoute(
+        path: '/spending',
+        builder: (context, state) => const SpendingScreen(),
+      ),
+      GoRoute(
+        path: '/pantry',
+        builder: (context, state) => const PantryScreen(),
       ),
       GoRoute(
         path: '/recipe',

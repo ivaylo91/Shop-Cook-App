@@ -93,6 +93,12 @@ Future<void> showItemSheet(
           ),
           if (onDelete != null)
             ListTile(
+              leading: const FaIcon(FontAwesomeIcons.house, size: 15),
+              title: Text(l10n.itemAtHome),
+              onTap: () => Navigator.pop(context, 'home'),
+            ),
+          if (onDelete != null)
+            ListTile(
               leading: FaIcon(
                 FontAwesomeIcons.trashCan,
                 size: 16,
@@ -128,6 +134,9 @@ Future<void> showItemSheet(
     case 'staple':
       await repository.setStaple(product.id, !product.isStaple);
 
+    case 'home':
+      await _markAtHome(context, ref, product);
+
     case 'price':
       final entry = await promptForPrice(
         context,
@@ -141,6 +150,38 @@ Future<void> showItemSheet(
     case 'aisle':
       await _pickAisle(context, ref, product);
   }
+}
+
+/// Takes the item off the list and remembers it is at home, so recipe
+/// imports and the week's shop leave it off from now on. One undo puts
+/// both back.
+Future<void> _markAtHome(
+  BuildContext context,
+  WidgetRef ref,
+  Product product,
+) async {
+  final l10n = context.l10n;
+  final messenger = ScaffoldMessenger.of(context);
+  final userId = ref.read(currentUserIdProvider);
+  if (userId == null) return;
+
+  final db = ref.read(databaseProvider);
+  final repository = ref.read(shoppingListRepositoryProvider);
+  await db.addToPantry(userId, product.name);
+  final deleted = await repository.deleteProductWithUndo(product.id);
+
+  messenger.replaceSnackBar(
+    SnackBar(
+      content: Text(l10n.itemAtHomeDone(product.name)),
+      action: SnackBarAction(
+        label: l10n.actionUndo,
+        onPressed: () async {
+          await repository.undoDelete(deleted);
+          await db.removeFromPantry(userId, foldName(product.name));
+        },
+      ),
+    ),
+  );
 }
 
 /// Rewrites the item as one line, the way it was typed into the composer.

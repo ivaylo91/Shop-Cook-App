@@ -10,6 +10,7 @@ import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/shopping_list_repository.dart';
+import 'week_shop.dart';
 
 /// The week ahead: which meal is cooked on which day.
 ///
@@ -32,7 +33,20 @@ class PlanScreen extends ConsumerWidget {
     return Backdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(l10n.navPlan)),
+        appBar: AppBar(
+          title: Text(l10n.navPlan),
+          actions: [
+            // Only once there is something planned to shop for.
+            if (plannedAsync.valueOrNull?.any((m) => m.cookedAt == null) ??
+                false)
+              TextButton.icon(
+                onPressed: () => shopForTheWeek(context, ref),
+                icon: const FaIcon(FontAwesomeIcons.cartPlus, size: 14),
+                label: Text(l10n.planShopWeekShort),
+              ),
+            const SizedBox(width: Insets.sm),
+          ],
+        ),
         body: plannedAsync.when(
           loading: () => const Padding(
             padding: EdgeInsets.all(Insets.lg),

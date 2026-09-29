@@ -10,7 +10,10 @@ import '../../core/providers.dart';
 import '../../core/settings.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
+import 'package:go_router/go_router.dart';
+
 import '../shopping_lists/share_list.dart';
+import 'invite_link.dart';
 
 /// The list's share button: send a copy as text, or share the list itself
 /// so both people see and change the same one.
@@ -81,6 +84,27 @@ Future<void> showShareActions(
   }
 }
 
+/// Asks for the user's name when they have none yet. Cancelling carries on
+/// without one; the others then see "Someone".
+Future<void> ensureDisplayName(BuildContext context, WidgetRef ref) async {
+  if (ref.read(displayNameProvider).isNotEmpty) return;
+  await askDisplayName(context, ref);
+}
+
+/// The name prompt, from the share flow or Settings.
+Future<void> askDisplayName(BuildContext context, WidgetRef ref) async {
+  final l10n = context.l10n;
+  final name = await promptForText(
+    context,
+    title: l10n.nameAskTitle,
+    hint: l10n.nameHint,
+    initialValue: ref.read(displayNameProvider),
+  );
+  if (name == null) return;
+  await ref.read(displayNameProvider.notifier).set(name);
+  ref.read(listSyncProvider).displayName = ref.read(displayNameProvider);
+}
+
 Future<void> _invite(
   BuildContext context,
   WidgetRef ref,
@@ -88,6 +112,8 @@ Future<void> _invite(
 ) async {
   final l10n = context.l10n;
   final messenger = ScaffoldMessenger.of(context);
+  await ensureDisplayName(context, ref);
+  if (!context.mounted) return;
 
   final String code;
   try {
@@ -133,7 +159,9 @@ Future<void> _invite(
           onPressed: () {
             Navigator.pop(context);
             SharePlus.instance.share(
-              ShareParams(text: l10n.shareInviteText(list.name, code)),
+              ShareParams(
+                text: l10n.shareInviteText(list.name, inviteLink(code), code),
+              ),
             );
           },
           icon: const FaIcon(FontAwesomeIcons.shareNodes, size: 14),
@@ -175,31 +203,53 @@ Future<void> _stop(
 /// Asks for an invite code and joins the list it belongs to.
 Future<void> joinSharedList(BuildContext context, WidgetRef ref) async {
   final l10n = context.l10n;
-  final messenger = ScaffoldMessenger.of(context);
-  final userId = ref.read(currentUserIdProvider);
-  if (userId == null) return;
-
   final code = await promptForText(
     context,
     title: l10n.joinTitle,
     hint: l10n.joinHint,
     confirmLabel: l10n.joinAction,
   );
-  final cleaned = code?.toUpperCase().replaceAll(RegExp('[^A-Z0-9]'), '');
-  if (cleaned == null || cleaned.isEmpty) return;
+  if (code == null || !context.mounted) return;
+  await joinWithCode(context, ref, code);
+}
+
+/// Joins the list behind [raw] and opens it. [ask] confirms first, for a
+/// code that arrived by link rather than being typed: a tap on a link in a
+/// chat should not silently add a list.
+Future<void> joinWithCode(
+  BuildContext context,
+  WidgetRef ref,
+  String raw, {
+  bool ask = false,
+}) async {
+  final l10n = context.l10n;
+  final messenger = ScaffoldMessenger.of(context);
+  final router = GoRouter.of(context);
+  final userId = ref.read(currentUserIdProvider);
+  final code = cleanInviteCode(raw);
+  if (userId == null || code == null) return;
+
+  if (ask) {
+    final confirmed = await confirmAction(
+      context,
+      title: l10n.joinTitle,
+      message: l10n.joinConfirmMessage(code),
+      confirmLabel: l10n.joinAction,
+    );
+    if (!confirmed || !context.mounted) return;
+  }
+  await ensureDisplayName(context, ref);
 
   try {
-    final listId = await ref
-        .read(listSyncProvider)
-        .join(cleaned, userId: userId);
+    final listId = await ref.read(listSyncProvider).join(code, userId: userId);
     if (listId == null) {
       messenger.replaceSnackBar(SnackBar(content: Text(l10n.joinBadCode)));
       return;
     }
     final list = await ref.read(databaseProvider).listById(listId);
-    messenger.replaceSnackBar(
-      SnackBar(content: Text(l10n.joined(list?.name ?? ''))),
-    );
+    if (list == null) return;
+    messenger.replaceSnackBar(SnackBar(content: Text(l10n.joined(list.name))));
+    router.push('/list/${list.id}', extra: list);
   } catch (_) {
     messenger.replaceSnackBar(SnackBar(content: Text(l10n.shareOffline)));
   }

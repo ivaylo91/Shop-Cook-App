@@ -10,6 +10,7 @@ import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 import '../recipes/ingredient_parser.dart';
 import '../recipes/library_screen.dart';
+import '../sharing/share_actions.dart';
 import 'shared_content.dart';
 
 const _channel = MethodChannel('shopcook/share');
@@ -61,6 +62,13 @@ class _ShareIntakeState extends ConsumerState<ShareIntake> {
       }
       if (raw == null || !mounted) return;
 
+      // An invite link tapped in a messenger, via the join page.
+      final join = raw['join'];
+      if (join != null) {
+        await joinWithCode(context, ref, join, ask: true);
+        return;
+      }
+
       final content = parseShared(raw['text'] ?? '', subject: raw['subject']);
       switch (content) {
         case null:
@@ -83,6 +91,8 @@ class _ShareIntakeState extends ConsumerState<ShareIntake> {
           );
         case SharedItems(:final lines):
           await _addItems(lines);
+        case SharedJoin(:final code):
+          await joinWithCode(context, ref, code, ask: true);
       }
     } finally {
       _busy = false;

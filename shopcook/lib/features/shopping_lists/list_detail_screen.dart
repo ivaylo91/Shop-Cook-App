@@ -13,6 +13,7 @@ import '../products/item_composer.dart';
 import '../plan/plan_screen.dart' show markMealCooked;
 import '../products/item_sheet.dart';
 import '../sharing/share_actions.dart';
+import '../sharing/changed_by.dart';
 
 class ListDetailScreen extends ConsumerWidget {
   final ShoppingList list;
@@ -150,6 +151,18 @@ class ListDetailScreen extends ConsumerWidget {
                                 '${product.quantity} ${product.unit}'.trim(),
                                 if (product.price != null)
                                   context.money(product.price!),
+                                ?changedByLabel(
+                                  context,
+                                  product,
+                                  names:
+                                      ref
+                                          .watch(
+                                            memberNamesProvider(product.listId),
+                                          )
+                                          .valueOrNull ??
+                                      const {},
+                                  me: ref.watch(currentUserIdProvider),
+                                ),
                               ].where((part) => part.isNotEmpty).join(' · '),
                               checked: product.isChecked,
                               onToggle: (value) => ref

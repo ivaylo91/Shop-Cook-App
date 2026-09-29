@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/shopping/product_category.dart';
+import 'providers.dart';
 
 /// Overridden in `main()` with an instance loaded before the first frame, so
 /// the app opens in the theme the user chose instead of rendering the default
@@ -149,3 +150,30 @@ final aisleOrderProvider =
     NotifierProvider<AisleOrderController, List<ProductCategory>>(
       AisleOrderController.new,
     );
+
+/// The name this user shows under in shared lists ("by Anna"), or empty.
+///
+/// Kept per account, so two people signed in on one phone at different
+/// times each keep their own. Never the email address: the people a list is
+/// shared with are not meant to learn it.
+class DisplayNameController extends Notifier<String> {
+  String get _key => 'displayName.${ref.read(currentUserIdProvider)}';
+
+  @override
+  String build() {
+    ref.watch(currentUserIdProvider);
+    return ref.watch(sharedPreferencesProvider).getString(_key) ?? '';
+  }
+
+  Future<void> set(String name) async {
+    final trimmed = name.trim();
+    final capped = trimmed.length > 40 ? trimmed.substring(0, 40) : trimmed;
+    if (capped == state) return;
+    state = capped;
+    await ref.read(sharedPreferencesProvider).setString(_key, capped);
+  }
+}
+
+final displayNameProvider = NotifierProvider<DisplayNameController, String>(
+  DisplayNameController.new,
+);

@@ -18,6 +18,10 @@ import io.flutter.plugin.common.MethodChannel
  * Dart pulls the share with `takeShared` rather than having it pushed, so a
  * share that starts the app is not lost while Flutter is still booting.
  * `shared` is only a nudge to pull again when the app was already running.
+ *
+ * Invite links to a shared list arrive the same way: the join page's
+ * button opens `shopcook://join/CODE`, which is handed over as `join`
+ * rather than `text`.
  */
 class MainActivity : FlutterActivity() {
     private var pending: Map<String, String?>? = null
@@ -54,6 +58,15 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun capture(intent: Intent?): Boolean {
+        val data = intent?.data
+        if (intent?.action == Intent.ACTION_VIEW &&
+            data?.scheme == "shopcook" &&
+            data.host == "join"
+        ) {
+            val code = data.lastPathSegment ?: return false
+            pending = mapOf("join" to code)
+            return true
+        }
         if (intent?.action != Intent.ACTION_SEND) return false
         val text = intent.getStringExtra(Intent.EXTRA_TEXT) ?: return false
         pending = mapOf(

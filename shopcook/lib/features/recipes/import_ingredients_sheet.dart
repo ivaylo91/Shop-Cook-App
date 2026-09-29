@@ -7,6 +7,7 @@ import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../data/remote/recipe_import_api.dart';
 import '../../core/ui/ui.dart';
+import '../pantry/pantry_match.dart';
 import 'ingredient_parser.dart';
 
 /// Runs the import end to end: fetch, let the user choose, then insert.
@@ -51,12 +52,31 @@ Future<void> importIngredients(
 
   final parsed = imported.ingredients.map(parseIngredient).toList();
 
+  // What is already at home starts unticked, so it is not bought twice.
+  final userId = ref.read(currentUserIdProvider);
+  final pantry = userId == null
+      ? const <String>[]
+      : [
+          for (final item
+              in await ref.read(databaseProvider).watchPantry(userId).first)
+            item.key,
+        ];
+  final atHome = {
+    for (var i = 0; i < parsed.length; i++)
+      if (isAtHome(parsed[i].name, pantry)) i,
+  };
+  if (!context.mounted) return;
+
   // Ground, radius and drag handle come from the theme's bottomSheetTheme.
   final chosen = await showModalBottomSheet<List<ParsedIngredient>>(
     context: context,
     isScrollControlled: true,
     builder: (context) =>
-        _IngredientPicker(title: imported.title, ingredients: parsed),
+        _IngredientPicker(
+          title: imported.title,
+          ingredients: parsed,
+          atHome: atHome,
+        ),
   );
 
   if (chosen == null || chosen.isEmpty) return;
@@ -106,7 +126,15 @@ class _IngredientPicker extends StatefulWidget {
   final String title;
   final List<ParsedIngredient> ingredients;
 
-  const _IngredientPicker({required this.title, required this.ingredients});
+  /// Indexes of ingredients the user has at home: unticked to start with,
+  /// and labelled so it is clear why.
+  final Set<int> atHome;
+
+  const _IngredientPicker({
+    required this.title,
+    required this.ingredients,
+    this.atHome = const {},
+  });
 
   @override
   State<_IngredientPicker> createState() => _IngredientPickerState();
@@ -114,7 +142,8 @@ class _IngredientPicker extends StatefulWidget {
 
 class _IngredientPickerState extends State<_IngredientPicker> {
   late final Set<int> _selected = {
-    for (var i = 0; i < widget.ingredients.length; i++) i,
+    for (var i = 0; i < widget.ingredients.length; i++)
+      if (!widget.atHome.contains(i)) i,
   };
 
   @override
@@ -140,8 +169,10 @@ class _IngredientPickerState extends State<_IngredientPicker> {
               itemCount: widget.ingredients.length,
               itemBuilder: (context, index) {
                 final ingredient = widget.ingredients[index];
-                final amount = '${ingredient.quantity} ${ingredient.unit}'
-                    .trim();
+                final amount = [
+                  '${ingredient.quantity} ${ingredient.unit}'.trim(),
+                  if (widget.atHome.contains(index)) context.l10n.pantryTitle,
+                ].where((part) => part.isNotEmpty).join(' · ');
                 return CheckboxListTile(
                   value: _selected.contains(index),
                   onChanged: (value) => setState(() {

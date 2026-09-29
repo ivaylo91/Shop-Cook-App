@@ -757,8 +757,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareInviteSend => 'Изпрати кода';
 
   @override
-  String shareInviteText(String name, String code) {
-    return 'Присъедини се към моя списък в ShopCook „$name“: отвори ShopCook, натисни „Присъедини се“ в екрана със списъци и въведи $code. Кодът важи 7 дни.';
+  String shareInviteText(String name, String link, String code) {
+    return 'Присъедини се към моя списък в ShopCook „$name“: $link\n\nИли отвори ShopCook, натисни „Присъедини се“ в екрана със списъци и въведи $code. Поканата важи 7 дни.';
   }
 
   @override
@@ -794,6 +794,154 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get joinBadCode =>
       'Този код не става. Може да е изтекъл — поискай нов.';
+
+  @override
+  String get spendingTitle => 'Разходи';
+
+  @override
+  String get spendingThisMonth => 'Този месец';
+
+  @override
+  String spendingLastMonth(String amount) {
+    return 'Миналия месец: $amount';
+  }
+
+  @override
+  String get spendingByList => 'По списъци';
+
+  @override
+  String get spendingTopItems => 'За какво отиват най-много';
+
+  @override
+  String spendingTimes(int count) {
+    return '$count пъти';
+  }
+
+  @override
+  String spendingUnpriced(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count продукта, купени този месец, нямат цена и не са включени.',
+      one: '1 продукт, купен този месец, няма цена и не е включен.',
+    );
+    return '$_temp0 Добави цена от менюто на продукта.';
+  }
+
+  @override
+  String get spendingEmptyTitle => 'Още няма какво да се сметне';
+
+  @override
+  String get spendingEmptyMessage =>
+      'Дай цена на продуктите от менюто им и ги отмятай, докато пазаруваш. Разходите ти се появяват тук, месец по месец.';
+
+  @override
+  String get planShopWeek => 'Пазаруване за седмицата';
+
+  @override
+  String get planShopWeekShort => 'Пазарувай';
+
+  @override
+  String get planShopWeekPick => 'В кой списък да отиде всичко?';
+
+  @override
+  String get planShopWeekNothing => 'Няма нищо планирано за следващите 7 дни.';
+
+  @override
+  String planShopWeekAllThere(String list) {
+    return 'Всичко нужно за ястията тази седмица вече е в „$list“.';
+  }
+
+  @override
+  String get planShopWeekTitle => 'За ястията тази седмица трябва';
+
+  @override
+  String get planShopWeekFromRecipe => 'от рецептата';
+
+  @override
+  String planShopWeekAdded(int count, String list) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Добавени са $count продукта',
+      one: 'Добавен е 1 продукт',
+    );
+    return '$_temp0 в „$list“';
+  }
+
+  @override
+  String get pantryTitle => 'Вкъщи';
+
+  @override
+  String get pantryNote =>
+      'Пропускат се при внасяне на рецепти и пазаруването за седмицата';
+
+  @override
+  String pantryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count неща вкъщи',
+      one: '1 нещо вкъщи',
+      zero: 'Още нищо',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pantryAddHint => 'Нещо, което имаш — напр. зехтин';
+
+  @override
+  String get pantryEmptyMessage =>
+      'Добави какво държиш в шкафа. Внасянето на рецепти и пазаруването за седмицата ги пропускат, за да не ги купуваш два пъти.';
+
+  @override
+  String get itemAtHome => 'Имам го вкъщи';
+
+  @override
+  String itemAtHomeDone(String name) {
+    return '„$name“ е вкъщи — внасянето на рецепти ще го пропуска';
+  }
+
+  @override
+  String get settingsYourName => 'Твоето име';
+
+  @override
+  String get settingsYourNameSubtitle =>
+      'Виждат го хората, с които споделяш списъци';
+
+  @override
+  String get settingsYourNameNotSet => 'Не е зададено';
+
+  @override
+  String get nameAskTitle => 'Как да те виждат другите?';
+
+  @override
+  String get nameHint => 'напр. Ани';
+
+  @override
+  String changedBy(String name) {
+    return 'от $name';
+  }
+
+  @override
+  String get someone => 'Някой';
+
+  @override
+  String syncNews(String who, int count, String list) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count продукта',
+      one: '1 продукт',
+    );
+    return '$who промени $_temp0 в „$list“';
+  }
+
+  @override
+  String joinConfirmMessage(String code) {
+    return 'Да се присъединиш ли към споделения списък с код $code? Двамата ще виждате и променяте един и същ списък.';
+  }
 
   @override
   String joined(String name) {

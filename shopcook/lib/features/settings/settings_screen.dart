@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/brand/shopcook_logo.dart';
 import '../../core/design.dart';
@@ -10,6 +11,8 @@ import '../../core/settings.dart';
 import '../../core/ui/ui.dart';
 import '../../l10n/app_localizations.dart';
 import '../home_widget/home_widget_sync.dart';
+import '../pantry/pantry_screen.dart';
+import '../sharing/share_actions.dart';
 import '../shopping/category_label.dart';
 
 /// Appearance, language and account, in the place people look for them.
@@ -131,6 +134,14 @@ class SettingsScreen extends ConsumerWidget {
             const _AisleOrderCard(),
             const SizedBox(height: Insets.xl),
             SectionLabel(
+              icon: FontAwesomeIcons.house,
+              label: l10n.pantryTitle,
+              color: palette.accent,
+            ),
+            const SizedBox(height: Insets.md),
+            const _PantryCard(),
+            const SizedBox(height: Insets.xl),
+            SectionLabel(
               icon: FontAwesomeIcons.user,
               label: l10n.settingsAccount,
               color: palette.inkMuted,
@@ -158,7 +169,9 @@ class SettingsScreen extends ConsumerWidget {
                     l10n.settingsDeviceOnly,
                     style: AppText.caption.copyWith(color: palette.inkMuted),
                   ),
-                  const SizedBox(height: Insets.lg),
+                  const SizedBox(height: Insets.md),
+                  const _DisplayNameRow(),
+                  const SizedBox(height: Insets.md),
                   OutlinedButton.icon(
                     onPressed: () => _signOut(context, ref),
                     icon: const FaIcon(
@@ -240,6 +253,94 @@ class SettingsScreen extends ConsumerWidget {
       await ref.read(authRepositoryProvider).signOut();
       // The router redirect takes it from here.
     }
+  }
+}
+
+/// How many things are marked as at home, and the way to the list of them.
+class _PantryCard extends ConsumerWidget {
+  const _PantryCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final palette = context.palette;
+    final count = ref.watch(pantryProvider).valueOrNull?.length ?? 0;
+
+    return AppCard(
+      padding: const EdgeInsets.all(Insets.lg),
+      shadowOpacity: 0.07,
+      onTap: () => context.push('/pantry'),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.pantryCount(count),
+                  style: AppText.body.copyWith(
+                    color: palette.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  l10n.pantryNote,
+                  style: AppText.caption.copyWith(color: palette.inkMuted),
+                ),
+              ],
+            ),
+          ),
+          FaIcon(
+            FontAwesomeIcons.chevronRight,
+            size: 13,
+            color: palette.inkFaint,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The name others see in shared lists, with a tap to change it.
+class _DisplayNameRow extends ConsumerWidget {
+  const _DisplayNameRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final palette = context.palette;
+    final name = ref.watch(displayNameProvider);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(Radii.chip),
+      onTap: () => askDisplayName(context, ref),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: Insets.sm),
+        child: Row(
+          children: [
+            FaIcon(FontAwesomeIcons.idBadge, size: 16, color: palette.accent),
+            const SizedBox(width: Insets.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${l10n.settingsYourName}: '
+                    '${name.isEmpty ? l10n.settingsYourNameNotSet : name}',
+                    style: AppText.body.copyWith(color: palette.ink),
+                  ),
+                  Text(
+                    l10n.settingsYourNameSubtitle,
+                    style: AppText.caption.copyWith(color: palette.inkMuted),
+                  ),
+                ],
+              ),
+            ),
+            FaIcon(FontAwesomeIcons.pen, size: 13, color: palette.inkFaint),
+          ],
+        ),
+      ),
+    );
   }
 }
 

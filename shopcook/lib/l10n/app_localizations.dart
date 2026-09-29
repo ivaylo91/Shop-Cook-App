@@ -1355,8 +1355,8 @@ abstract class AppLocalizations {
   /// No description provided for @shareInviteText.
   ///
   /// In en, this message translates to:
-  /// **'Join my ShopCook list “{name}”: open ShopCook, tap Join on the Lists screen and enter {code}. The code works for 7 days.'**
-  String shareInviteText(String name, String code);
+  /// **'Join my ShopCook list “{name}”: {link}\n\nOr open ShopCook, tap Join on the Lists screen and enter {code}. The invite works for 7 days.'**
+  String shareInviteText(String name, String link, String code);
 
   /// No description provided for @shareStop.
   ///
@@ -1417,6 +1417,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That code didn’t work. It may have expired — ask for a new one.'**
   String get joinBadCode;
+
+  /// No description provided for @spendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Spending'**
+  String get spendingTitle;
+
+  /// No description provided for @spendingThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get spendingThisMonth;
+
+  /// No description provided for @spendingLastMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Last month: {amount}'**
+  String spendingLastMonth(String amount);
+
+  /// No description provided for @spendingByList.
+  ///
+  /// In en, this message translates to:
+  /// **'By list'**
+  String get spendingByList;
+
+  /// No description provided for @spendingTopItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Most spent on'**
+  String get spendingTopItems;
+
+  /// No description provided for @spendingTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} times'**
+  String spendingTimes(int count);
+
+  /// No description provided for @spendingUnpriced.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item bought this month has no price, so it isn’t counted.} other{{count} items bought this month have no price, so they aren’t counted.}} Add a price from an item’s menu.'**
+  String spendingUnpriced(int count);
+
+  /// No description provided for @spendingEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to add up yet'**
+  String get spendingEmptyTitle;
+
+  /// No description provided for @spendingEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Give items a price from their menu and tick them as you buy them. What you spend shows up here, month by month.'**
+  String get spendingEmptyMessage;
+
+  /// No description provided for @planShopWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop for the week'**
+  String get planShopWeek;
+
+  /// No description provided for @planShopWeekShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop'**
+  String get planShopWeekShort;
+
+  /// No description provided for @planShopWeekPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Which list should it all go on?'**
+  String get planShopWeekPick;
+
+  /// No description provided for @planShopWeekNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is planned for the next 7 days.'**
+  String get planShopWeekNothing;
+
+  /// No description provided for @planShopWeekAllThere.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything this week’s meals need is already on {list}.'**
+  String planShopWeekAllThere(String list);
+
+  /// No description provided for @planShopWeekTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This week’s meals need'**
+  String get planShopWeekTitle;
+
+  /// No description provided for @planShopWeekFromRecipe.
+  ///
+  /// In en, this message translates to:
+  /// **'from the recipe'**
+  String get planShopWeekFromRecipe;
+
+  /// No description provided for @planShopWeekAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Added 1 item} other{Added {count} items}} to {list}'**
+  String planShopWeekAdded(int count, String list);
+
+  /// No description provided for @pantryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'At home'**
+  String get pantryTitle;
+
+  /// No description provided for @pantryNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Left off recipe imports and the week’s shop'**
+  String get pantryNote;
+
+  /// No description provided for @pantryCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing yet} =1{1 thing at home} other{{count} things at home}}'**
+  String pantryCount(int count);
+
+  /// No description provided for @pantryAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Something you have — e.g. olive oil'**
+  String get pantryAddHint;
+
+  /// No description provided for @pantryEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add what you keep in the cupboard. Recipe imports and the week’s shop leave these off, so you don’t buy them twice.'**
+  String get pantryEmptyMessage;
+
+  /// No description provided for @itemAtHome.
+  ///
+  /// In en, this message translates to:
+  /// **'I have this at home'**
+  String get itemAtHome;
+
+  /// No description provided for @itemAtHomeDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is at home — recipe imports will leave it off'**
+  String itemAtHomeDone(String name);
+
+  /// No description provided for @settingsYourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get settingsYourName;
+
+  /// No description provided for @settingsYourNameSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown to people you share lists with'**
+  String get settingsYourNameSubtitle;
+
+  /// No description provided for @settingsYourNameNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get settingsYourNameNotSet;
+
+  /// No description provided for @nameAskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What should others see you as?'**
+  String get nameAskTitle;
+
+  /// No description provided for @nameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Anna'**
+  String get nameHint;
+
+  /// No description provided for @changedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'by {name}'**
+  String changedBy(String name);
+
+  /// No description provided for @someone.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone'**
+  String get someone;
+
+  /// No description provided for @syncNews.
+  ///
+  /// In en, this message translates to:
+  /// **'{who} changed {count, plural, =1{1 item} other{{count} items}} in {list}'**
+  String syncNews(String who, int count, String list);
+
+  /// No description provided for @joinConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Join the shared list with code {code}? You’ll both see and change the same list.'**
+  String joinConfirmMessage(String code);
 
   /// No description provided for @joined.
   ///

@@ -89,6 +89,11 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         appBar: AppBar(
           title: Text(l10n.navLists),
           actions: [
+            IconButton(
+              onPressed: () => context.push('/spending'),
+              tooltip: l10n.spendingTitle,
+              icon: const FaIcon(FontAwesomeIcons.chartColumn, size: 16),
+            ),
             TextButton.icon(
               onPressed: () => joinSharedList(context, ref),
               icon: const FaIcon(FontAwesomeIcons.userPlus, size: 14),

@@ -14,6 +14,7 @@ import 'package:shopcook/data/sync/list_sync.dart';
 class _Server {
   final lists = <String, ({String name, String owner})>{};
   final members = <String, Set<String>>{};
+  final names = <String, String>{};
   final invites = <String, String>{};
   final rows = <String, Map<String, Map<String, dynamic>>>{
     ListSync.mealsTable: {},
@@ -98,6 +99,7 @@ class _Remote implements SharedListRemote {
       server.rows[table]![row['id'] as String] = {
         ...row,
         'updated_at': server.stamp(),
+        'updated_by': userId,
       };
     }
   }
@@ -112,6 +114,7 @@ class _Remote implements SharedListRemote {
         ...row,
         'deleted_at': server.stamp(),
         'updated_at': server.stamp(),
+        'updated_by': userId,
       };
     }
   }
@@ -142,6 +145,19 @@ class _Remote implements SharedListRemote {
 
   @override
   Stream<void> changes() => const Stream.empty();
+
+  @override
+  Future<List<({String userId, String name})>> members(String listId) async {
+    _mustBelong(listId);
+    return [
+      for (final member in server.members[listId]!)
+        (userId: member, name: server.names[member] ?? ''),
+    ];
+  }
+
+  @override
+  Future<void> setMyName(String userId, String name) async =>
+      server.names[userId] = name;
 }
 
 /// One phone: its own database, repository and sync, signed in as [user].
@@ -370,6 +386,47 @@ void main() {
 
     final benMeal = (await ben.repo.watchMeals(listId).first).single;
     expect(benMeal.plannedFor, DateTime(2026, 10, 3));
+  });
+
+  test('members see who changed what, by the name they chose', () async {
+    anna.sync.displayName = 'Anna';
+    ben.sync.displayName = 'Ben';
+    final listId = await sharedWeekly();
+    final news = <SyncNews>[];
+    final listening = anna.sync.news.listen(news.add);
+    addTearDown(listening.cancel);
+
+    await ben.repo.toggleProductChecked(
+      (await ben.item(listId, 'Milk')).id,
+      true,
+    );
+    await ben.repo.addProduct(listId: listId, name: 'Tea');
+    await ben.syncNow();
+    await anna.syncNow();
+    await pumpEventQueue();
+
+    expect(news.single.by, {'ben'});
+    expect(news.single.count, 2);
+    expect(news.single.listName, 'Weekly');
+
+    final names = await anna.db.watchMemberNames(listId).first;
+    expect(names, {'anna': 'Anna', 'ben': 'Ben'});
+    expect((await anna.item(listId, 'Milk')).changedBy, 'ben');
+    expect((await anna.item(listId, 'Tea')).changedBy, 'ben');
+  });
+
+  test('joining is not news, and neither are your own changes', () async {
+    final news = <SyncNews>[];
+    final listening = ben.sync.news.listen(news.add);
+    addTearDown(listening.cancel);
+
+    final listId = await sharedWeekly();
+    await ben.repo.addProduct(listId: listId, name: 'Tea');
+    await ben.syncNow();
+    await ben.syncNow();
+    await pumpEventQueue();
+
+    expect(news, isEmpty);
   });
 
   test('two syncs at once fold into one pass after another', () async {

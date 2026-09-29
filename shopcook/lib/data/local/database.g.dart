@@ -870,6 +870,17 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _changedByMeta = const VerificationMeta(
+    'changedBy',
+  );
+  @override
+  late final GeneratedColumn<String> changedBy = GeneratedColumn<String>(
+    'changed_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -894,6 +905,7 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     categoryOverride,
     isStaple,
     clearedAt,
+    changedBy,
     createdAt,
   ];
   @override
@@ -980,6 +992,12 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         clearedAt.isAcceptableOrUnknown(data['cleared_at']!, _clearedAtMeta),
       );
     }
+    if (data.containsKey('changed_by')) {
+      context.handle(
+        _changedByMeta,
+        changedBy.isAcceptableOrUnknown(data['changed_by']!, _changedByMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1041,6 +1059,10 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}cleared_at'],
       ),
+      changedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}changed_by'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1083,6 +1105,11 @@ class Product extends DataClass implements Insertable<Product> {
   /// suggestions count them, staples and hand-filed aisles are read from
   /// them. Deleting last week's milk would forget that milk is a staple.
   final DateTime? clearedAt;
+
+  /// In a shared list, the account that last changed this item, as the
+  /// server recorded it; null for items only ever changed on this phone.
+  /// Shown as "by Anna" when it is someone else.
+  final String? changedBy;
   final DateTime createdAt;
   const Product({
     required this.id,
@@ -1096,6 +1123,7 @@ class Product extends DataClass implements Insertable<Product> {
     this.categoryOverride,
     required this.isStaple,
     this.clearedAt,
+    this.changedBy,
     required this.createdAt,
   });
   @override
@@ -1119,6 +1147,9 @@ class Product extends DataClass implements Insertable<Product> {
     map['is_staple'] = Variable<bool>(isStaple);
     if (!nullToAbsent || clearedAt != null) {
       map['cleared_at'] = Variable<DateTime>(clearedAt);
+    }
+    if (!nullToAbsent || changedBy != null) {
+      map['changed_by'] = Variable<String>(changedBy);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -1145,6 +1176,9 @@ class Product extends DataClass implements Insertable<Product> {
       clearedAt: clearedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(clearedAt),
+      changedBy: changedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(changedBy),
       createdAt: Value(createdAt),
     );
   }
@@ -1166,6 +1200,7 @@ class Product extends DataClass implements Insertable<Product> {
       categoryOverride: serializer.fromJson<String?>(json['categoryOverride']),
       isStaple: serializer.fromJson<bool>(json['isStaple']),
       clearedAt: serializer.fromJson<DateTime?>(json['clearedAt']),
+      changedBy: serializer.fromJson<String?>(json['changedBy']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -1184,6 +1219,7 @@ class Product extends DataClass implements Insertable<Product> {
       'categoryOverride': serializer.toJson<String?>(categoryOverride),
       'isStaple': serializer.toJson<bool>(isStaple),
       'clearedAt': serializer.toJson<DateTime?>(clearedAt),
+      'changedBy': serializer.toJson<String?>(changedBy),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -1200,6 +1236,7 @@ class Product extends DataClass implements Insertable<Product> {
     Value<String?> categoryOverride = const Value.absent(),
     bool? isStaple,
     Value<DateTime?> clearedAt = const Value.absent(),
+    Value<String?> changedBy = const Value.absent(),
     DateTime? createdAt,
   }) => Product(
     id: id ?? this.id,
@@ -1215,6 +1252,7 @@ class Product extends DataClass implements Insertable<Product> {
         : this.categoryOverride,
     isStaple: isStaple ?? this.isStaple,
     clearedAt: clearedAt.present ? clearedAt.value : this.clearedAt,
+    changedBy: changedBy.present ? changedBy.value : this.changedBy,
     createdAt: createdAt ?? this.createdAt,
   );
   Product copyWithCompanion(ProductsCompanion data) {
@@ -1232,6 +1270,7 @@ class Product extends DataClass implements Insertable<Product> {
           : this.categoryOverride,
       isStaple: data.isStaple.present ? data.isStaple.value : this.isStaple,
       clearedAt: data.clearedAt.present ? data.clearedAt.value : this.clearedAt,
+      changedBy: data.changedBy.present ? data.changedBy.value : this.changedBy,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -1250,6 +1289,7 @@ class Product extends DataClass implements Insertable<Product> {
           ..write('categoryOverride: $categoryOverride, ')
           ..write('isStaple: $isStaple, ')
           ..write('clearedAt: $clearedAt, ')
+          ..write('changedBy: $changedBy, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -1268,6 +1308,7 @@ class Product extends DataClass implements Insertable<Product> {
     categoryOverride,
     isStaple,
     clearedAt,
+    changedBy,
     createdAt,
   );
   @override
@@ -1285,6 +1326,7 @@ class Product extends DataClass implements Insertable<Product> {
           other.categoryOverride == this.categoryOverride &&
           other.isStaple == this.isStaple &&
           other.clearedAt == this.clearedAt &&
+          other.changedBy == this.changedBy &&
           other.createdAt == this.createdAt);
 }
 
@@ -1300,6 +1342,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<String?> categoryOverride;
   final Value<bool> isStaple;
   final Value<DateTime?> clearedAt;
+  final Value<String?> changedBy;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const ProductsCompanion({
@@ -1314,6 +1357,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.categoryOverride = const Value.absent(),
     this.isStaple = const Value.absent(),
     this.clearedAt = const Value.absent(),
+    this.changedBy = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1329,6 +1373,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.categoryOverride = const Value.absent(),
     this.isStaple = const Value.absent(),
     this.clearedAt = const Value.absent(),
+    this.changedBy = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1347,6 +1392,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Expression<String>? categoryOverride,
     Expression<bool>? isStaple,
     Expression<DateTime>? clearedAt,
+    Expression<String>? changedBy,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -1362,6 +1408,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       if (categoryOverride != null) 'category_override': categoryOverride,
       if (isStaple != null) 'is_staple': isStaple,
       if (clearedAt != null) 'cleared_at': clearedAt,
+      if (changedBy != null) 'changed_by': changedBy,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1379,6 +1426,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Value<String?>? categoryOverride,
     Value<bool>? isStaple,
     Value<DateTime?>? clearedAt,
+    Value<String?>? changedBy,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -1394,6 +1442,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       categoryOverride: categoryOverride ?? this.categoryOverride,
       isStaple: isStaple ?? this.isStaple,
       clearedAt: clearedAt ?? this.clearedAt,
+      changedBy: changedBy ?? this.changedBy,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -1435,6 +1484,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     if (clearedAt.present) {
       map['cleared_at'] = Variable<DateTime>(clearedAt.value);
     }
+    if (changedBy.present) {
+      map['changed_by'] = Variable<String>(changedBy.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1458,6 +1510,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
           ..write('categoryOverride: $categoryOverride, ')
           ..write('isStaple: $isStaple, ')
           ..write('clearedAt: $clearedAt, ')
+          ..write('changedBy: $changedBy, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -3671,6 +3724,584 @@ class SyncFlagsCompanion extends UpdateCompanion<SyncFlag> {
   }
 }
 
+class $SharedMembersTable extends SharedMembers
+    with TableInfo<$SharedMembersTable, SharedMember> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SharedMembersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _listIdMeta = const VerificationMeta('listId');
+  @override
+  late final GeneratedColumn<String> listId = GeneratedColumn<String>(
+    'list_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES shopping_lists (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [listId, userId, name];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'shared_members';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SharedMember> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('list_id')) {
+      context.handle(
+        _listIdMeta,
+        listId.isAcceptableOrUnknown(data['list_id']!, _listIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_listIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {listId, userId};
+  @override
+  SharedMember map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SharedMember(
+      listId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}list_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+    );
+  }
+
+  @override
+  $SharedMembersTable createAlias(String alias) {
+    return $SharedMembersTable(attachedDatabase, alias);
+  }
+}
+
+class SharedMember extends DataClass implements Insertable<SharedMember> {
+  final String listId;
+  final String userId;
+
+  /// Empty when they have not set one.
+  final String name;
+  const SharedMember({
+    required this.listId,
+    required this.userId,
+    required this.name,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['list_id'] = Variable<String>(listId);
+    map['user_id'] = Variable<String>(userId);
+    map['name'] = Variable<String>(name);
+    return map;
+  }
+
+  SharedMembersCompanion toCompanion(bool nullToAbsent) {
+    return SharedMembersCompanion(
+      listId: Value(listId),
+      userId: Value(userId),
+      name: Value(name),
+    );
+  }
+
+  factory SharedMember.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SharedMember(
+      listId: serializer.fromJson<String>(json['listId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      name: serializer.fromJson<String>(json['name']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'listId': serializer.toJson<String>(listId),
+      'userId': serializer.toJson<String>(userId),
+      'name': serializer.toJson<String>(name),
+    };
+  }
+
+  SharedMember copyWith({String? listId, String? userId, String? name}) =>
+      SharedMember(
+        listId: listId ?? this.listId,
+        userId: userId ?? this.userId,
+        name: name ?? this.name,
+      );
+  SharedMember copyWithCompanion(SharedMembersCompanion data) {
+    return SharedMember(
+      listId: data.listId.present ? data.listId.value : this.listId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      name: data.name.present ? data.name.value : this.name,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SharedMember(')
+          ..write('listId: $listId, ')
+          ..write('userId: $userId, ')
+          ..write('name: $name')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(listId, userId, name);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SharedMember &&
+          other.listId == this.listId &&
+          other.userId == this.userId &&
+          other.name == this.name);
+}
+
+class SharedMembersCompanion extends UpdateCompanion<SharedMember> {
+  final Value<String> listId;
+  final Value<String> userId;
+  final Value<String> name;
+  final Value<int> rowid;
+  const SharedMembersCompanion({
+    this.listId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SharedMembersCompanion.insert({
+    required String listId,
+    required String userId,
+    required String name,
+    this.rowid = const Value.absent(),
+  }) : listId = Value(listId),
+       userId = Value(userId),
+       name = Value(name);
+  static Insertable<SharedMember> custom({
+    Expression<String>? listId,
+    Expression<String>? userId,
+    Expression<String>? name,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (listId != null) 'list_id': listId,
+      if (userId != null) 'user_id': userId,
+      if (name != null) 'name': name,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SharedMembersCompanion copyWith({
+    Value<String>? listId,
+    Value<String>? userId,
+    Value<String>? name,
+    Value<int>? rowid,
+  }) {
+    return SharedMembersCompanion(
+      listId: listId ?? this.listId,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (listId.present) {
+      map['list_id'] = Variable<String>(listId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SharedMembersCompanion(')
+          ..write('listId: $listId, ')
+          ..write('userId: $userId, ')
+          ..write('name: $name, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PantryItemsTable extends PantryItems
+    with TableInfo<$PantryItemsTable, PantryItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PantryItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _addedAtMeta = const VerificationMeta(
+    'addedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> addedAt = GeneratedColumn<DateTime>(
+    'added_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [userId, key, name, addedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pantry_items';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PantryItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('added_at')) {
+      context.handle(
+        _addedAtMeta,
+        addedAt.isAcceptableOrUnknown(data['added_at']!, _addedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_addedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userId, key};
+  @override
+  PantryItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PantryItem(
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      addedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}added_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PantryItemsTable createAlias(String alias) {
+    return $PantryItemsTable(attachedDatabase, alias);
+  }
+}
+
+class PantryItem extends DataClass implements Insertable<PantryItem> {
+  final String userId;
+
+  /// The folded name the item is matched by; see [foldName].
+  final String key;
+
+  /// The name as the user last wrote it.
+  final String name;
+  final DateTime addedAt;
+  const PantryItem({
+    required this.userId,
+    required this.key,
+    required this.name,
+    required this.addedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['user_id'] = Variable<String>(userId);
+    map['key'] = Variable<String>(key);
+    map['name'] = Variable<String>(name);
+    map['added_at'] = Variable<DateTime>(addedAt);
+    return map;
+  }
+
+  PantryItemsCompanion toCompanion(bool nullToAbsent) {
+    return PantryItemsCompanion(
+      userId: Value(userId),
+      key: Value(key),
+      name: Value(name),
+      addedAt: Value(addedAt),
+    );
+  }
+
+  factory PantryItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PantryItem(
+      userId: serializer.fromJson<String>(json['userId']),
+      key: serializer.fromJson<String>(json['key']),
+      name: serializer.fromJson<String>(json['name']),
+      addedAt: serializer.fromJson<DateTime>(json['addedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userId': serializer.toJson<String>(userId),
+      'key': serializer.toJson<String>(key),
+      'name': serializer.toJson<String>(name),
+      'addedAt': serializer.toJson<DateTime>(addedAt),
+    };
+  }
+
+  PantryItem copyWith({
+    String? userId,
+    String? key,
+    String? name,
+    DateTime? addedAt,
+  }) => PantryItem(
+    userId: userId ?? this.userId,
+    key: key ?? this.key,
+    name: name ?? this.name,
+    addedAt: addedAt ?? this.addedAt,
+  );
+  PantryItem copyWithCompanion(PantryItemsCompanion data) {
+    return PantryItem(
+      userId: data.userId.present ? data.userId.value : this.userId,
+      key: data.key.present ? data.key.value : this.key,
+      name: data.name.present ? data.name.value : this.name,
+      addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PantryItem(')
+          ..write('userId: $userId, ')
+          ..write('key: $key, ')
+          ..write('name: $name, ')
+          ..write('addedAt: $addedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(userId, key, name, addedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PantryItem &&
+          other.userId == this.userId &&
+          other.key == this.key &&
+          other.name == this.name &&
+          other.addedAt == this.addedAt);
+}
+
+class PantryItemsCompanion extends UpdateCompanion<PantryItem> {
+  final Value<String> userId;
+  final Value<String> key;
+  final Value<String> name;
+  final Value<DateTime> addedAt;
+  final Value<int> rowid;
+  const PantryItemsCompanion({
+    this.userId = const Value.absent(),
+    this.key = const Value.absent(),
+    this.name = const Value.absent(),
+    this.addedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PantryItemsCompanion.insert({
+    required String userId,
+    required String key,
+    required String name,
+    required DateTime addedAt,
+    this.rowid = const Value.absent(),
+  }) : userId = Value(userId),
+       key = Value(key),
+       name = Value(name),
+       addedAt = Value(addedAt);
+  static Insertable<PantryItem> custom({
+    Expression<String>? userId,
+    Expression<String>? key,
+    Expression<String>? name,
+    Expression<DateTime>? addedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (userId != null) 'user_id': userId,
+      if (key != null) 'key': key,
+      if (name != null) 'name': name,
+      if (addedAt != null) 'added_at': addedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PantryItemsCompanion copyWith({
+    Value<String>? userId,
+    Value<String>? key,
+    Value<String>? name,
+    Value<DateTime>? addedAt,
+    Value<int>? rowid,
+  }) {
+    return PantryItemsCompanion(
+      userId: userId ?? this.userId,
+      key: key ?? this.key,
+      name: name ?? this.name,
+      addedAt: addedAt ?? this.addedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (addedAt.present) {
+      map['added_at'] = Variable<DateTime>(addedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PantryItemsCompanion(')
+          ..write('userId: $userId, ')
+          ..write('key: $key, ')
+          ..write('name: $name, ')
+          ..write('addedAt: $addedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3686,6 +4317,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SharedListsTable sharedLists = $SharedListsTable(this);
   late final $SyncOutboxTable syncOutbox = $SyncOutboxTable(this);
   late final $SyncFlagsTable syncFlags = $SyncFlagsTable(this);
+  late final $SharedMembersTable sharedMembers = $SharedMembersTable(this);
+  late final $PantryItemsTable pantryItems = $PantryItemsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3701,6 +4334,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sharedLists,
     syncOutbox,
     syncFlags,
+    sharedMembers,
+    pantryItems,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3745,6 +4380,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('shared_lists', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'shopping_lists',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('shared_members', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -3825,6 +4467,27 @@ final class $$ShoppingListsTableReferences
     ).filter((f) => f.listId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_sharedListsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SharedMembersTable, List<SharedMember>>
+  _sharedMembersRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.sharedMembers,
+    aliasName: $_aliasNameGenerator(
+      db.shoppingLists.id,
+      db.sharedMembers.listId,
+    ),
+  );
+
+  $$SharedMembersTableProcessedTableManager get sharedMembersRefs {
+    final manager = $$SharedMembersTableTableManager(
+      $_db,
+      $_db.sharedMembers,
+    ).filter((f) => f.listId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_sharedMembersRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -3926,6 +4589,31 @@ class $$ShoppingListsTableFilterComposer
           }) => $$SharedListsTableFilterComposer(
             $db: $db,
             $table: $db.sharedLists,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> sharedMembersRefs(
+    Expression<bool> Function($$SharedMembersTableFilterComposer f) f,
+  ) {
+    final $$SharedMembersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.sharedMembers,
+      getReferencedColumn: (t) => t.listId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SharedMembersTableFilterComposer(
+            $db: $db,
+            $table: $db.sharedMembers,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4061,6 +4749,31 @@ class $$ShoppingListsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> sharedMembersRefs<T extends Object>(
+    Expression<T> Function($$SharedMembersTableAnnotationComposer a) f,
+  ) {
+    final $$SharedMembersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.sharedMembers,
+      getReferencedColumn: (t) => t.listId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SharedMembersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sharedMembers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ShoppingListsTableTableManager
@@ -4080,6 +4793,7 @@ class $$ShoppingListsTableTableManager
             bool mealsRefs,
             bool productsRefs,
             bool sharedListsRefs,
+            bool sharedMembersRefs,
           })
         > {
   $$ShoppingListsTableTableManager(_$AppDatabase db, $ShoppingListsTable table)
@@ -4134,6 +4848,7 @@ class $$ShoppingListsTableTableManager
                 mealsRefs = false,
                 productsRefs = false,
                 sharedListsRefs = false,
+                sharedMembersRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -4141,6 +4856,7 @@ class $$ShoppingListsTableTableManager
                     if (mealsRefs) db.meals,
                     if (productsRefs) db.products,
                     if (sharedListsRefs) db.sharedLists,
+                    if (sharedMembersRefs) db.sharedMembers,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -4208,6 +4924,27 @@ class $$ShoppingListsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (sharedMembersRefs)
+                        await $_getPrefetchedData<
+                          ShoppingList,
+                          $ShoppingListsTable,
+                          SharedMember
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ShoppingListsTableReferences
+                              ._sharedMembersRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ShoppingListsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).sharedMembersRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.listId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -4232,6 +4969,7 @@ typedef $$ShoppingListsTableProcessedTableManager =
         bool mealsRefs,
         bool productsRefs,
         bool sharedListsRefs,
+        bool sharedMembersRefs,
       })
     >;
 typedef $$MealsTableCreateCompanionBuilder =
@@ -4774,6 +5512,7 @@ typedef $$ProductsTableCreateCompanionBuilder =
       Value<String?> categoryOverride,
       Value<bool> isStaple,
       Value<DateTime?> clearedAt,
+      Value<String?> changedBy,
       required DateTime createdAt,
       Value<int> rowid,
     });
@@ -4790,6 +5529,7 @@ typedef $$ProductsTableUpdateCompanionBuilder =
       Value<String?> categoryOverride,
       Value<bool> isStaple,
       Value<DateTime?> clearedAt,
+      Value<String?> changedBy,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -4887,6 +5627,11 @@ class $$ProductsTableFilterComposer
 
   ColumnFilters<DateTime> get clearedAt => $composableBuilder(
     column: $table.clearedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get changedBy => $composableBuilder(
+    column: $table.changedBy,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4996,6 +5741,11 @@ class $$ProductsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get changedBy => $composableBuilder(
+    column: $table.changedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -5086,6 +5836,9 @@ class $$ProductsTableAnnotationComposer
   GeneratedColumn<DateTime> get clearedAt =>
       $composableBuilder(column: $table.clearedAt, builder: (column) => column);
 
+  GeneratedColumn<String> get changedBy =>
+      $composableBuilder(column: $table.changedBy, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -5175,6 +5928,7 @@ class $$ProductsTableTableManager
                 Value<String?> categoryOverride = const Value.absent(),
                 Value<bool> isStaple = const Value.absent(),
                 Value<DateTime?> clearedAt = const Value.absent(),
+                Value<String?> changedBy = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProductsCompanion(
@@ -5189,6 +5943,7 @@ class $$ProductsTableTableManager
                 categoryOverride: categoryOverride,
                 isStaple: isStaple,
                 clearedAt: clearedAt,
+                changedBy: changedBy,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -5205,6 +5960,7 @@ class $$ProductsTableTableManager
                 Value<String?> categoryOverride = const Value.absent(),
                 Value<bool> isStaple = const Value.absent(),
                 Value<DateTime?> clearedAt = const Value.absent(),
+                Value<String?> changedBy = const Value.absent(),
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => ProductsCompanion.insert(
@@ -5219,6 +5975,7 @@ class $$ProductsTableTableManager
                 categoryOverride: categoryOverride,
                 isStaple: isStaple,
                 clearedAt: clearedAt,
+                changedBy: changedBy,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -6992,6 +7749,472 @@ typedef $$SyncFlagsTableProcessedTableManager =
       SyncFlag,
       PrefetchHooks Function()
     >;
+typedef $$SharedMembersTableCreateCompanionBuilder =
+    SharedMembersCompanion Function({
+      required String listId,
+      required String userId,
+      required String name,
+      Value<int> rowid,
+    });
+typedef $$SharedMembersTableUpdateCompanionBuilder =
+    SharedMembersCompanion Function({
+      Value<String> listId,
+      Value<String> userId,
+      Value<String> name,
+      Value<int> rowid,
+    });
+
+final class $$SharedMembersTableReferences
+    extends BaseReferences<_$AppDatabase, $SharedMembersTable, SharedMember> {
+  $$SharedMembersTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ShoppingListsTable _listIdTable(_$AppDatabase db) =>
+      db.shoppingLists.createAlias(
+        $_aliasNameGenerator(db.sharedMembers.listId, db.shoppingLists.id),
+      );
+
+  $$ShoppingListsTableProcessedTableManager get listId {
+    final $_column = $_itemColumn<String>('list_id')!;
+
+    final manager = $$ShoppingListsTableTableManager(
+      $_db,
+      $_db.shoppingLists,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_listIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SharedMembersTableFilterComposer
+    extends Composer<_$AppDatabase, $SharedMembersTable> {
+  $$SharedMembersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ShoppingListsTableFilterComposer get listId {
+    final $$ShoppingListsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.listId,
+      referencedTable: $db.shoppingLists,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShoppingListsTableFilterComposer(
+            $db: $db,
+            $table: $db.shoppingLists,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SharedMembersTableOrderingComposer
+    extends Composer<_$AppDatabase, $SharedMembersTable> {
+  $$SharedMembersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ShoppingListsTableOrderingComposer get listId {
+    final $$ShoppingListsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.listId,
+      referencedTable: $db.shoppingLists,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShoppingListsTableOrderingComposer(
+            $db: $db,
+            $table: $db.shoppingLists,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SharedMembersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SharedMembersTable> {
+  $$SharedMembersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  $$ShoppingListsTableAnnotationComposer get listId {
+    final $$ShoppingListsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.listId,
+      referencedTable: $db.shoppingLists,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShoppingListsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.shoppingLists,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SharedMembersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SharedMembersTable,
+          SharedMember,
+          $$SharedMembersTableFilterComposer,
+          $$SharedMembersTableOrderingComposer,
+          $$SharedMembersTableAnnotationComposer,
+          $$SharedMembersTableCreateCompanionBuilder,
+          $$SharedMembersTableUpdateCompanionBuilder,
+          (SharedMember, $$SharedMembersTableReferences),
+          SharedMember,
+          PrefetchHooks Function({bool listId})
+        > {
+  $$SharedMembersTableTableManager(_$AppDatabase db, $SharedMembersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SharedMembersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SharedMembersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SharedMembersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> listId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SharedMembersCompanion(
+                listId: listId,
+                userId: userId,
+                name: name,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String listId,
+                required String userId,
+                required String name,
+                Value<int> rowid = const Value.absent(),
+              }) => SharedMembersCompanion.insert(
+                listId: listId,
+                userId: userId,
+                name: name,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SharedMembersTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({listId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (listId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.listId,
+                                referencedTable: $$SharedMembersTableReferences
+                                    ._listIdTable(db),
+                                referencedColumn: $$SharedMembersTableReferences
+                                    ._listIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SharedMembersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SharedMembersTable,
+      SharedMember,
+      $$SharedMembersTableFilterComposer,
+      $$SharedMembersTableOrderingComposer,
+      $$SharedMembersTableAnnotationComposer,
+      $$SharedMembersTableCreateCompanionBuilder,
+      $$SharedMembersTableUpdateCompanionBuilder,
+      (SharedMember, $$SharedMembersTableReferences),
+      SharedMember,
+      PrefetchHooks Function({bool listId})
+    >;
+typedef $$PantryItemsTableCreateCompanionBuilder =
+    PantryItemsCompanion Function({
+      required String userId,
+      required String key,
+      required String name,
+      required DateTime addedAt,
+      Value<int> rowid,
+    });
+typedef $$PantryItemsTableUpdateCompanionBuilder =
+    PantryItemsCompanion Function({
+      Value<String> userId,
+      Value<String> key,
+      Value<String> name,
+      Value<DateTime> addedAt,
+      Value<int> rowid,
+    });
+
+class $$PantryItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $PantryItemsTable> {
+  $$PantryItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PantryItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PantryItemsTable> {
+  $$PantryItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PantryItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PantryItemsTable> {
+  $$PantryItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => column);
+}
+
+class $$PantryItemsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PantryItemsTable,
+          PantryItem,
+          $$PantryItemsTableFilterComposer,
+          $$PantryItemsTableOrderingComposer,
+          $$PantryItemsTableAnnotationComposer,
+          $$PantryItemsTableCreateCompanionBuilder,
+          $$PantryItemsTableUpdateCompanionBuilder,
+          (
+            PantryItem,
+            BaseReferences<_$AppDatabase, $PantryItemsTable, PantryItem>,
+          ),
+          PantryItem,
+          PrefetchHooks Function()
+        > {
+  $$PantryItemsTableTableManager(_$AppDatabase db, $PantryItemsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PantryItemsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PantryItemsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PantryItemsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> userId = const Value.absent(),
+                Value<String> key = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<DateTime> addedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PantryItemsCompanion(
+                userId: userId,
+                key: key,
+                name: name,
+                addedAt: addedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String userId,
+                required String key,
+                required String name,
+                required DateTime addedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PantryItemsCompanion.insert(
+                userId: userId,
+                key: key,
+                name: name,
+                addedAt: addedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PantryItemsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PantryItemsTable,
+      PantryItem,
+      $$PantryItemsTableFilterComposer,
+      $$PantryItemsTableOrderingComposer,
+      $$PantryItemsTableAnnotationComposer,
+      $$PantryItemsTableCreateCompanionBuilder,
+      $$PantryItemsTableUpdateCompanionBuilder,
+      (
+        PantryItem,
+        BaseReferences<_$AppDatabase, $PantryItemsTable, PantryItem>,
+      ),
+      PantryItem,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7016,4 +8239,8 @@ class $AppDatabaseManager {
       $$SyncOutboxTableTableManager(_db, _db.syncOutbox);
   $$SyncFlagsTableTableManager get syncFlags =>
       $$SyncFlagsTableTableManager(_db, _db.syncFlags);
+  $$SharedMembersTableTableManager get sharedMembers =>
+      $$SharedMembersTableTableManager(_db, _db.sharedMembers);
+  $$PantryItemsTableTableManager get pantryItems =>
+      $$PantryItemsTableTableManager(_db, _db.pantryItems);
 }

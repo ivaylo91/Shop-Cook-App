@@ -71,3 +71,11 @@ final sharedListsProvider = StreamProvider<Map<String, bool>>((ref) {
       .watchSharedLists()
       .map((marks) => {for (final m in marks) m.listId: m.isOwner});
 });
+
+/// Member names of a shared list, by account id.
+final memberNamesProvider = StreamProvider.family<Map<String, String>, String>((
+  ref,
+  listId,
+) {
+  return ref.watch(databaseProvider).watchMemberNames(listId);
+});

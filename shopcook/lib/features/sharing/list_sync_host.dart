@@ -1,9 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/localization.dart';
 import '../../core/providers.dart';
+import '../../core/settings.dart';
+import '../../core/ui/ui.dart';
+import '../../data/sync/list_sync.dart';
 
 /// Runs the shared-list sync for as long as someone is signed in.
 ///
@@ -29,6 +33,7 @@ class _ListSyncHostState extends ConsumerState<ListSyncHost> {
   StreamSubscription<int>? _outbox;
   StreamSubscription<bool>? _anyShared;
   StreamSubscription<void>? _remote;
+  StreamSubscription<SyncNews>? _news;
   Timer? _debounce;
   Timer? _retry;
   late final AppLifecycleListener _lifecycle;
@@ -37,6 +42,11 @@ class _ListSyncHostState extends ConsumerState<ListSyncHost> {
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(onResume: _kick);
+    ref.listenManual<String>(displayNameProvider, (_, name) {
+      ref.read(listSyncProvider).displayName = name;
+      _kick();
+    }, fireImmediately: true);
+    _news = ref.read(listSyncProvider).news.listen(_announce);
     ref.listenManual<String?>(
       currentUserIdProvider,
       (_, userId) => _follow(userId),
@@ -87,6 +97,24 @@ class _ListSyncHostState extends ConsumerState<ListSyncHost> {
     }
   }
 
+  /// "Anna changed 3 items in Weekly", while the app is in front.
+  Future<void> _announce(SyncNews news) async {
+    if (!mounted) return;
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final names = await ref
+        .read(databaseProvider)
+        .watchMemberNames(news.listId)
+        .first;
+    final who = {
+      for (final id in news.by)
+        (names[id] ?? '').isEmpty ? l10n.someone : names[id]!,
+    }.join(', ');
+    messenger.replaceSnackBar(
+      SnackBar(content: Text(l10n.syncNews(who, news.count, news.listName))),
+    );
+  }
+
   void _stop() {
     _outbox?.cancel();
     _anyShared?.cancel();
@@ -101,6 +129,7 @@ class _ListSyncHostState extends ConsumerState<ListSyncHost> {
   @override
   void dispose() {
     _stop();
+    _news?.cancel();
     _lifecycle.dispose();
     super.dispose();
   }

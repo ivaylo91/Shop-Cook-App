@@ -45,6 +45,12 @@ abstract class SharedListRemote {
 
   /// Fires whenever something in a list this user belongs to changes.
   Stream<void> changes();
+
+  /// Who belongs to the list, with the name each chose (empty if none).
+  Future<List<({String userId, String name})>> members(String listId);
+
+  /// Sets the name [userId] shows under in every list they belong to.
+  Future<void> setMyName(String userId, String name);
 }
 
 class SupabaseSharedListRemote implements SharedListRemote {
@@ -123,6 +129,27 @@ class SupabaseSharedListRemote implements SharedListRemote {
     if (since != null) query = query.gte('updated_at', since);
     return await query.order('updated_at');
   }
+
+  @override
+  Future<List<({String userId, String name})>> members(String listId) async {
+    final rows = await _client
+        .from('shared_list_members')
+        .select('user_id, display_name')
+        .eq('list_id', listId);
+    return [
+      for (final row in rows)
+        (
+          userId: row['user_id'] as String,
+          name: row['display_name'] as String? ?? '',
+        ),
+    ];
+  }
+
+  @override
+  Future<void> setMyName(String userId, String name) => _client
+      .from('shared_list_members')
+      .update({'display_name': name})
+      .eq('user_id', userId);
 
   @override
   Stream<void> changes() {

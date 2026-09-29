@@ -1,6 +1,15 @@
+import '../sharing/invite_link.dart';
+
 /// What another app shared with ShopCook, once it has been read.
 sealed class SharedContent {
   const SharedContent();
+}
+
+/// An invite to a shared list: joins it.
+class SharedJoin extends SharedContent {
+  final String code;
+
+  const SharedJoin(this.code);
 }
 
 /// A link: goes to the recipe library.
@@ -40,6 +49,11 @@ const _maxTitle = 140;
 SharedContent? parseShared(String text, {String? subject}) {
   final trimmed = text.trim();
   if (trimmed.isEmpty) return null;
+
+  // An invite passed on from a messenger carries a link too, and would
+  // otherwise be saved to the recipe library.
+  final invite = inviteCodeIn(trimmed);
+  if (invite != null) return SharedJoin(invite);
 
   final match = _url.firstMatch(trimmed);
   if (match != null) {

@@ -16,6 +16,7 @@ import '../products/item_sheet.dart';
 import '../recipes/import_ingredients_sheet.dart';
 import '../recipes/recipe_thumbnail.dart';
 import '../shopping/product_category.dart';
+import '../sharing/changed_by.dart';
 
 class MealDetailScreen extends ConsumerWidget {
   final String listId;
@@ -105,6 +106,18 @@ class MealDetailScreen extends ConsumerWidget {
                                 '${product.quantity} ${product.unit}'.trim(),
                                 if (product.price != null)
                                   context.money(product.price!),
+                                ?changedByLabel(
+                                  context,
+                                  product,
+                                  names:
+                                      ref
+                                          .watch(
+                                            memberNamesProvider(product.listId),
+                                          )
+                                          .valueOrNull ??
+                                      const {},
+                                  me: ref.watch(currentUserIdProvider),
+                                ),
                               ].where((part) => part.isNotEmpty).join(' · '),
                               checked: product.isChecked,
                               onToggle: (value) => ref

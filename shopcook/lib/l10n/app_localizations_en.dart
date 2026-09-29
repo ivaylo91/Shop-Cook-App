@@ -757,8 +757,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareInviteSend => 'Send code';
 
   @override
-  String shareInviteText(String name, String code) {
-    return 'Join my ShopCook list “$name”: open ShopCook, tap Join on the Lists screen and enter $code. The code works for 7 days.';
+  String shareInviteText(String name, String link, String code) {
+    return 'Join my ShopCook list “$name”: $link\n\nOr open ShopCook, tap Join on the Lists screen and enter $code. The invite works for 7 days.';
   }
 
   @override
@@ -794,6 +794,153 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get joinBadCode =>
       'That code didn’t work. It may have expired — ask for a new one.';
+
+  @override
+  String get spendingTitle => 'Spending';
+
+  @override
+  String get spendingThisMonth => 'This month';
+
+  @override
+  String spendingLastMonth(String amount) {
+    return 'Last month: $amount';
+  }
+
+  @override
+  String get spendingByList => 'By list';
+
+  @override
+  String get spendingTopItems => 'Most spent on';
+
+  @override
+  String spendingTimes(int count) {
+    return '$count times';
+  }
+
+  @override
+  String spendingUnpriced(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count items bought this month have no price, so they aren’t counted.',
+      one: '1 item bought this month has no price, so it isn’t counted.',
+    );
+    return '$_temp0 Add a price from an item’s menu.';
+  }
+
+  @override
+  String get spendingEmptyTitle => 'Nothing to add up yet';
+
+  @override
+  String get spendingEmptyMessage =>
+      'Give items a price from their menu and tick them as you buy them. What you spend shows up here, month by month.';
+
+  @override
+  String get planShopWeek => 'Shop for the week';
+
+  @override
+  String get planShopWeekShort => 'Shop';
+
+  @override
+  String get planShopWeekPick => 'Which list should it all go on?';
+
+  @override
+  String get planShopWeekNothing => 'Nothing is planned for the next 7 days.';
+
+  @override
+  String planShopWeekAllThere(String list) {
+    return 'Everything this week’s meals need is already on $list.';
+  }
+
+  @override
+  String get planShopWeekTitle => 'This week’s meals need';
+
+  @override
+  String get planShopWeekFromRecipe => 'from the recipe';
+
+  @override
+  String planShopWeekAdded(int count, String list) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Added $count items',
+      one: 'Added 1 item',
+    );
+    return '$_temp0 to $list';
+  }
+
+  @override
+  String get pantryTitle => 'At home';
+
+  @override
+  String get pantryNote => 'Left off recipe imports and the week’s shop';
+
+  @override
+  String pantryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count things at home',
+      one: '1 thing at home',
+      zero: 'Nothing yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pantryAddHint => 'Something you have — e.g. olive oil';
+
+  @override
+  String get pantryEmptyMessage =>
+      'Add what you keep in the cupboard. Recipe imports and the week’s shop leave these off, so you don’t buy them twice.';
+
+  @override
+  String get itemAtHome => 'I have this at home';
+
+  @override
+  String itemAtHomeDone(String name) {
+    return '$name is at home — recipe imports will leave it off';
+  }
+
+  @override
+  String get settingsYourName => 'Your name';
+
+  @override
+  String get settingsYourNameSubtitle => 'Shown to people you share lists with';
+
+  @override
+  String get settingsYourNameNotSet => 'Not set';
+
+  @override
+  String get nameAskTitle => 'What should others see you as?';
+
+  @override
+  String get nameHint => 'e.g. Anna';
+
+  @override
+  String changedBy(String name) {
+    return 'by $name';
+  }
+
+  @override
+  String get someone => 'Someone';
+
+  @override
+  String syncNews(String who, int count, String list) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$who changed $_temp0 in $list';
+  }
+
+  @override
+  String joinConfirmMessage(String code) {
+    return 'Join the shared list with code $code? You’ll both see and change the same list.';
+  }
 
   @override
   String joined(String name) {
