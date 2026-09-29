@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ShopCook — Join a shared list</title>
+<style>
+  :root { color-scheme: light dark; --ink:#1A1C18; --muted:#5B6156; --bg:#F6F8F2; --card:#fff; --accent:#2E7D32; --on-accent:#fff; }
+  @media (prefers-color-scheme: dark) { :root { --ink:#E9EDE2; --muted:#AFB7A8; --bg:#121510; --card:#1B1F19; --accent:#86C888; --on-accent:#10220F; } }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width:520px; margin:0 auto; padding:40px 20px 64px; }
+  .card { background:var(--card); border-radius:20px; padding:28px 24px; text-align:center; }
+  h1 { font-size:1.5rem; margin:0 0 8px; }
+  p { margin:8px 0; }
+  .muted { color:var(--muted); font-size:.95rem; }
+  .code { font-size:2rem; letter-spacing:.3em; font-weight:700; color:var(--accent); margin:20px 0; }
+  .button { display:block; background:var(--accent); color:var(--on-accent); text-decoration:none; font-weight:600; border-radius:999px; padding:14px 20px; margin:20px 0 12px; }
+  a { color:var(--accent); }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <h1 id="title">Join a shared ShopCook list</h1>
+    <p class="muted" id="lead">Someone invited you to see and change a shopping list with them.</p>
+    <div class="code" id="code" hidden></div>
+    <a class="button" id="open" href="#" hidden>Open in ShopCook</a>
+    <p class="muted" id="manual" hidden>Or open ShopCook, tap <strong>Join</strong> on the Lists screen and enter the code above.</p>
+    <p class="muted" id="bad" hidden>This link is missing its invite code. Ask for a new invite.</p>
+    <p class="muted"><a id="store" href="https://play.google.com/store/apps/details?id=com.shopcook.shopcook">Get ShopCook on Google Play</a></p>
+  </div>
+</main>
+<script>
+  // The invite code is 8 letters and digits from an alphabet with no 0, O,
+  // 1 or I. Anything else is not shown, so the page never echoes arbitrary
+  // text from a link.
+  var code = (new URLSearchParams(location.search).get('c') || '').toUpperCase();
+  var valid = /^[A-Z2-9]{8}$/.test(code);
+  var play = 'https://play.google.com/store/apps/details?id=com.shopcook.shopcook';
+
+  var bg = (navigator.language || '').toLowerCase().indexOf('bg') === 0;
+  if (bg) {
+    document.documentElement.lang = 'bg';
+    document.title = 'ShopCook — Присъединяване към споделен списък';
+    document.getElementById('title').textContent = 'Присъедини се към споделен списък в ShopCook';
+    document.getElementById('lead').textContent = 'Някой те покани да виждате и променяте заедно списък за пазаруване.';
+    document.getElementById('open').textContent = 'Отвори в ShopCook';
+    document.getElementById('manual').innerHTML = 'Или отвори ShopCook, натисни <strong>Присъедини се</strong> в екрана със списъци и въведи кода по-горе.';
+    document.getElementById('bad').textContent = 'В тази връзка липсва код за покана. Поискай нова покана.';
+    document.getElementById('store').textContent = 'Изтегли ShopCook от Google Play';
+  }
+
+  if (valid) {
+    var shown = document.getElementById('code');
+    shown.textContent = code.slice(0, 4) + ' ' + code.slice(4);
+    shown.hidden = false;
+    document.getElementById('manual').hidden = false;
+
+    // On Android, an intent link opens the app when it is installed and
+    // falls back to the Play Store when it is not.
+    if (/android/i.test(navigator.userAgent)) {
+      var open = document.getElementById('open');
+      open.href = 'intent://join/' + code +
+        '#Intent;scheme=shopcook;package=com.shopcook.shopcook;' +
+        'S.browser_fallback_url=' + encodeURIComponent(play) + ';end';
+      open.hidden = false;
+    }
+  } else {
+    document.getElementById('bad').hidden = false;
+  }
+</script>
+</body>
+</html>
