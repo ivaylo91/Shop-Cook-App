@@ -101,6 +101,7 @@ class MealDetailScreen extends ConsumerWidget {
                         children: [
                           for (final product in products)
                             ProductRow(
+                              key: ValueKey(product.id),
                               name: product.name,
                               details: [
                                 '${product.quantity} ${product.unit}'.trim(),

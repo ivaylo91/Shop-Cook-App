@@ -160,10 +160,12 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
             );
           },
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => _createList(context, ref),
-          tooltip: l10n.listsNewTitle,
-          child: const FaIcon(FontAwesomeIcons.plus, size: 18),
+        floatingActionButton: PressScale(
+          child: FloatingActionButton(
+            onPressed: () => _createList(context, ref),
+            tooltip: l10n.listsNewTitle,
+            child: const FaIcon(FontAwesomeIcons.plus, size: 18),
+          ),
         ),
       ),
     );

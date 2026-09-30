@@ -184,12 +184,16 @@ class _MonthBars extends StatelessWidget {
                           heightFactor: highest == 0
                               ? 0.02
                               : (month.total / highest).clamp(0.02, 1.0),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: index == summary.months.length - 1
-                                  ? palette.accent
-                                  : palette.accent.withValues(alpha: 0.28),
-                              borderRadius: BorderRadius.circular(6),
+                          child: _Rise(
+                            index: index,
+                            count: summary.months.length,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: index == summary.months.length - 1
+                                    ? palette.accent
+                                    : palette.accent.withValues(alpha: 0.28),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
                             ),
                           ),
                         ),
@@ -206,6 +210,44 @@ class _MonthBars extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// A bar growing up from the baseline when the chart first shows, each one
+/// starting a moment after its neighbour so the eye is led along the months
+/// toward the current one.
+///
+/// A scale from the bottom edge rather than an animated height: the bar's
+/// box never changes, so nothing around it is laid out again. The screen is
+/// opened now and then, not all day, which is what allows the longer run.
+class _Rise extends StatelessWidget {
+  final int index;
+  final int count;
+  final Widget child;
+
+  const _Rise({required this.index, required this.count, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (context.reduceMotion) return child;
+
+    final total = Motion.slow + Motion.stagger * (count - 1);
+    final start =
+        (Motion.stagger * index).inMilliseconds / total.inMilliseconds;
+    final end = start + Motion.slow.inMilliseconds / total.inMilliseconds;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: total,
+      curve: Interval(start, end.clamp(0.0, 1.0), curve: Motion.enter),
+      builder: (context, t, child) => Transform.scale(
+        scaleX: 1,
+        scaleY: t,
+        alignment: Alignment.bottomCenter,
+        child: child,
+      ),
+      child: child,
     );
   }
 }

@@ -15,6 +15,7 @@ import '../../core/ui/ui.dart';
 Future<String?> captureSpeech(BuildContext context) {
   return showModalBottomSheet<String>(
     context: context,
+    sheetAnimationStyle: sheetMotion(context),
     builder: (_) => const _VoiceSheet(),
   );
 }
@@ -146,6 +147,7 @@ class _VoiceSheetState extends State<_VoiceSheet> {
               child: AnimatedScale(
                 scale: pulse,
                 duration: Motion.fast,
+                curve: Motion.enter,
                 child: Container(
                   width: 88,
                   height: 88,

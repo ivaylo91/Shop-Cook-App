@@ -178,6 +178,7 @@ Future<void> shopForTheWeek(BuildContext context, WidgetRef ref) async {
 
   final chosen = await showModalBottomSheet<List<WeekItem>>(
     context: context,
+    sheetAnimationStyle: sheetMotion(context),
     isScrollControlled: true,
     builder: (context) => _WeekPicker(items: items),
   );
@@ -338,15 +339,17 @@ class _WeekPickerState extends State<_WeekPicker> {
                     ),
                   ),
                   const Spacer(),
-                  FilledButton.icon(
-                    onPressed: _selected.isEmpty
-                        ? null
-                        : () => Navigator.pop(context, [
-                            for (final i in _selected.toList()..sort())
-                              items[i],
-                          ]),
-                    icon: const FaIcon(FontAwesomeIcons.plus, size: 14),
-                    label: Text(l10n.importAddCount(_selected.length)),
+                  PressScale(
+                    child: FilledButton.icon(
+                      onPressed: _selected.isEmpty
+                          ? null
+                          : () => Navigator.pop(context, [
+                              for (final i in _selected.toList()..sort())
+                                items[i],
+                            ]),
+                      icon: const FaIcon(FontAwesomeIcons.plus, size: 14),
+                      label: Text(l10n.importAddCount(_selected.length)),
+                    ),
                   ),
                 ],
               ),

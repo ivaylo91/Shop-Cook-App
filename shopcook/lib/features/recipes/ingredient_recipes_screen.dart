@@ -193,11 +193,14 @@ class _SearchAppsCard extends StatelessWidget {
           const SizedBox(height: Insets.lg),
           SizedBox(
             width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () =>
-                  onOpen('https://www.youtube.com/results?search_query=$term'),
-              icon: const FaIcon(FontAwesomeIcons.youtube, size: 16),
-              label: const Text('YouTube'),
+            child: PressScale(
+              child: FilledButton.icon(
+                onPressed: () => onOpen(
+                  'https://www.youtube.com/results?search_query=$term',
+                ),
+                icon: const FaIcon(FontAwesomeIcons.youtube, size: 16),
+                label: const Text('YouTube'),
+              ),
             ),
           ),
         ],

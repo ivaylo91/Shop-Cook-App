@@ -238,14 +238,16 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
               padding: const EdgeInsets.all(Insets.lg),
               child: SizedBox(
                 width: double.infinity,
-                child: FilledButton(
-                  onPressed: keep.isEmpty
-                      ? null
-                      : () => Navigator.pop(context, [
-                          for (var i = 0; i < items.length; i++)
-                            if (keep.contains(i)) items[i],
-                        ]),
-                  child: Text(context.l10n.voiceAddCount(keep.length)),
+                child: PressScale(
+                  child: FilledButton(
+                    onPressed: keep.isEmpty
+                        ? null
+                        : () => Navigator.pop(context, [
+                            for (var i = 0; i < items.length; i++)
+                              if (keep.contains(i)) items[i],
+                          ]),
+                    child: Text(context.l10n.voiceAddCount(keep.length)),
+                  ),
                 ),
               ),
             ),
@@ -327,24 +329,24 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
                       ),
                     ),
                   ] else
-                  IconButton(
-                    onPressed: _busy ? null : () => _submit(),
-                    tooltip: context.l10n.composerAdd,
-                    icon: _busy
-                        ? SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
+                    IconButton(
+                      onPressed: _busy ? null : () => _submit(),
+                      tooltip: context.l10n.composerAdd,
+                      icon: _busy
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: palette.accent,
+                              ),
+                            )
+                          : FaIcon(
+                              FontAwesomeIcons.circlePlus,
+                              size: 20,
                               color: palette.accent,
                             ),
-                          )
-                        : FaIcon(
-                            FontAwesomeIcons.circlePlus,
-                            size: 20,
-                            color: palette.accent,
-                          ),
-                  ),
+                    ),
                 ],
               ),
             ),

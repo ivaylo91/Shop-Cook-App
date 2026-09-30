@@ -117,6 +117,10 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
   }
 
   void _goTo(int page) {
+    if (context.reduceMotion) {
+      _pages.jumpToPage(page);
+      return;
+    }
     _pages.animateToPage(page, duration: Motion.base, curve: Motion.enter);
   }
 
@@ -304,28 +308,30 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
                 ],
                 Expanded(
                   flex: 2,
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(52),
-                    ),
-                    onPressed: onLast
-                        ? () async {
-                            final navigator = Navigator.of(context);
-                            if (await _confirmLeave()) navigator.pop();
-                          }
-                        : () => _goTo(_page + 1),
-                    icon: FaIcon(
-                      onLast
-                          ? FontAwesomeIcons.check
-                          : FontAwesomeIcons.arrowRight,
-                      size: 14,
-                    ),
-                    label: Text(
-                      onLast
-                          ? l10n.cookModeDone
-                          : _page == 0
-                          ? l10n.cookModeStartCooking
-                          : l10n.cookModeNext,
+                  child: PressScale(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                      ),
+                      onPressed: onLast
+                          ? () async {
+                              final navigator = Navigator.of(context);
+                              if (await _confirmLeave()) navigator.pop();
+                            }
+                          : () => _goTo(_page + 1),
+                      icon: FaIcon(
+                        onLast
+                            ? FontAwesomeIcons.check
+                            : FontAwesomeIcons.arrowRight,
+                        size: 14,
+                      ),
+                      label: Text(
+                        onLast
+                            ? l10n.cookModeDone
+                            : _page == 0
+                            ? l10n.cookModeStartCooking
+                            : l10n.cookModeNext,
+                      ),
                     ),
                   ),
                 ),

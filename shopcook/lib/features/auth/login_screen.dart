@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design.dart';
 import '../../core/localization.dart';
 import '../../core/providers.dart';
+import '../../core/ui/ui.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'auth_scaffold.dart';
 
@@ -134,21 +135,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _FormError(message: _formError!),
           const SizedBox(height: Insets.lg),
         ],
-        FilledButton(
-          onPressed: _busy ? null : _submit,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
+        PressScale(
+          child: FilledButton(
+            onPressed: _busy ? null : _submit,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+            ),
+            child: _busy
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: context.palette.onAccent,
+                    ),
+                  )
+                : Text(l10n.loginSubmit),
           ),
-          child: _busy
-              ? SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: context.palette.onAccent,
-                  ),
-                )
-              : Text(l10n.loginSubmit),
         ),
         const SizedBox(height: Insets.lg),
         Row(
@@ -180,7 +183,7 @@ class _FormError extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(Insets.md),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+        color: context.palette.wash(color, 0.08),
         borderRadius: BorderRadius.circular(Radii.chip),
         border: Border.all(color: color.withValues(alpha: 0.25)),
       ),

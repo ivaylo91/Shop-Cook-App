@@ -24,7 +24,7 @@ Future<void> importIngredients(
   final messenger = ScaffoldMessenger.of(context);
   final l10n = context.l10n;
 
-  showDialog<void>(
+  showAppDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (_) => const _LoadingDialog(),
@@ -70,13 +70,13 @@ Future<void> importIngredients(
   // Ground, radius and drag handle come from the theme's bottomSheetTheme.
   final chosen = await showModalBottomSheet<List<ParsedIngredient>>(
     context: context,
+    sheetAnimationStyle: sheetMotion(context),
     isScrollControlled: true,
-    builder: (context) =>
-        _IngredientPicker(
-          title: imported.title,
-          ingredients: parsed,
-          atHome: atHome,
-        ),
+    builder: (context) => _IngredientPicker(
+      title: imported.title,
+      ingredients: parsed,
+      atHome: atHome,
+    ),
   );
 
   if (chosen == null || chosen.isEmpty) return;
@@ -222,15 +222,19 @@ class _IngredientPickerState extends State<_IngredientPicker> {
                     ),
                   ),
                   const Spacer(),
-                  FilledButton.icon(
-                    onPressed: _selected.isEmpty
-                        ? null
-                        : () => Navigator.pop(context, [
-                            for (final i in _selected.toList()..sort())
-                              widget.ingredients[i],
-                          ]),
-                    icon: const FaIcon(FontAwesomeIcons.plus, size: 14),
-                    label: Text(context.l10n.importAddCount(_selected.length)),
+                  PressScale(
+                    child: FilledButton.icon(
+                      onPressed: _selected.isEmpty
+                          ? null
+                          : () => Navigator.pop(context, [
+                              for (final i in _selected.toList()..sort())
+                                widget.ingredients[i],
+                            ]),
+                      icon: const FaIcon(FontAwesomeIcons.plus, size: 14),
+                      label: Text(
+                        context.l10n.importAddCount(_selected.length),
+                      ),
+                    ),
                   ),
                 ],
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/design.dart';
 import '../../core/localization.dart';
+import '../../core/ui/ui.dart';
 
 /// A pasted recipe link, already checked to be a web address.
 class RecipeLink {
@@ -36,7 +37,7 @@ Future<RecipeLink?> promptForRecipeLink(
   String title = '',
   String initialUrl = '',
 }) {
-  return showDialog<RecipeLink>(
+  return showAppDialog<RecipeLink>(
     context: context,
     builder: (context) =>
         _RecipeLinkDialog(initialTitle: title, initialUrl: initialUrl),
@@ -114,7 +115,9 @@ class _RecipeLinkDialogState extends State<_RecipeLinkDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.actionCancel),
         ),
-        FilledButton(onPressed: _submit, child: Text(l10n.actionSave)),
+        PressScale(
+          child: FilledButton(onPressed: _submit, child: Text(l10n.actionSave)),
+        ),
       ],
     );
   }

@@ -67,7 +67,8 @@ class ProductRow extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       AnimatedDefaultTextStyle(
-                        duration: Motion.base,
+                        // In step with the dot: one action, one beat.
+                        duration: Motion.fast,
                         curve: Motion.enter,
                         style: AppText.title.copyWith(
                           color: checked ? palette.inkFaint : palette.ink,
@@ -121,7 +122,8 @@ class CheckDot extends StatelessWidget {
       height: 44,
       child: Center(
         child: AnimatedContainer(
-          duration: Motion.base,
+          // Feedback for the most-used control in the app, so it is quick.
+          duration: Motion.fast,
           curve: Motion.enter,
           width: 26,
           height: 26,

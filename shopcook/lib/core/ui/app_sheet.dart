@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../design.dart';
 import '../localization.dart';
 import '../money.dart';
+import 'press_scale.dart';
+import 'transitions.dart';
 
 /// A modal bottom sheet on the app's terms: the palette's ground, a rounded
 /// top, a drag handle, and a title that does not have to be hand-built at
@@ -21,13 +23,13 @@ Future<T?> showAppSheet<T>({
     context: context,
     isScrollControlled: isScrollControlled,
     showDragHandle: true,
+    sheetAnimationStyle: sheetMotion(context),
     builder: (context) => SafeArea(
       top: false,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (title != null)
-            AppSheetHeader(title: title, subtitle: subtitle),
+          if (title != null) AppSheetHeader(title: title, subtitle: subtitle),
           Flexible(child: builder(context)),
         ],
       ),
@@ -58,7 +60,10 @@ class AppSheetHeader extends StatelessWidget {
         children: [
           SizedBox(
             width: double.infinity,
-            child: Text(title, style: AppText.title.copyWith(color: palette.ink)),
+            child: Text(
+              title,
+              style: AppText.title.copyWith(color: palette.ink),
+            ),
           ),
           if (subtitle != null) ...[
             const SizedBox(height: Insets.xs),
@@ -88,7 +93,7 @@ Future<bool> confirmAction(
   final scheme = Theme.of(context).colorScheme;
   final l10n = context.l10n;
 
-  final confirmed = await showDialog<bool>(
+  final confirmed = await showAppDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(title),
@@ -98,15 +103,17 @@ Future<bool> confirmAction(
           onPressed: () => Navigator.pop(context, false),
           child: Text(cancelLabel ?? l10n.actionCancel),
         ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          style: destructive
-              ? FilledButton.styleFrom(
-                  backgroundColor: scheme.error,
-                  foregroundColor: scheme.onError,
-                )
-              : null,
-          child: Text(confirmLabel ?? l10n.actionConfirm),
+        PressScale(
+          child: FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: destructive
+                ? FilledButton.styleFrom(
+                    backgroundColor: scheme.error,
+                    foregroundColor: scheme.onError,
+                  )
+                : null,
+            child: Text(confirmLabel ?? l10n.actionConfirm),
+          ),
         ),
       ],
     ),
@@ -129,7 +136,7 @@ Future<String?> promptForText(
   final l10n = context.l10n;
   final controller = TextEditingController(text: initialValue);
 
-  final value = await showDialog<String>(
+  final value = await showAppDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(title),
@@ -145,9 +152,11 @@ Future<String?> promptForText(
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.actionCancel),
         ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, controller.text),
-          child: Text(confirmLabel ?? l10n.actionSave),
+        PressScale(
+          child: FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: Text(confirmLabel ?? l10n.actionSave),
+          ),
         ),
       ],
     ),
@@ -172,7 +181,7 @@ Future<PriceEntry?> promptForPrice(
     text: initialValue == null ? '' : initialValue.toString(),
   );
 
-  return showDialog<PriceEntry>(
+  return showAppDialog<PriceEntry>(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(title),
@@ -182,8 +191,7 @@ Future<PriceEntry?> promptForPrice(
         // Both separators reach the parser, so either keyboard is fine.
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         decoration: InputDecoration(hintText: l10n.itemPriceHint),
-        onSubmitted: (v) =>
-            Navigator.pop(context, PriceEntry(parsePrice(v))),
+        onSubmitted: (v) => Navigator.pop(context, PriceEntry(parsePrice(v))),
       ),
       actions: [
         if (initialValue != null)
@@ -195,12 +203,12 @@ Future<PriceEntry?> promptForPrice(
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.actionCancel),
         ),
-        FilledButton(
-          onPressed: () => Navigator.pop(
-            context,
-            PriceEntry(parsePrice(controller.text)),
+        PressScale(
+          child: FilledButton(
+            onPressed: () =>
+                Navigator.pop(context, PriceEntry(parsePrice(controller.text))),
+            child: Text(l10n.actionSave),
           ),
-          child: Text(l10n.actionSave),
         ),
       ],
     ),

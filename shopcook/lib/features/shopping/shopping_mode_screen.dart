@@ -97,21 +97,33 @@ class ShoppingModeScreen extends ConsumerWidget {
               listSpend: _sum(products),
               unpriced: products.where((p) => p.price == null).length,
             ),
-            if (remaining.isEmpty) ...[
-              const SizedBox(height: Insets.xl),
-              _DonePeak(
-                total: products.length,
-                // Only the list's own items clear; a meal's ingredients go
-                // with the meal once it is cooked.
-                onClear: picked.any((p) => p.mealId == null)
-                    ? () => _clearTicked(context, ref)
-                    : null,
+            // Everything still to buy, and the celebration that replaces it,
+            // resize as one block. Ticking the last item swaps an aisle for
+            // the done card; without this the basket below jumped to its
+            // new place at once, leaving a gap the card then faded into.
+            _Resizing(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (remaining.isEmpty) ...[
+                    const SizedBox(height: Insets.xl),
+                    _DonePeak(
+                      total: products.length,
+                      // Only the list's own items clear; a meal's
+                      // ingredients go with the meal once it is cooked.
+                      onClear: picked.any((p) => p.mealId == null)
+                          ? () => _clearTicked(context, ref)
+                          : null,
+                    ),
+                  ],
+                  // The user's own aisle order, so the list matches the shop
+                  // they actually walk rather than the enum's declaration
+                  // order.
+                  for (final category in ref.watch(aisleOrderProvider))
+                    ..._aisle(context, ref, category, remaining, mealNames),
+                ],
               ),
-            ],
-            // The user's own aisle order, so the list matches the shop
-            // they actually walk rather than the enum's declaration order.
-            for (final category in ref.watch(aisleOrderProvider))
-              ..._aisle(context, ref, category, remaining, mealNames),
+            ),
             if (picked.isNotEmpty) ...[
               const SizedBox(height: Insets.xl),
               SectionLabel(
@@ -122,13 +134,21 @@ class ShoppingModeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: Insets.md),
               // Done work should recede so the eye stays on what's left.
-              Opacity(
-                opacity: 0.6,
-                child: _ItemGroup(
-                  tint: palette.ink,
-                  products: picked,
-                  mealNames: mealNames,
-                  onToggle: (product, value) => _toggle(ref, product, value),
+              // Faded against a plain surface of its own: faded straight
+              // onto the backdrop, the pattern would show through the rows.
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: palette.surface,
+                  borderRadius: BorderRadius.circular(Radii.card),
+                ),
+                child: Opacity(
+                  opacity: 0.6,
+                  child: _ItemGroup(
+                    tint: palette.ink,
+                    products: picked,
+                    mealNames: mealNames,
+                    onToggle: (product, value) => _toggle(ref, product, value),
+                  ),
                 ),
               ),
             ],
@@ -298,6 +318,27 @@ class _ProgressHero extends StatelessWidget {
   }
 }
 
+/// Lets its child change height over a moment rather than at once, so what
+/// sits below glides to its new place. Movement, so it is skipped when the
+/// phone asks for less.
+class _Resizing extends StatelessWidget {
+  final Widget child;
+
+  const _Resizing({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (context.reduceMotion) return child;
+
+    return AnimatedSize(
+      duration: Motion.base,
+      curve: Motion.enter,
+      alignment: Alignment.topCenter,
+      child: child,
+    );
+  }
+}
+
 /// The peak: the moment the last item goes in the basket.
 class _DonePeak extends StatelessWidget {
   final int total;
@@ -316,8 +357,16 @@ class _DonePeak extends StatelessWidget {
       tween: Tween(begin: 0.92, end: 1),
       duration: Motion.slow,
       curve: Motion.emphasis,
-      builder: (context, scale, child) =>
-          Transform.scale(scale: scale, child: child),
+      // The one celebration in the app, so it may overshoot. It fades in
+      // over the first part of the scale, so it arrives rather than pops;
+      // with motion reduced it only fades.
+      builder: (context, scale, child) => Opacity(
+        opacity: ((scale - 0.92) / 0.06).clamp(0.0, 1.0),
+        child: Transform.scale(
+          scale: context.reduceMotion ? 1 : scale,
+          child: child,
+        ),
+      ),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(
@@ -325,7 +374,9 @@ class _DonePeak extends StatelessWidget {
           vertical: Insets.xxl,
         ),
         decoration: BoxDecoration(
-          color: palette.accent.withValues(alpha: palette.isDark ? 0.14 : 0.08),
+          // The tint laid over the solid surface, not over whatever is
+          // behind: the backdrop's pattern must not run under the message.
+          color: palette.wash(palette.accent, palette.isDark ? 0.14 : 0.08),
           borderRadius: BorderRadius.circular(Radii.card),
           border: Border.all(
             color: palette.accent.withValues(
@@ -362,10 +413,12 @@ class _DonePeak extends StatelessWidget {
             ),
             if (onClear != null) ...[
               const SizedBox(height: Insets.lg),
-              FilledButton.icon(
-                onPressed: onClear,
-                icon: const FaIcon(FontAwesomeIcons.broom, size: 14),
-                label: Text(context.l10n.listClearTicked),
+              PressScale(
+                child: FilledButton.icon(
+                  onPressed: onClear,
+                  icon: const FaIcon(FontAwesomeIcons.broom, size: 14),
+                  label: Text(context.l10n.listClearTicked),
+                ),
               ),
             ],
           ],
@@ -396,6 +449,7 @@ class _ItemGroup extends ConsumerWidget {
       children: [
         for (final product in products)
           ProductRow(
+            key: ValueKey(product.id),
             name: product.name,
             // Why it's on the list: how much, which meal wants it, what it
             // cost.

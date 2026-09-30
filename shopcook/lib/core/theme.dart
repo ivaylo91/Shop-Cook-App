@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'design.dart';
+import 'ui/transitions.dart';
 
 /// Builds the app theme for one brightness from [AppPalette].
 ///
@@ -74,6 +75,13 @@ ThemeData buildAppTheme(Brightness brightness) {
   // of the older ones (CardTheme, DialogTheme and friends).
   return base.copyWith(
     extensions: <ThemeExtension<dynamic>>[palette],
+
+    pageTransitionsTheme: PageTransitionsTheme(
+      builders: {
+        for (final platform in TargetPlatform.values)
+          platform: const AppPageTransitions(),
+      },
+    ),
 
     appBarTheme: base.appBarTheme.copyWith(
       // Clear at rest, so a screen's backdrop pattern runs up behind the

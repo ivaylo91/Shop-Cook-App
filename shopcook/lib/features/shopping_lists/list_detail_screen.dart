@@ -116,16 +116,39 @@ class ListDetailScreen extends ConsumerWidget {
                     icon: FontAwesomeIcons.basketShopping,
                     label: l10n.listDetailOtherItems,
                     color: palette.inkMuted,
-                    trailing: ticked == 0
-                        ? null
-                        : TextButton.icon(
-                            onPressed: () => _clearTicked(context, ref),
-                            icon: const FaIcon(
-                              FontAwesomeIcons.broom,
-                              size: 13,
+                    // Appears with the first tick and goes with the last, so
+                    // it arrives rather than popping: a short fade, scaled
+                    // from just under full size toward the edge it sits on.
+                    trailing: AnimatedSwitcher(
+                      duration: Motion.fast,
+                      // Out of the way quicker than it came.
+                      reverseDuration: Motion.fast ~/ 2,
+                      switchInCurve: Motion.enter,
+                      switchOutCurve: Motion.enter,
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: context.reduceMotion
+                            ? child
+                            : ScaleTransition(
+                                scale: Tween<double>(
+                                  begin: 0.95,
+                                  end: 1,
+                                ).animate(animation),
+                                alignment: Alignment.centerRight,
+                                child: child,
+                              ),
+                      ),
+                      child: ticked == 0
+                          ? const SizedBox.shrink()
+                          : TextButton.icon(
+                              onPressed: () => _clearTicked(context, ref),
+                              icon: const FaIcon(
+                                FontAwesomeIcons.broom,
+                                size: 13,
+                              ),
+                              label: Text(l10n.listClearTicked),
                             ),
-                            label: Text(l10n.listClearTicked),
-                          ),
+                    ),
                   ),
                   const SizedBox(height: Insets.md),
                   unassignedAsync.when(
@@ -146,6 +169,7 @@ class ListDetailScreen extends ConsumerWidget {
                         children: [
                           for (final product in products)
                             ProductRow(
+                              key: ValueKey(product.id),
                               name: product.name,
                               details: [
                                 '${product.quantity} ${product.unit}'.trim(),

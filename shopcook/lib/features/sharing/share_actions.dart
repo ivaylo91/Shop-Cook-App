@@ -48,11 +48,7 @@ Future<void> showShareActions(
         ),
         if (isShared)
           ListTile(
-            leading: FaIcon(
-              FontAwesomeIcons.linkSlash,
-              size: 16,
-              color: error,
-            ),
+            leading: FaIcon(FontAwesomeIcons.linkSlash, size: 16, color: error),
             title: Text(
               isOwner ? l10n.shareStop : l10n.shareLeave,
               style: TextStyle(color: error),
@@ -124,7 +120,7 @@ Future<void> _invite(
   }
   if (!context.mounted) return;
 
-  await showDialog<void>(
+  await showAppDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(l10n.shareInviteTitle(list.name)),
@@ -155,17 +151,19 @@ Future<void> _invite(
           },
           child: Text(MaterialLocalizations.of(context).copyButtonLabel),
         ),
-        FilledButton.icon(
-          onPressed: () {
-            Navigator.pop(context);
-            SharePlus.instance.share(
-              ShareParams(
-                text: l10n.shareInviteText(list.name, inviteLink(code), code),
-              ),
-            );
-          },
-          icon: const FaIcon(FontAwesomeIcons.shareNodes, size: 14),
-          label: Text(l10n.shareInviteSend),
+        PressScale(
+          child: FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              SharePlus.instance.share(
+                ShareParams(
+                  text: l10n.shareInviteText(list.name, inviteLink(code), code),
+                ),
+              );
+            },
+            icon: const FaIcon(FontAwesomeIcons.shareNodes, size: 14),
+            label: Text(l10n.shareInviteSend),
+          ),
         ),
       ],
     ),

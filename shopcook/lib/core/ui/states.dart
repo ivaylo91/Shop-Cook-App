@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../design.dart';
 import '../localization.dart';
+import 'press_scale.dart';
 
 /// Empty states are an opportunity: say what goes here and how to get there.
 class EmptyState extends StatelessWidget {
@@ -35,15 +36,31 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(Insets.xl),
-              decoration: BoxDecoration(
-                color: palette.accent.withValues(
-                  alpha: palette.isDark ? 0.16 : 0.10,
+            // An empty screen is seen rarely and has nothing else going on,
+            // so this is where a little arrival is affordable. Never from
+            // nothing: it starts nearly full size and mostly fades.
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: 1),
+              duration: Motion.base,
+              curve: Motion.enter,
+              builder: (context, t, child) => Opacity(
+                opacity: t,
+                child: Transform.scale(
+                  scale: context.reduceMotion ? 1 : 0.95 + 0.05 * t,
+                  child: child,
                 ),
-                shape: BoxShape.circle,
               ),
-              child: FaIcon(icon, size: 32, color: palette.accent),
+              child: Container(
+                padding: const EdgeInsets.all(Insets.xl),
+                decoration: BoxDecoration(
+                  color: palette.wash(
+                    palette.accent,
+                    palette.isDark ? 0.16 : 0.10,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: FaIcon(icon, size: 32, color: palette.accent),
+              ),
             ),
             const SizedBox(height: Insets.xl),
             Text(
@@ -63,10 +80,12 @@ class EmptyState extends StatelessWidget {
             ),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: Insets.xl),
-              FilledButton.icon(
-                onPressed: onAction,
-                icon: FaIcon(actionIcon ?? FontAwesomeIcons.plus, size: 16),
-                label: Text(actionLabel!),
+              PressScale(
+                child: FilledButton.icon(
+                  onPressed: onAction,
+                  icon: FaIcon(actionIcon ?? FontAwesomeIcons.plus, size: 16),
+                  label: Text(actionLabel!),
+                ),
               ),
             ],
           ],
@@ -104,7 +123,7 @@ class ErrorState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(Insets.lg),
               decoration: BoxDecoration(
-                color: error.withValues(alpha: 0.10),
+                color: context.palette.wash(error, 0.10),
                 shape: BoxShape.circle,
               ),
               child: FaIcon(

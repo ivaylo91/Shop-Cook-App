@@ -28,7 +28,8 @@ class _SkeletonState extends State<Skeleton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 900),
+    // Brisk on purpose: a quicker pulse makes the same wait feel shorter.
+    duration: const Duration(milliseconds: 600),
   );
 
   @override
@@ -54,9 +55,10 @@ class _SkeletonState extends State<Skeleton>
     }
 
     return FadeTransition(
-      opacity: Tween<double>(begin: 0.45, end: 1).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-      ),
+      opacity: Tween<double>(
+        begin: 0.45,
+        end: 1,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
       child: _block(palette.sunken),
     );
   }
@@ -82,10 +84,7 @@ class SkeletonRows extends StatelessWidget {
   Widget build(BuildContext context) {
     // Top-aligned so a screen body's tight constraints do not stretch the
     // card to the bottom of the screen.
-    return Align(
-      alignment: Alignment.topCenter,
-      child: _rows(),
-    );
+    return Align(alignment: Alignment.topCenter, child: _rows());
   }
 
   Widget _rows() {

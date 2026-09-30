@@ -35,15 +35,41 @@ abstract final class Radii {
 /// [base] for anything that moves or resizes, and [slow] for a deliberate
 /// moment the user is meant to notice.
 abstract final class Motion {
+  /// Press feedback, and anything seen tens of times a day.
   static const fast = Duration(milliseconds: 140);
+
+  /// The default for interface motion. Nothing routine runs longer.
   static const base = Duration(milliseconds: 220);
+
+  /// A bottom sheet coming up. Longer than [base] because it travels
+  /// further, and its curve spends most of that settling.
+  static const sheet = Duration(milliseconds: 300);
+
+  /// Only for the rare moment: a celebration, a chart drawing itself.
   static const slow = Duration(milliseconds: 440);
 
-  static const enter = Curves.easeOutCubic;
-  static const exit = Curves.easeInCubic;
+  /// A strong ease-out — cubic-bezier(0.23, 1, 0.32, 1) — for everything
+  /// that enters, leaves or answers a touch. It moves most in its first
+  /// frames, which is when the user is watching. There is deliberately no
+  /// ease-in: starting slowly delays exactly that moment.
+  static const enter = Curves.easeOutQuint;
+
+  /// The iOS-style drawer curve — cubic-bezier(0.32, 0.72, 0, 1) — for
+  /// sheets: off quickly, then a long settle, as if pulled up by hand.
+  static const drawer = Cubic(0.32, 0.72, 0, 1);
 
   /// Slight overshoot, for the one thing per screen worth celebrating.
   static const emphasis = Curves.easeOutBack;
+
+  /// How far apart neighbours start when several things enter together.
+  static const stagger = Duration(milliseconds: 40);
+}
+
+extension MotionContext on BuildContext {
+  /// Whether the phone is set to remove animations. Movement and scaling
+  /// are dropped then; fades stay, since they explain a change without
+  /// moving anything.
+  bool get reduceMotion => MediaQuery.disableAnimationsOf(this);
 }
 
 abstract final class AppText {
@@ -141,6 +167,13 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// nine saturated blocks would wreck the 60/30/10 balance.
   Color aisle(ProductCategory category) =>
       (isDark ? _aislesDark : _aislesLight)[category]!;
+
+  /// A tint laid over the plain surface, as a solid colour.
+  ///
+  /// For a tinted fill that sits on a screen's backdrop: a see-through tint
+  /// would let the backdrop's pattern show under whatever is written on it.
+  Color wash(Color tint, double alpha) =>
+      Color.alphaBlend(tint.withValues(alpha: alpha), surface);
 
   /// Soft, tinted shadow. Never pure grey on a coloured ground — and never
   /// tinted at all in dark mode, where a coloured shadow reads as a glow.
