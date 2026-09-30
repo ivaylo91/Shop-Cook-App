@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'core/crash_reporter.dart';
+import 'features/notifications/push.dart';
 import 'core/settings.dart';
 import 'core/supabase_config.dart';
 
@@ -22,6 +23,7 @@ Future<void> main() async {
     publishableKey: SupabaseConfig.publishableKey,
   );
   await CrashReporter.install();
+  await initPush();
 
   // Loaded before the first frame so the app opens in the user's chosen
   // theme instead of rendering the default and then snapping to it.

@@ -1418,6 +1418,66 @@ abstract class AppLocalizations {
   /// **'That code didn’t work. It may have expired — ask for a new one.'**
   String get joinBadCode;
 
+  /// No description provided for @introShopTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk the shop once'**
+  String get introShopTitle;
+
+  /// No description provided for @introShopBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add items in one line — “2 kg potatoes”. In the shop your list is sorted by aisle, so nothing sends you back.'**
+  String get introShopBody;
+
+  /// No description provided for @introCookTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan meals, then cook them'**
+  String get introCookTitle;
+
+  /// No description provided for @introCookBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Put a meal on a list, save its recipe from any site, and cook from it step by step, with timers.'**
+  String get introCookBody;
+
+  /// No description provided for @introShareTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a list'**
+  String get introShareTitle;
+
+  /// No description provided for @introShareBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a code or a link. You both see and tick the same list, live.'**
+  String get introShareBody;
+
+  /// No description provided for @introSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get introSkip;
+
+  /// No description provided for @introNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get introNext;
+
+  /// No description provided for @introStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get introStart;
+
+  /// No description provided for @settingsShowIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the tour again'**
+  String get settingsShowIntro;
+
   /// No description provided for @spendingTitle.
   ///
   /// In en, this message translates to:

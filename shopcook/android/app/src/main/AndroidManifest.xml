@@ -44,6 +44,17 @@
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="barcode"/>
+        <!-- Notifications about shared lists: their channel (created in
+             MainActivity), and how they look in the status bar. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="shared_lists"/>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification"/>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/widget_accent"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

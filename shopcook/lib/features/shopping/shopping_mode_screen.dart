@@ -12,6 +12,7 @@ import '../../data/local/database.dart';
 import '../../data/repositories/shopping_list_repository.dart';
 import '../products/item_composer.dart';
 import '../products/item_sheet.dart';
+import '../review/review_prompt.dart';
 import '../sharing/changed_by.dart';
 import 'category_label.dart';
 import 'product_category.dart';
@@ -112,7 +113,10 @@ class ShoppingModeScreen extends ConsumerWidget {
                       // Only the list's own items clear; a meal's
                       // ingredients go with the meal once it is cooked.
                       onClear: picked.any((p) => p.mealId == null)
-                          ? () => _clearTicked(context, ref)
+                          ? () async {
+                              await _clearTicked(context, ref);
+                              await shopFinished(ref);
+                            }
                           : null,
                     ),
                   ],

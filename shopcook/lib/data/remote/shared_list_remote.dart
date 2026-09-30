@@ -8,7 +8,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// An interface so the sync can be tested against an in-memory server with
 /// two phones talking through it.
 abstract class SharedListRemote {
-  /// Puts a list on the server, owned by the signed-in user.
+  /// Puts a list on the server, owned by the signed-in user. Doing it
+  /// again for a list that is already there changes nothing.
   Future<void> createList({required String id, required String name});
 
   /// An invite code for a list the user belongs to.
@@ -35,6 +36,10 @@ abstract class SharedListRemote {
   /// Marks rows deleted, so other phones learn they went.
   Future<void> tombstone(String table, List<String> ids);
 
+  /// Marks a meal's use of the recipe at [url] as removed. Recipe links
+  /// have no id of their own; the meal and the address identify one.
+  Future<void> tombstoneLink({required String mealId, required String url});
+
   /// Rows of one list changed at or after [since] (a server timestamp), or
   /// every row when [since] is null, oldest change first.
   Future<List<Map<String, dynamic>>> changesSince(
@@ -59,8 +64,18 @@ class SupabaseSharedListRemote implements SharedListRemote {
   SupabaseSharedListRemote(this._client);
 
   @override
-  Future<void> createList({required String id, required String name}) =>
-      _client.from('shared_lists').insert({'id': id, 'name': name});
+  Future<void> createList({required String id, required String name}) async {
+    try {
+      await _client.from('shared_lists').insert({'id': id, 'name': name});
+    } on PostgrestException catch (error) {
+      // 23505 is "already exists": an earlier share got this far and no
+      // further, which makes this attempt a retry, not a failure. A plain
+      // insert rather than an upsert that ignores duplicates, because the
+      // upsert form is checked against the read policy before the trigger
+      // has made the creator a member, and is refused.
+      if (error.code != '23505') rethrow;
+    }
+  }
 
   @override
   Future<String> createInvite(String listId) async =>
@@ -120,6 +135,14 @@ class SupabaseSharedListRemote implements SharedListRemote {
   }
 
   @override
+  Future<void> tombstoneLink({required String mealId, required String url}) =>
+      _client
+          .from('shared_meal_recipes')
+          .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
+          .eq('meal_id', mealId)
+          .eq('source_url', url);
+
+  @override
   Future<List<Map<String, dynamic>>> changesSince(
     String table,
     String listId,
@@ -158,7 +181,12 @@ class SupabaseSharedListRemote implements SharedListRemote {
       onCancel: () => _client.removeChannel(channel),
     );
     channel = _client.channel('shared-lists');
-    for (final table in ['shared_lists', 'shared_meals', 'shared_products']) {
+    for (final table in [
+      'shared_lists',
+      'shared_meals',
+      'shared_products',
+      'shared_meal_recipes',
+    ]) {
       channel.onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',

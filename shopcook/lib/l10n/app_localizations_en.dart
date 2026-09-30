@@ -796,6 +796,39 @@ class AppLocalizationsEn extends AppLocalizations {
       'That code didn’t work. It may have expired — ask for a new one.';
 
   @override
+  String get introShopTitle => 'Walk the shop once';
+
+  @override
+  String get introShopBody =>
+      'Add items in one line — “2 kg potatoes”. In the shop your list is sorted by aisle, so nothing sends you back.';
+
+  @override
+  String get introCookTitle => 'Plan meals, then cook them';
+
+  @override
+  String get introCookBody =>
+      'Put a meal on a list, save its recipe from any site, and cook from it step by step, with timers.';
+
+  @override
+  String get introShareTitle => 'Share a list';
+
+  @override
+  String get introShareBody =>
+      'Send a code or a link. You both see and tick the same list, live.';
+
+  @override
+  String get introSkip => 'Skip';
+
+  @override
+  String get introNext => 'Next';
+
+  @override
+  String get introStart => 'Get started';
+
+  @override
+  String get settingsShowIntro => 'Show the tour again';
+
+  @override
   String get spendingTitle => 'Spending';
 
   @override

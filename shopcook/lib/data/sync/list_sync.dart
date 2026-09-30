@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
+import 'package:uuid/uuid.dart';
 
 import '../local/database.dart';
 import '../remote/shared_list_remote.dart';
@@ -21,6 +22,9 @@ class ListSync {
 
   static const mealsTable = 'shared_meals';
   static const productsTable = 'shared_products';
+  static const linksTable = 'shared_meal_recipes';
+
+  static const _uuid = Uuid();
 
   /// How far before the last pulled change the next pull starts. Rows are
   /// stamped when their transaction starts, so one that commits late can
@@ -46,18 +50,18 @@ class ListSync {
   /// is already shared only fetches a code.
   Future<String> share(ShoppingList list) async {
     if (await _db.sharedList(list.id) == null) {
+      // Safe to repeat: a list already on the server from an attempt that
+      // got no further is simply left as it is.
       await _remote.createList(id: list.id, name: list.name);
-      // Marked before the snapshot is read, so an edit made while it
-      // uploads is queued rather than missed.
+      // Its contents are queued, not uploaded here. If the connection drops
+      // now, the list is still marked and its contents still waiting, and
+      // the next sync sends them; an upload done in place would have been
+      // lost for good.
       await _db.markShared(list.id, isOwner: true);
-      await _remote.upsert(mealsTable, [
-        for (final meal in await _db.allMealsForList(list.id)) mealRow(meal),
-      ]);
-      await _remote.upsert(productsTable, [
-        for (final product in await _db.productsForList(list.id))
-          productRow(product),
-      ]);
+      await _db.queueWholeList(list.id);
     }
+    final userId = list.userId;
+    if (userId != null) await _push(userId);
     await _pushName(list.userId, force: true);
     return _remote.createInvite(list.id);
   }
@@ -152,9 +156,22 @@ class ListSync {
     final products = <Map<String, dynamic>>[];
     final goneMeals = <String>[];
     final goneProducts = <String>[];
+    final links = <Map<String, dynamic>>[];
+    final goneLinks = <({String mealId, String url})>[];
 
     for (final entry in latest.values) {
       switch (entry.entity) {
+        case 'link':
+          // "mealId|url"; the id has no bar in it, the address may.
+          final bar = entry.rowId.indexOf('|');
+          final mealId = entry.rowId.substring(0, bar);
+          final url = entry.rowId.substring(bar + 1);
+          final recipe = entry.deleted
+              ? null
+              : await _db.linkedRecipe(mealId: mealId, url: url);
+          recipe == null
+              ? goneLinks.add((mealId: mealId, url: url))
+              : links.add(linkRow(entry.listId, mealId, recipe));
         case 'list':
           renamed.add(entry.rowId);
         case 'meal':
@@ -177,8 +194,12 @@ class ListSync {
     // Meals before products, so a new item's meal is there when it lands.
     await _remote.upsert(mealsTable, meals);
     await _remote.upsert(productsTable, products);
+    await _remote.upsert(linksTable, links);
     await _remote.tombstone(productsTable, goneProducts);
     await _remote.tombstone(mealsTable, goneMeals);
+    for (final link in goneLinks) {
+      await _remote.tombstoneLink(mealId: link.mealId, url: link.url);
+    }
 
     // Only what was read: anything queued during the push goes next time.
     await _db.dropOutbox([for (final entry in pending) entry.id]);
@@ -203,6 +224,7 @@ class ListSync {
       mark.listId,
       since,
     );
+    final links = await _remote.changesSince(linksTable, mark.listId, since);
 
     await _db.replaceMembers(mark.listId, await _remote.members(mark.listId));
 
@@ -266,6 +288,46 @@ class ListSync {
         }
         await _db.upsertProduct(product);
       }
+
+      // Recipes on the list's meals. Each member keeps a recipe in their
+      // own library, so a link that arrives finds the recipe there by its
+      // address or adds it, and a link that goes leaves the recipe behind.
+      for (final row in links) {
+        newest = _later(newest, row['updated_at'] as String);
+        note(row);
+        final mealId = row['meal_id'] as String;
+        final url = row['source_url'] as String;
+        if (pending.contains('$mealId|$url')) continue;
+        if (await _db.mealById(mealId) == null) continue;
+
+        final mine = await _db.recipeByUrl(userId: userId, sourceUrl: url);
+        if (row['deleted_at'] != null) {
+          if (mine != null) {
+            await _db.unlinkRecipe(mealId: mealId, recipeId: mine.id);
+          }
+          continue;
+        }
+        var recipeId = mine?.id;
+        if (recipeId == null) {
+          recipeId = _uuid.v4();
+          await _db.insertRecipe(
+            RecipesCompanion.insert(
+              id: recipeId,
+              userId: Value(userId),
+              title: row['title'] as String,
+              sourceUrl: url,
+              thumbnailUrl: Value(row['thumbnail_url'] as String? ?? ''),
+              sourceType: Value(
+                row['source_type'] == RecipeSourceType.video.name
+                    ? RecipeSourceType.video
+                    : RecipeSourceType.web,
+              ),
+              createdAt: DateTime.now(),
+            ),
+          );
+        }
+        await _db.linkRecipe(mealId: mealId, recipeId: recipeId);
+      }
     });
 
     if (newest != null && newest != mark.cursor) {
@@ -323,6 +385,20 @@ class ListSync {
       createdAt: _local(row['created_at']),
     );
   }
+
+  static Map<String, dynamic> linkRow(
+    String listId,
+    String mealId,
+    Recipe recipe,
+  ) => {
+    'list_id': listId,
+    'meal_id': mealId,
+    'source_url': recipe.sourceUrl,
+    'title': recipe.title,
+    'thumbnail_url': recipe.thumbnailUrl,
+    'source_type': recipe.sourceType.name,
+    'deleted_at': null,
+  };
 
   static Map<String, dynamic> productRow(Product product) => {
     'id': product.id,

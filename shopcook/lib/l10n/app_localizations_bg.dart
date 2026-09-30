@@ -796,6 +796,39 @@ class AppLocalizationsBg extends AppLocalizations {
       'Този код не става. Може да е изтекъл — поискай нов.';
 
   @override
+  String get introShopTitle => 'Мини през магазина веднъж';
+
+  @override
+  String get introShopBody =>
+      'Добавяй продукти на един ред — „2 кг картофи“. В магазина списъкът е подреден по щандове, за да не се връщаш.';
+
+  @override
+  String get introCookTitle => 'Планирай ястия и ги сготви';
+
+  @override
+  String get introCookBody =>
+      'Сложи ястие в списък, запази рецептата му от който и да е сайт и готви по нея стъпка по стъпка, с таймери.';
+
+  @override
+  String get introShareTitle => 'Сподели списък';
+
+  @override
+  String get introShareBody =>
+      'Изпрати код или връзка. Двамата виждате и отмятате един и същ списък на живо.';
+
+  @override
+  String get introSkip => 'Пропусни';
+
+  @override
+  String get introNext => 'Напред';
+
+  @override
+  String get introStart => 'Започни';
+
+  @override
+  String get settingsShowIntro => 'Покажи обиколката отново';
+
+  @override
   String get spendingTitle => 'Разходи';
 
   @override

@@ -25,6 +25,9 @@ plugins {
     // gradle.properties).
     id("com.android.application") version "8.11.1" apply false
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false
+    // Reads android/app/google-services.json (git-ignored) so Firebase
+    // Cloud Messaging knows which project the app belongs to.
+    id("com.google.gms.google-services") version "4.4.4" apply false
 }
 
 include(":app")

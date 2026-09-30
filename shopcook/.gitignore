@@ -57,3 +57,9 @@ supabase/.temp/
 # The closed-testing tester list: other people's email addresses, and this
 # repository is public. Keep it on the machine that uploads it to Play.
 play/testers.csv
+
+# Firebase. The service account key is a private key and must never be
+# committed; the app config stays local too, since this repository is public.
+*firebase*.json
+*firebase-adminsdk*.json
+android/app/google-services.json

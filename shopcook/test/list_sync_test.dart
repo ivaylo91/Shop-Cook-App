@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shopcook/data/local/database.dart';
@@ -15,10 +15,14 @@ class _Server {
   final lists = <String, ({String name, String owner})>{};
   final members = <String, Set<String>>{};
   final names = <String, String>{};
+
+  /// Makes every upload fail, as with no signal.
+  var offline = false;
   final invites = <String, String>{};
   final rows = <String, Map<String, Map<String, dynamic>>>{
     ListSync.mealsTable: {},
     ListSync.productsTable: {},
+    ListSync.linksTable: {},
   };
 
   var _tick = 0;
@@ -46,6 +50,7 @@ class _Remote implements SharedListRemote {
 
   @override
   Future<void> createList({required String id, required String name}) async {
+    if (server.lists.containsKey(id)) return;
     server.lists[id] = (name: name, owner: userId);
     server.members[id] = {userId};
   }
@@ -94,9 +99,13 @@ class _Remote implements SharedListRemote {
 
   @override
   Future<void> upsert(String table, List<Map<String, dynamic>> rows) async {
+    if (server.offline) throw StateError('offline');
     for (final row in rows) {
       _mustBelong(row['list_id'] as String);
-      server.rows[table]![row['id'] as String] = {
+      final key = table == ListSync.linksTable
+          ? '${row['meal_id']}|${row['source_url']}'
+          : row['id'] as String;
+      server.rows[table]![key] = {
         ...row,
         'updated_at': server.stamp(),
         'updated_by': userId,
@@ -117,6 +126,23 @@ class _Remote implements SharedListRemote {
         'updated_by': userId,
       };
     }
+  }
+
+  @override
+  Future<void> tombstoneLink({
+    required String mealId,
+    required String url,
+  }) async {
+    final table = server.rows[ListSync.linksTable]!;
+    final row = table['$mealId|$url'];
+    if (row == null) return;
+    _mustBelong(row['list_id'] as String);
+    table['$mealId|$url'] = {
+      ...row,
+      'deleted_at': server.stamp(),
+      'updated_at': server.stamp(),
+      'updated_by': userId,
+    };
   }
 
   @override
@@ -427,6 +453,148 @@ void main() {
     await pumpEventQueue();
 
     expect(news, isEmpty);
+  });
+
+  group('recipes on shared meals', () {
+    const url = 'https://example.com/curry';
+
+    /// Saves a recipe to [phone]'s library and returns its id.
+    Future<String> saved(_Phone phone, {String title = 'Green curry'}) async {
+      final id = 'recipe-${phone.user}';
+      await phone.db.insertRecipe(
+        RecipesCompanion.insert(
+          id: id,
+          userId: Value(phone.user),
+          title: title,
+          sourceUrl: url,
+          createdAt: DateTime(2026, 9, 1),
+        ),
+      );
+      return id;
+    }
+
+    Future<List<Recipe>> onMeal(_Phone phone, String mealId) =>
+        phone.db.watchRecipesForMeal(mealId).first;
+
+    Future<List<String>> library(_Phone phone) async => [
+      for (final entry in await phone.db.watchLibrary(phone.user).first)
+        entry.recipe.title,
+    ];
+
+    test('a recipe put on a meal reaches the other member’s meal and '
+        'library', () async {
+      final listId = await sharedWeekly();
+      final meal = (await anna.repo.watchMeals(listId).first).single;
+
+      await anna.db.linkRecipe(mealId: meal.id, recipeId: await saved(anna));
+      await anna.syncNow();
+      await ben.syncNow();
+
+      expect((await onMeal(ben, meal.id)).single.sourceUrl, url);
+      expect(await library(ben), ['Green curry']);
+      expect(await ben.outboxSize(), 0, reason: 'pulled, not echoed');
+    });
+
+    test('recipes already on a meal go up when the list is shared', () async {
+      await anna.repo.createList('Weekly', userId: 'anna');
+      final list = (await anna.repo.watchLists('anna').first).single;
+      await anna.repo.createMeal(list.id, 'Curry');
+      final meal = (await anna.repo.watchMeals(list.id).first).single;
+      await anna.db.linkRecipe(mealId: meal.id, recipeId: await saved(anna));
+
+      final code = await anna.sync.share(list);
+      await ben.sync.join(code, userId: 'ben');
+
+      expect((await onMeal(ben, meal.id)).single.title, 'Green curry');
+    });
+
+    test('a member who already has the recipe reuses their own copy',
+        () async {
+      final listId = await sharedWeekly();
+      final meal = (await anna.repo.watchMeals(listId).first).single;
+      final bens = await saved(ben, title: 'Ben’s curry');
+
+      await anna.db.linkRecipe(mealId: meal.id, recipeId: await saved(anna));
+      await anna.syncNow();
+      await ben.syncNow();
+
+      expect((await onMeal(ben, meal.id)).single.id, bens);
+      expect(await library(ben), ['Ben’s curry'], reason: 'no duplicate');
+    });
+
+    test('taking it off the meal reaches the others; their library keeps it',
+        () async {
+      final listId = await sharedWeekly();
+      final meal = (await anna.repo.watchMeals(listId).first).single;
+      await anna.db.linkRecipe(mealId: meal.id, recipeId: await saved(anna));
+      await anna.syncNow();
+      await ben.syncNow();
+
+      final bens = (await onMeal(ben, meal.id)).single;
+      await ben.db.unlinkRecipe(mealId: meal.id, recipeId: bens.id);
+      await ben.syncNow();
+      await anna.syncNow();
+
+      expect(await onMeal(anna, meal.id), isEmpty);
+      expect(await library(anna), ['Green curry']);
+      expect(await library(ben), ['Green curry']);
+    });
+
+    test('deleting the recipe from the library unlinks it for everyone',
+        () async {
+      final listId = await sharedWeekly();
+      final meal = (await anna.repo.watchMeals(listId).first).single;
+      final annas = await saved(anna);
+      await anna.db.linkRecipe(mealId: meal.id, recipeId: annas);
+      await anna.syncNow();
+      await ben.syncNow();
+
+      await anna.db.deleteRecipe(annas);
+      await anna.syncNow();
+      await ben.syncNow();
+
+      expect(await onMeal(ben, meal.id), isEmpty);
+      expect(await library(ben), ['Green curry'], reason: 'his own copy');
+    });
+
+    test('a recipe on a meal of a list nobody shared queues nothing',
+        () async {
+      await anna.repo.createList('Private', userId: 'anna');
+      final list = (await anna.repo.watchLists('anna').first).single;
+      await anna.repo.createMeal(list.id, 'Soup');
+      final meal = (await anna.repo.watchMeals(list.id).first).single;
+      final id = await saved(anna);
+      await anna.db.linkRecipe(mealId: meal.id, recipeId: id);
+      await anna.db.deleteRecipe(id);
+
+      expect(await anna.outboxSize(), 0);
+    });
+  });
+
+  test('a share cut off before its contents went up finishes later',
+      () async {
+    await anna.repo.createList('Weekly', userId: 'anna');
+    final list = (await anna.repo.watchLists('anna').first).single;
+    await anna.repo.addProduct(listId: list.id, name: 'Milk');
+    await anna.repo.addProduct(listId: list.id, name: 'Bread');
+
+    server.offline = true;
+    await expectLater(anna.sync.share(list), throwsStateError);
+    expect(server.rows[ListSync.productsTable], isEmpty);
+    expect(await anna.db.sharedList(list.id), isNotNull);
+
+    // Back online: the next sync sends what was waiting, and sharing again
+    // hands out a code instead of failing on the list that already exists.
+    server.offline = false;
+    await anna.syncNow();
+    expect(server.rows[ListSync.productsTable], hasLength(2));
+
+    final code = await anna.sync.share(list);
+    await ben.sync.join(code, userId: 'ben');
+    expect(
+      (await ben.items(list.id)).map((p) => p.name),
+      unorderedEquals(['Milk', 'Bread']),
+    );
   });
 
   test('two syncs at once fold into one pass after another', () async {

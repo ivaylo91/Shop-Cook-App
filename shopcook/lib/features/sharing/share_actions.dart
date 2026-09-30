@@ -13,6 +13,7 @@ import '../../data/local/database.dart';
 import 'package:go_router/go_router.dart';
 
 import '../shopping_lists/share_list.dart';
+import '../notifications/push.dart';
 import 'invite_link.dart';
 
 /// The list's share button: send a copy as text, or share the list itself
@@ -118,6 +119,8 @@ Future<void> _invite(
     messenger.replaceSnackBar(SnackBar(content: Text(l10n.shareOffline)));
     return;
   }
+  // The list is shared now, so there is something to be notified about.
+  await askForNotifications(ref);
   if (!context.mounted) return;
 
   await showAppDialog<void>(
@@ -248,6 +251,7 @@ Future<void> joinWithCode(
     if (list == null) return;
     messenger.replaceSnackBar(SnackBar(content: Text(l10n.joined(list.name))));
     router.push('/list/${list.id}', extra: list);
+    await askForNotifications(ref);
   } catch (_) {
     messenger.replaceSnackBar(SnackBar(content: Text(l10n.shareOffline)));
   }

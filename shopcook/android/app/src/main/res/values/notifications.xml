@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The notification channel, as named in the phone's settings. -->
+    <string name="notification_channel_name">Shared lists</string>
+    <string name="notification_channel_description">When someone changes a list you share</string>
+</resources>

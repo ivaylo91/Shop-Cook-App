@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shopcook/data/local/database.dart';
 import 'package:shopcook/features/pantry/pantry_match.dart';
 import 'package:shopcook/features/plan/week_shop.dart';
+import 'package:shopcook/features/review/review_prompt.dart';
 import 'package:shopcook/features/share_intake/shared_content.dart';
 import 'package:shopcook/features/sharing/invite_link.dart';
 import 'package:shopcook/features/spending/spending.dart';
@@ -154,6 +155,40 @@ void main() {
         pantry: const [],
       );
       expect(items, isEmpty);
+    });
+  });
+
+  group('asking for a rating', () {
+    final now = DateTime(2026, 9, 30);
+
+    test('not before the third finished shop', () {
+      expect(
+        shouldAskForReview(shopsDone: 2, lastAsked: null, now: now),
+        isFalse,
+      );
+      expect(
+        shouldAskForReview(shopsDone: 3, lastAsked: null, now: now),
+        isTrue,
+      );
+    });
+
+    test('not again until the quiet period has passed', () {
+      expect(
+        shouldAskForReview(
+          shopsDone: 9,
+          lastAsked: now.subtract(const Duration(days: 30)),
+          now: now,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAskForReview(
+          shopsDone: 9,
+          lastAsked: now.subtract(reviewQuietPeriod),
+          now: now,
+        ),
+        isTrue,
+      );
     });
   });
 

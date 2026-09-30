@@ -282,7 +282,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   /// The migration ladder. Every step has to be additive and idempotent in
   /// order, because an install can be on any earlier version — a phone that
@@ -299,6 +299,7 @@ class AppDatabase extends _$AppDatabase {
     onCreate: (m) async {
       await m.createAll();
       await createSyncTriggers();
+      await createRecipeLinkTriggers();
     },
     onUpgrade: (m, from, to) async {
       // v2: meals can be planned for a day.
@@ -399,6 +400,10 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(sharedMembers);
         await m.createTable(pantryItems);
       }
+      // v12: recipes attached to a shared list's meals are shared too.
+      if (from < 12) {
+        await createRecipeLinkTriggers();
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -448,6 +453,90 @@ class AppDatabase extends _$AppDatabase {
       "BEGIN INSERT INTO sync_outbox (entity, row_id, list_id, deleted) "
       "VALUES ('list', NEW.id, NEW.id, 0); END",
     );
+  }
+
+  /// Queues changes to which recipes a shared list's meals use.
+  ///
+  /// A link is identified to the other members by meal and recipe address
+  /// ("mealId|url"), because each keeps the recipe in their own library
+  /// under their own id. The address is read while the recipe row still
+  /// exists: every statement selects it from `recipes`, so a link whose
+  /// recipe or meal has already gone queues nothing rather than a null.
+  /// That is also why deleting a recipe has its own BEFORE trigger — by the
+  /// time the cascade removes its links, the address is no longer there to
+  /// read.
+  Future<void> createRecipeLinkTriggers() async {
+    const quiet =
+        "(SELECT value FROM sync_flags WHERE name = 'applying') = 0";
+    const shared =
+        'EXISTS (SELECT 1 FROM shared_lists s WHERE s.list_id = m.list_id)';
+    String queue(String mealId, String recipeId, int deleted) =>
+        'INSERT INTO sync_outbox (entity, row_id, list_id, deleted) '
+        "SELECT 'link', $mealId || '|' || r.source_url, m.list_id, $deleted "
+        'FROM meals m, recipes r '
+        'WHERE m.id = $mealId AND r.id = $recipeId AND $shared;';
+
+    await customStatement(
+      'CREATE TRIGGER IF NOT EXISTS sync_links_insert '
+      'AFTER INSERT ON meal_recipes WHEN $quiet '
+      'BEGIN ${queue('NEW.meal_id', 'NEW.recipe_id', 0)} END',
+    );
+    await customStatement(
+      'CREATE TRIGGER IF NOT EXISTS sync_links_delete '
+      'AFTER DELETE ON meal_recipes WHEN $quiet '
+      'BEGIN ${queue('OLD.meal_id', 'OLD.recipe_id', 1)} END',
+    );
+    // A recipe leaving the library takes its links with it.
+    await customStatement(
+      'CREATE TRIGGER IF NOT EXISTS sync_links_recipe_delete '
+      'BEFORE DELETE ON recipes WHEN $quiet '
+      'BEGIN '
+      'INSERT INTO sync_outbox (entity, row_id, list_id, deleted) '
+      "SELECT 'link', mr.meal_id || '|' || OLD.source_url, m.list_id, 1 "
+      'FROM meal_recipes mr JOIN meals m ON m.id = mr.meal_id '
+      'WHERE mr.recipe_id = OLD.id AND $shared; '
+      'END',
+    );
+    // The title and picture are often filled in a moment after saving.
+    await customStatement(
+      'CREATE TRIGGER IF NOT EXISTS sync_links_recipe_update '
+      'AFTER UPDATE OF title, thumbnail_url ON recipes WHEN $quiet '
+      'BEGIN '
+      'INSERT INTO sync_outbox (entity, row_id, list_id, deleted) '
+      "SELECT 'link', mr.meal_id || '|' || NEW.source_url, m.list_id, 0 "
+      'FROM meal_recipes mr JOIN meals m ON m.id = mr.meal_id '
+      'WHERE mr.recipe_id = NEW.id AND $shared; '
+      'END',
+    );
+  }
+
+  /// The recipe at [url] that [mealId] uses, if it uses one.
+  Future<Recipe?> linkedRecipe({
+    required String mealId,
+    required String url,
+  }) async {
+    final query = select(recipes).join([
+      innerJoin(mealRecipes, mealRecipes.recipeId.equalsExp(recipes.id)),
+    ])..where(mealRecipes.mealId.equals(mealId) & recipes.sourceUrl.equals(url));
+    final rows = await query.get();
+    return rows.isEmpty ? null : rows.first.readTable(recipes);
+  }
+
+  /// Every recipe used by a meal of [listId], with the meal it is on.
+  Future<List<({String mealId, Recipe recipe})>> linkedRecipesForList(
+    String listId,
+  ) async {
+    final query = select(recipes).join([
+      innerJoin(mealRecipes, mealRecipes.recipeId.equalsExp(recipes.id)),
+      innerJoin(meals, meals.id.equalsExp(mealRecipes.mealId)),
+    ])..where(meals.listId.equals(listId));
+    return [
+      for (final row in await query.get())
+        (
+          mealId: row.readTable(mealRecipes).mealId,
+          recipe: row.readTable(recipes),
+        ),
+    ];
   }
 
   /// Runs [writes] as the sync applying pulled changes: nothing written in
@@ -537,6 +626,31 @@ class AppDatabase extends _$AppDatabase {
       (update(sharedLists)..where((t) => t.listId.equals(listId))).write(
         SharedListsCompanion(cursor: Value(cursor)),
       );
+
+  /// Queues everything on a list to be pushed: its meals, its items and
+  /// the recipes on its meals. Used when a list is first shared, so its
+  /// contents go up by the same retrying path as any later change, rather
+  /// than in one upload that a dropped connection could leave half done.
+  Future<void> queueWholeList(String listId) => transaction(() async {
+    Future<void> queue(String entity, String rowId) => into(syncOutbox).insert(
+      SyncOutboxCompanion.insert(
+        entity: entity,
+        rowId: rowId,
+        listId: listId,
+        deleted: false,
+      ),
+    );
+
+    for (final meal in await allMealsForList(listId)) {
+      await queue('meal', meal.id);
+    }
+    for (final product in await productsForList(listId)) {
+      await queue('product', product.id);
+    }
+    for (final link in await linkedRecipesForList(listId)) {
+      await queue('link', '${link.mealId}|${link.recipe.sourceUrl}');
+    }
+  });
 
   /// Stops treating a list as shared, and drops what it had queued. The
   /// list itself stays, as an ordinary list on this phone.

@@ -11,6 +11,8 @@ import '../../core/settings.dart';
 import '../../core/ui/ui.dart';
 import '../../l10n/app_localizations.dart';
 import '../home_widget/home_widget_sync.dart';
+import '../notifications/push.dart';
+import '../onboarding/intro.dart';
 import '../pantry/pantry_screen.dart';
 import '../sharing/share_actions.dart';
 import '../shopping/category_label.dart';
@@ -223,6 +225,15 @@ class SettingsScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            const SizedBox(height: Insets.sm),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => showIntro(context),
+                icon: const FaIcon(FontAwesomeIcons.circlePlay, size: 14),
+                label: Text(l10n.settingsShowIntro),
+              ),
+            ),
           ],
         ),
       ),
@@ -250,6 +261,9 @@ class SettingsScreen extends ConsumerWidget {
 
     if (confirmed) {
       await clearHomeWidget();
+      // While still signed in: the server lets an account remove only its
+      // own phone.
+      await unregisterPush();
       await ref.read(authRepositoryProvider).signOut();
       // The router redirect takes it from here.
     }

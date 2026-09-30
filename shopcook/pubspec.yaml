@@ -1,7 +1,7 @@
 name: shopcook
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.0+9
+version: 1.0.0+10
 
 environment:
   sdk: ^3.9.2
@@ -35,6 +35,9 @@ dependencies:
   home_widget: ^0.10.0
   http: ^1.6.0
   package_info_plus: ^10.2.1
+  in_app_review: ^2.0.12
+  firebase_core: ^4.15.0
+  firebase_messaging: ^16.7.0
 
 dev_dependencies:
   flutter_test:

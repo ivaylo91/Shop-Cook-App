@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/design.dart';
 import '../../core/localization.dart';
 import '../home_widget/home_widget_sync.dart';
+import '../notifications/push.dart';
+import '../onboarding/intro.dart';
 import '../share_intake/share_intake.dart';
 import '../sharing/list_sync_host.dart';
 
@@ -28,9 +30,13 @@ class AppShell extends StatelessWidget {
     final palette = context.palette;
 
     return Scaffold(
-      body: ListSyncHost(
-        child: HomeWidgetSync(
-          child: ShareIntake(shell: shell, child: shell),
+      body: IntroGate(
+        child: PushHost(
+          child: ListSyncHost(
+            child: HomeWidgetSync(
+              child: ShareIntake(shell: shell, child: shell),
+            ),
+          ),
         ),
       ),
       bottomNavigationBar: NavigationBar(
@@ -38,10 +44,8 @@ class AppShell extends StatelessWidget {
         // goBranch with initialLocation resets a branch when its tab is
         // tapped while already selected, which is the expected "take me to
         // the top" behaviour.
-        onDestinationSelected: (index) => shell.goBranch(
-          index,
-          initialLocation: index == shell.currentIndex,
-        ),
+        onDestinationSelected: (index) =>
+            shell.goBranch(index, initialLocation: index == shell.currentIndex),
         backgroundColor: palette.card,
         indicatorColor: palette.accent.withValues(
           alpha: palette.isDark ? 0.24 : 0.14,
