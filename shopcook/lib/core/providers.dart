@@ -1,3 +1,5 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -9,6 +11,7 @@ import '../data/repositories/auth_repository.dart';
 import '../data/repositories/recipe_repository.dart';
 import '../data/repositories/shopping_list_repository.dart';
 import '../data/sync/list_sync.dart';
+import 'settings.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(Supabase.instance.client);
@@ -35,9 +38,7 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   return db;
 });
 
-final shoppingListRepositoryProvider = Provider<ShoppingListRepository>((
-  ref,
-) {
+final shoppingListRepositoryProvider = Provider<ShoppingListRepository>((ref) {
   return ShoppingListRepository(ref.watch(databaseProvider));
 });
 
@@ -46,7 +47,13 @@ final recipeSearchApiProvider = Provider<RecipeSearchApi>((ref) {
 });
 
 final recipeImportApiProvider = Provider<RecipeImportApi>((ref) {
-  return RecipeImportApi(Supabase.instance.client);
+  return RecipeImportApi(
+    Supabase.instance.client,
+    // The language chosen in settings, else the phone's.
+    language: () =>
+        (ref.read(localeProvider) ?? PlatformDispatcher.instance.locale)
+            .languageCode,
+  );
 });
 
 final recipeRepositoryProvider = Provider<RecipeRepository>((ref) {

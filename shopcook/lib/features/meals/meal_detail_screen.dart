@@ -402,29 +402,36 @@ class _RecipeCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: Insets.md),
+          // Import gets a row of its own: "Внеси съставките" does not fit
+          // in half a card beside a second button, and wrapped badly.
+          // A video's ingredients come from its description, or from the
+          // recipe page it links to; see the import-recipe function.
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonalIcon(
+              onPressed: () => importIngredients(
+                context,
+                ref,
+                recipeUrl: recipe.sourceUrl,
+                listId: listId,
+                mealId: mealId,
+              ),
+              icon: const FaIcon(FontAwesomeIcons.fileImport, size: 14),
+              label: Text(
+                context.l10n.recipeImport,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          const SizedBox(height: Insets.sm),
           Row(
             children: [
-              // A video's ingredients come from its description, or from
-              // the recipe page it links to; see the import-recipe function.
               Expanded(
-                child: FilledButton.tonalIcon(
+                child: OutlinedButton.icon(
                   onPressed: () => context.push('/cook', extra: recipe),
                   icon: const FaIcon(FontAwesomeIcons.kitchenSet, size: 14),
                   label: Text(context.l10n.cookModeStart),
-                ),
-              ),
-              const SizedBox(width: Insets.sm),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => importIngredients(
-                    context,
-                    ref,
-                    recipeUrl: recipe.sourceUrl,
-                    listId: listId,
-                    mealId: mealId,
-                  ),
-                  icon: const FaIcon(FontAwesomeIcons.fileImport, size: 14),
-                  label: Text(context.l10n.recipeImport),
                 ),
               ),
               const SizedBox(width: Insets.sm),

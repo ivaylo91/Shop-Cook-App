@@ -438,7 +438,10 @@ async function fromPage(url: string): Promise<Parsed | null> {
 
 /// A YouTube video's recipe: from the description when it lists the
 /// ingredients, otherwise from the recipe page it links to, if any.
-async function fromVideo(id: string): Promise<Record<string, unknown>> {
+async function fromVideo(
+  id: string,
+  language: string | undefined,
+): Promise<Record<string, unknown>> {
   const key = Deno.env.get("YOUTUBE_API_KEY");
   if (!key) return { ingredients: [], error: "Video import is not set up." };
 
@@ -470,7 +473,9 @@ async function fromVideo(id: string): Promise<Record<string, unknown>> {
     .find((url): url is string => typeof url === "string") ?? "";
   const title = typeof snippet.title === "string" ? snippet.title : "";
 
-  const found = fromDescription(description);
+  // A description with the recipe in two languages gives one of them: the
+  // app's, else the video's.
+  const found = fromDescription(description, { language, title });
   if (found.ingredients.length > 0) {
     return { title, ...found, servings: "", minutes: 0, image };
   }
@@ -503,8 +508,9 @@ Deno.serve(async (req: Request) => {
   }
 
   let url = "";
+  let language: string | undefined;
   try {
-    ({ url } = await req.json());
+    ({ url, language } = await req.json());
   } catch {
     return reply({ error: "Send a JSON body with a url." }, 400);
   }
@@ -514,7 +520,11 @@ Deno.serve(async (req: Request) => {
   }
 
   const videoId = youtubeId(url);
-  if (videoId) return reply(await fromVideo(videoId));
+  if (videoId) {
+    // Sent by the app from build 12; older ones go by the video's title.
+    const lang = typeof language === "string" ? language : undefined;
+    return reply(await fromVideo(videoId, lang));
+  }
 
   let html: string;
   try {

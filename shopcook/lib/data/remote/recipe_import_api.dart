@@ -55,13 +55,19 @@ class RecipeImport {
 class RecipeImportApi {
   final SupabaseClient _client;
 
-  RecipeImportApi(this._client);
+  /// The app's language code, read at each call. A video description that
+  /// gives the recipe twice, in Bulgarian and in English, is read in this
+  /// one, rather than putting every product on the list twice.
+  final String Function() _language;
+
+  RecipeImportApi(this._client, {String Function()? language})
+    : _language = language ?? (() => 'en');
 
   Future<RecipeImport> fetchIngredients(String url) async {
     try {
       final response = await _client.functions.invoke(
         'import-recipe',
-        body: {'url': url},
+        body: {'url': url, 'language': _language()},
       );
       final data = response.data;
       if (data is! Map) {
