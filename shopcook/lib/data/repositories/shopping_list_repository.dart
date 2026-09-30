@@ -17,8 +17,7 @@ class ShoppingListRepository {
   /// Hands any list written before lists had owners to [userId].
   ///
   /// Returns how many were claimed, which is only interesting the first time.
-  Future<int> claimUnownedLists(String userId) =>
-      _db.claimUnownedLists(userId);
+  Future<int> claimUnownedLists(String userId) => _db.claimUnownedLists(userId);
 
   Future<void> createList(String name, {required String userId}) {
     return _db.insertList(
@@ -104,8 +103,7 @@ class ShoppingListRepository {
     links: tree.links,
   );
 
-  Stream<List<Meal>> watchMeals(String listId) =>
-      _db.watchMealsForList(listId);
+  Stream<List<Meal>> watchMeals(String listId) => _db.watchMealsForList(listId);
 
   Future<void> createMeal(String listId, String name) {
     return _db.insertMeal(
@@ -189,7 +187,8 @@ class ShoppingListRepository {
   Stream<List<Product>> watchProductsForMeal(String mealId) =>
       _db.watchProductsForMeal(mealId);
 
-  Future<void> addProduct({
+  /// Adds an item and returns its id.
+  Future<String> addProduct({
     required String listId,
     String? mealId,
     required String name,
@@ -204,9 +203,10 @@ class ShoppingListRepository {
         ? null
         : await _db.rememberedCategory(userId: userId, name: name);
 
-    return _db.insertProduct(
+    final id = _uuid.v4();
+    await _db.insertProduct(
       ProductsCompanion.insert(
-        id: _uuid.v4(),
+        id: id,
         listId: listId,
         mealId: Value(mealId),
         name: name,
@@ -216,6 +216,7 @@ class ShoppingListRepository {
         createdAt: DateTime.now(),
       ),
     );
+    return id;
   }
 
   /// Adds several products at once, as when importing a recipe.
@@ -259,7 +260,7 @@ class ShoppingListRepository {
     );
 
     if (existing == null) {
-      await addProduct(
+      final id = await addProduct(
         listId: listId,
         mealId: mealId,
         name: name,
@@ -267,7 +268,7 @@ class ShoppingListRepository {
         unit: unit,
         userId: userId,
       );
-      return const AddOutcome.added();
+      return AddOutcome.added(id);
     }
 
     final merged = _mergeQuantities(
@@ -280,7 +281,7 @@ class ShoppingListRepository {
     if (merged == null) {
       // Units that cannot be added up (2 tbsp onto 500 g) are better left as
       // two honest rows than silently combined into a wrong number.
-      await addProduct(
+      final id = await addProduct(
         listId: listId,
         mealId: mealId,
         name: name,
@@ -288,12 +289,24 @@ class ShoppingListRepository {
         unit: unit,
         userId: userId,
       );
-      return const AddOutcome.added();
+      return AddOutcome.added(id);
     }
 
     await _db.setProductQuantity(existing.id, merged);
-    return AddOutcome.merged(name: existing.name, quantity: merged, unit: existing.unit);
+    return AddOutcome.merged(
+      productId: existing.id,
+      name: existing.name,
+      quantity: merged,
+      unit: existing.unit,
+      previousQuantity: existing.quantity,
+    );
   }
+
+  /// Takes back an [addOrMergeProduct]: removes the row it made, or puts
+  /// back the amount it topped up.
+  Future<void> undoAdd(AddOutcome outcome) => outcome.didMerge
+      ? _db.setProductQuantity(outcome.productId, outcome.previousQuantity!)
+      : _db.deleteProduct(outcome.productId);
 
   /// Sums two amounts when that is unambiguous, else null.
   ///
@@ -322,7 +335,10 @@ class ShoppingListRepository {
     final sum = a + b;
     return sum == sum.roundToDouble()
         ? sum.round().toString()
-        : sum.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+        : sum
+              .toStringAsFixed(2)
+              .replaceFirst(RegExp(r'0+$'), '')
+              .replaceFirst(RegExp(r'\.$'), '');
   }
 
   static double? _plainNumber(String raw) {
@@ -477,20 +493,29 @@ class CookedMeal {
 /// Whether an add created a row or topped up an existing one.
 class AddOutcome {
   final bool didMerge;
+
+  /// The row added, or the one topped up.
+  final String productId;
   final String? name;
   final String? quantity;
   final String? unit;
 
-  const AddOutcome.added()
+  /// The topped-up row's amount before, for an undo.
+  final String? previousQuantity;
+
+  const AddOutcome.added(this.productId)
     : didMerge = false,
       name = null,
       quantity = null,
-      unit = null;
+      unit = null,
+      previousQuantity = null;
 
   const AddOutcome.merged({
+    required this.productId,
     required this.name,
     required this.quantity,
     required this.unit,
+    required this.previousQuantity,
   }) : didMerge = true;
 
   /// The combined amount, e.g. "3" or "500 g"; empty when there is none.

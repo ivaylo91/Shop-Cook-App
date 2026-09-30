@@ -80,9 +80,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
+          // The window is a guide for aiming, not a filter: mapping it onto
+          // the camera image goes wrong on some phones, and then a barcode
+          // held squarely in the frame is thrown away.
           MobileScanner(
             controller: _controller,
-            scanWindow: window,
             onDetect: _onDetect,
             errorBuilder: (context, error) => _ScannerError(
               message:

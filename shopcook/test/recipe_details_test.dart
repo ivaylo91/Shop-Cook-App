@@ -107,16 +107,27 @@ void main() {
     expect(RecipeRepository.decodeDetails(row.details)?.steps, _chilli.steps);
   });
 
-  test('a video is not sent to the page reader', () async {
+  test('a video is read too, and keeps its own picture', () async {
+    // The importer reads a video's description for its ingredients.
     importer.next = _chilli;
-    await recipes.saveRecipe(
+    final id = await recipes.saveRecipe(
       userId: _user,
       title: 'Video',
-      sourceUrl: 'https://youtu.be/abc',
+      sourceUrl: 'https://youtu.be/dQw4w9WgXcQ',
       sourceType: RecipeSourceType.video,
     );
     await pumpEventQueue();
-    expect(importer.calls, 0);
+    expect(importer.calls, 1);
+    final saved = (await db.recipeById(id))!;
+    expect(RecipeRepository.decodeDetails(saved.details), isNotNull);
+    expect(
+      saved.thumbnailUrl,
+      'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+    );
+
+    // Read once: not again.
+    await recipes.fillMissingDetails([saved]);
+    expect(importer.calls, 1);
   });
 
   test('fillMissingDetails reads unread web recipes, once each', () async {
@@ -133,13 +144,15 @@ void main() {
     expect(importer.calls, 1);
   });
 
-  test('fillMissingDetails does not retry a failure in the same session',
-      () async {
-    final unread = await saved();
-    await recipes.fillMissingDetails([unread]);
-    await recipes.fillMissingDetails([unread]);
-    expect(importer.calls, 1);
-  });
+  test(
+    'fillMissingDetails does not retry a failure in the same session',
+    () async {
+      final unread = await saved();
+      await recipes.fillMissingDetails([unread]);
+      await recipes.fillMissingDetails([unread]);
+      expect(importer.calls, 1);
+    },
+  );
 
   test('the page picture becomes the thumbnail when there is none', () async {
     final recipe = await saved(title: 'Chilli');
@@ -162,7 +175,10 @@ void main() {
     await pumpEventQueue();
     importer.next = _chilli;
     await recipes.details((await db.recipeById(id))!);
-    expect((await db.recipeById(id))!.thumbnailUrl, 'https://i.ytimg.com/own.jpg');
+    expect(
+      (await db.recipeById(id))!.thumbnailUrl,
+      'https://i.ytimg.com/own.jpg',
+    );
   });
 
   test('a recipe read before pictures existed is read again once', () async {
@@ -213,8 +229,11 @@ void main() {
     // One saved before this existed.
     await db.setRecipeThumbnail(id, '');
     await recipes.fillMissingDetails([(await db.recipeById(id))!]);
-    expect((await db.recipeById(id))!.thumbnailUrl, isNotEmpty);
-    expect(importer.calls, 0, reason: 'no page read for a video');
+    expect(
+      (await db.recipeById(id))!.thumbnailUrl,
+      'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+      reason: 'built from the id, not fetched',
+    );
 
     // A letterboxed still, as search results carry, is swapped.
     await db.setRecipeThumbnail(

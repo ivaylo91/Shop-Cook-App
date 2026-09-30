@@ -146,7 +146,7 @@ class RecipeRepository {
         createdAt: DateTime.now(),
       ),
     );
-    if (sourceType == RecipeSourceType.web && _importApi != null) {
+    if (_importApi != null) {
       unawaited(_prefetch(id));
     }
     return id;
@@ -198,7 +198,8 @@ class RecipeRepository {
       // address built from the video id: no request needed.
       // The 4:3 "hqdefault" still, which search results also carry, is
       // letterboxed with black bars; the 16:9 one is not.
-      final letterboxed = recipe.thumbnailUrl.contains('i.ytimg.com/') &&
+      final letterboxed =
+          recipe.thumbnailUrl.contains('i.ytimg.com/') &&
           recipe.thumbnailUrl.endsWith('/hqdefault.jpg');
       if (recipe.sourceType == RecipeSourceType.video &&
           (recipe.thumbnailUrl.isEmpty || letterboxed)) {
@@ -210,11 +211,13 @@ class RecipeRepository {
     }
     if (_importApi == null) return;
     for (final recipe in recipes) {
+      // A video's picture comes from its id (above), so only its
+      // description is left to read.
       final complete =
-          recipe.details != null && recipe.thumbnailUrl.isNotEmpty;
-      if (recipe.sourceType != RecipeSourceType.web ||
-          complete ||
-          !_tried.add(recipe.id)) {
+          recipe.details != null &&
+          (recipe.thumbnailUrl.isNotEmpty ||
+              recipe.sourceType == RecipeSourceType.video);
+      if (complete || !_tried.add(recipe.id)) {
         continue;
       }
       try {
@@ -338,7 +341,8 @@ class RecipeRepository {
       id = uri.pathSegments.firstOrNull;
     } else if (host.endsWith('youtube.com')) {
       final segments = uri.pathSegments;
-      id = uri.queryParameters['v'] ??
+      id =
+          uri.queryParameters['v'] ??
           (segments.length >= 2 &&
                   const {'shorts', 'embed', 'live', 'v'}.contains(segments[0])
               ? segments[1]

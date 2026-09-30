@@ -304,9 +304,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recipeImport => 'Import ingredients';
 
   @override
-  String get recipeVideoNoImport => 'Videos have no ingredient list to import.';
-
-  @override
   String get recipeRemoveTooltip => 'Remove recipe';
 
   @override
@@ -1292,6 +1289,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get scanUnknown =>
       'Unknown product. Type its name and it will be remembered for next time.';
+
+  @override
+  String scanAdded(String name) {
+    return 'Added $name';
+  }
 
   @override
   String get voiceTooltip => 'Add by voice';

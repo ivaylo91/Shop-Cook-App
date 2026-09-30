@@ -404,37 +404,29 @@ class _RecipeCard extends ConsumerWidget {
           const SizedBox(height: Insets.md),
           Row(
             children: [
-              // Videos carry no structured ingredient data, so the importer
-              // has nothing to read on them.
-              if (!isVideo) ...[
-                Expanded(
-                  child: FilledButton.tonalIcon(
-                    onPressed: () => context.push('/cook', extra: recipe),
-                    icon: const FaIcon(FontAwesomeIcons.kitchenSet, size: 14),
-                    label: Text(context.l10n.cookModeStart),
-                  ),
+              // A video's ingredients come from its description, or from
+              // the recipe page it links to; see the import-recipe function.
+              Expanded(
+                child: FilledButton.tonalIcon(
+                  onPressed: () => context.push('/cook', extra: recipe),
+                  icon: const FaIcon(FontAwesomeIcons.kitchenSet, size: 14),
+                  label: Text(context.l10n.cookModeStart),
                 ),
-                const SizedBox(width: Insets.sm),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => importIngredients(
-                      context,
-                      ref,
-                      recipeUrl: recipe.sourceUrl,
-                      listId: listId,
-                      mealId: mealId,
-                    ),
-                    icon: const FaIcon(FontAwesomeIcons.fileImport, size: 14),
-                    label: Text(context.l10n.recipeImport),
+              ),
+              const SizedBox(width: Insets.sm),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => importIngredients(
+                    context,
+                    ref,
+                    recipeUrl: recipe.sourceUrl,
+                    listId: listId,
+                    mealId: mealId,
                   ),
+                  icon: const FaIcon(FontAwesomeIcons.fileImport, size: 14),
+                  label: Text(context.l10n.recipeImport),
                 ),
-              ] else
-                Expanded(
-                  child: Text(
-                    context.l10n.recipeVideoNoImport,
-                    style: AppText.caption.copyWith(color: palette.inkFaint),
-                  ),
-                ),
+              ),
               const SizedBox(width: Insets.sm),
               IconButton(
                 icon: const FaIcon(FontAwesomeIcons.trashCan, size: 15),

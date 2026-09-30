@@ -215,12 +215,11 @@ class _LibraryCard extends ConsumerWidget {
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (entry.recipe.sourceType != RecipeSourceType.video)
-            ListTile(
-              leading: const FaIcon(FontAwesomeIcons.kitchenSet, size: 16),
-              title: Text(l10n.cookModeStart),
-              onTap: () => Navigator.pop(context, 'cook'),
-            ),
+          ListTile(
+            leading: const FaIcon(FontAwesomeIcons.kitchenSet, size: 16),
+            title: Text(l10n.cookModeStart),
+            onTap: () => Navigator.pop(context, 'cook'),
+          ),
           ListTile(
             leading: const FaIcon(FontAwesomeIcons.utensils, size: 16),
             title: Text(l10n.libraryAddToMeal),

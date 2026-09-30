@@ -160,15 +160,45 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
     if (!mounted) return;
     setState(() => _busy = false);
 
-    // Either way the name lands in the field rather than on the list, so a
-    // wrong match can be fixed and an amount added before it is kept.
-    _pendingBarcode = code;
-    if (name != null) {
-      _fill(name);
-    } else {
+    // An unknown product needs its name typed; that add remembers it.
+    if (name == null) {
+      _pendingBarcode = code;
       _fill('');
       messenger.replaceSnackBar(SnackBar(content: Text(l10n.scanUnknown)));
+      return;
     }
+
+    // A known one goes straight on the list — scanning is for a hand full
+    // of shopping, not for a second tap. A wrong match is one Undo away.
+    _pendingBarcode = null;
+    final repository = ref.read(shoppingListRepositoryProvider);
+    final parsed = parseIngredient(name);
+    final outcome = await repository.addOrMergeProduct(
+      listId: widget.listId,
+      mealId: widget.mealId,
+      name: parsed.name.isEmpty ? name : parsed.name,
+      quantity: parsed.quantity,
+      unit: parsed.unit,
+    );
+    if (!mounted) return;
+    HapticFeedback.selectionClick();
+
+    final shown = outcome.name ?? name;
+    messenger.replaceSnackBar(
+      SnackBar(
+        content: Text(
+          !outcome.didMerge
+              ? l10n.scanAdded(shown)
+              : outcome.amount.isEmpty
+              ? l10n.composerMergedPlain(shown)
+              : l10n.composerMergedAmount(shown, outcome.amount),
+        ),
+        action: SnackBarAction(
+          label: l10n.actionUndo,
+          onPressed: () => repository.undoAdd(outcome),
+        ),
+      ),
+    );
   }
 
   Future<void> _dictate() async {

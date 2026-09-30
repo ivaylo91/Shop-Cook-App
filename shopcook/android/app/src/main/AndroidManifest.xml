@@ -39,11 +39,6 @@
         android:icon="@mipmap/ic_launcher"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules">
-        <!-- The barcode model comes from Play services (see gradle.properties);
-             this has it fetched at install rather than on the first scan. -->
-        <meta-data
-            android:name="com.google.mlkit.vision.DEPENDENCIES"
-            android:value="barcode"/>
         <!-- Notifications about shared lists: their channel (created in
              MainActivity), and how they look in the status bar. -->
         <meta-data

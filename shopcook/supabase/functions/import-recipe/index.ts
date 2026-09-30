@@ -6,7 +6,11 @@
 // server-side because the client cannot fetch arbitrary origins without
 // hitting CORS.
 //
-// Needs no API keys, so this works even before search is configured.
+// A YouTube link is read through the YouTube API instead (YOUTUBE_API_KEY,
+// the key search uses): the ingredients from the video's description, or
+// from the recipe page the description links to. Web pages need no key.
+
+import { fromDescription, recipeLinks, youtubeId } from "./youtube.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -416,6 +420,80 @@ function parseRecipe(html: string): (Parsed & { images: string[] }) | null {
   return micro && micro.ingredients.length > 0 ? { ...micro, images: [] } : null;
 }
 
+/// The recipe page at [url], or null when there is none or it cannot be
+/// read.
+async function fromPage(url: string): Promise<Parsed | null> {
+  try {
+    const res = await fetchPublic(url);
+    if (!res) return null;
+    if (!res.ok) {
+      await res.body?.cancel();
+      return null;
+    }
+    return parse(await readCapped(res, MAX_BYTES), url);
+  } catch {
+    return null;
+  }
+}
+
+/// A YouTube video's recipe: from the description when it lists the
+/// ingredients, otherwise from the recipe page it links to, if any.
+async function fromVideo(id: string): Promise<Record<string, unknown>> {
+  const key = Deno.env.get("YOUTUBE_API_KEY");
+  if (!key) return { ingredients: [], error: "Video import is not set up." };
+
+  let snippet: Record<string, unknown>;
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${id}&key=${key}`,
+    );
+    if (!res.ok) {
+      await res.body?.cancel();
+      return { ingredients: [], error: `YouTube returned ${res.status}.` };
+    }
+    const data = await res.json();
+    snippet = data?.items?.[0]?.snippet;
+    if (!snippet) return { ingredients: [], error: "That video was not found." };
+  } catch {
+    return { ingredients: [], error: "Could not reach YouTube." };
+  }
+
+  const description = typeof snippet.description === "string"
+    ? snippet.description
+    : "";
+  const thumbnails = (snippet.thumbnails ?? {}) as Record<
+    string,
+    { url?: string }
+  >;
+  const image = ["maxres", "standard", "high", "medium", "default"]
+    .map((size) => thumbnails[size]?.url)
+    .find((url): url is string => typeof url === "string") ?? "";
+  const title = typeof snippet.title === "string" ? snippet.title : "";
+
+  const found = fromDescription(description);
+  if (found.ingredients.length > 0) {
+    return { title, ...found, servings: "", minutes: 0, image };
+  }
+
+  for (const link of recipeLinks(description)) {
+    if (!isPubliclyFetchable(link)) continue;
+    const page = await fromPage(link);
+    if (page) {
+      return {
+        ...page,
+        // The video's own title and picture: the one the user saved.
+        title: title || page.title,
+        image: image || page.image,
+      };
+    }
+  }
+
+  return {
+    ingredients: [],
+    error: "This video does not list its ingredients.",
+  };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -434,6 +512,9 @@ Deno.serve(async (req: Request) => {
   if (typeof url !== "string" || !isPubliclyFetchable(url)) {
     return reply({ error: "That does not look like a public web address." }, 400);
   }
+
+  const videoId = youtubeId(url);
+  if (videoId) return reply(await fromVideo(videoId));
 
   let html: string;
   try {

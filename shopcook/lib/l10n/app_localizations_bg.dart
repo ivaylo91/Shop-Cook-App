@@ -305,10 +305,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get recipeImport => 'Внеси съставките';
 
   @override
-  String get recipeVideoNoImport =>
-      'Видеата нямат списък със съставки за внасяне.';
-
-  @override
   String get recipeRemoveTooltip => 'Премахни рецептата';
 
   @override
@@ -1293,6 +1289,11 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get scanUnknown =>
       'Непознат продукт. Напиши името му и то ще бъде запомнено за следващия път.';
+
+  @override
+  String scanAdded(String name) {
+    return 'Добавено: $name';
+  }
 
   @override
   String get voiceTooltip => 'Добави с глас';

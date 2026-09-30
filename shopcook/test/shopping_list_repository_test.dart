@@ -68,26 +68,32 @@ void main() {
       expect(products.single.name, 'Onions');
     });
 
-    test('tops up a matching unchecked item instead of duplicating it',
-        () async {
-      final listId = await aList();
-      await repo.addOrMergeProduct(
-        listId: listId,
-        name: 'Onions',
-        quantity: '2',
-      );
+    test(
+      'tops up a matching unchecked item instead of duplicating it',
+      () async {
+        final listId = await aList();
+        await repo.addOrMergeProduct(
+          listId: listId,
+          name: 'Onions',
+          quantity: '2',
+        );
 
-      final outcome = await repo.addOrMergeProduct(
-        listId: listId,
-        name: 'onions',
-        quantity: '3',
-      );
+        final outcome = await repo.addOrMergeProduct(
+          listId: listId,
+          name: 'onions',
+          quantity: '3',
+        );
 
-      expect(outcome.didMerge, isTrue);
-      final products = await repo.watchAllProducts(listId).first;
-      expect(products.length, 1, reason: 'should not have created a second row');
-      expect(products.single.quantity, '5');
-    });
+        expect(outcome.didMerge, isTrue);
+        final products = await repo.watchAllProducts(listId).first;
+        expect(
+          products.length,
+          1,
+          reason: 'should not have created a second row',
+        );
+        expect(products.single.quantity, '5');
+      },
+    );
 
     test('keeps a separate row when the units cannot be added up', () async {
       final listId = await aList();
@@ -143,7 +149,11 @@ void main() {
 
       expect(outcome.didMerge, isFalse);
       final products = await repo.watchAllProducts(listId).first;
-      expect(products.length, 2, reason: 'already-bought milk is not topped up');
+      expect(
+        products.length,
+        2,
+        reason: 'already-bought milk is not topped up',
+      );
     });
 
     test('does not merge across meals', () async {
@@ -426,6 +436,26 @@ void main() {
       expect(outcome.didMerge, isFalse);
       expect(await shown(listId), ['Eggs']);
     });
+
+    test('undo takes back an add, or only the amount it topped up', () async {
+      final listId = await aList();
+
+      // A scan of something new: undo removes the row.
+      final added = await repo.addOrMergeProduct(listId: listId, name: 'Milk');
+      await repo.undoAdd(added);
+      expect(await db.productsForList(listId), isEmpty);
+
+      // A scan of something already there: undo leaves the row, as before.
+      await repo.addProduct(listId: listId, name: 'Eggs', quantity: '6');
+      final merged = await repo.addOrMergeProduct(
+        listId: listId,
+        name: 'Eggs',
+        quantity: '4',
+      );
+      expect((await named(listId, 'Eggs')).quantity, '10');
+      await repo.undoAdd(merged);
+      expect((await named(listId, 'Eggs')).quantity, '6');
+    });
   });
 
   group('editProduct', () {
@@ -457,9 +487,9 @@ void main() {
         category: ProductCategory.frozen,
       );
       await repo.addProduct(listId: listId, name: 'Haloumi');
-      final typo = (await db.productsForList(listId)).firstWhere(
-        (p) => p.name == 'Haloumi',
-      );
+      final typo = (await db.productsForList(
+        listId,
+      )).firstWhere((p) => p.name == 'Haloumi');
 
       await repo.editProduct(
         typo,
@@ -470,10 +500,7 @@ void main() {
       );
 
       final fixed = await db.productById(typo.id);
-      expect(
-        ShoppingListRepository.aisleOf(fixed!),
-        ProductCategory.frozen,
-      );
+      expect(ShoppingListRepository.aisleOf(fixed!), ProductCategory.frozen);
     });
 
     test('keeping the name keeps its aisle', () async {
@@ -508,12 +535,14 @@ void main() {
       await repo.addProduct(listId: listId, mealId: meal.id, name: 'Rice');
       await repo.addProduct(listId: listId, name: 'Milk');
       await repo.addProduct(listId: listId, name: 'Bread');
-      final milk = (await db.productsForList(listId))
-          .firstWhere((p) => p.name == 'Milk');
+      final milk = (await db.productsForList(
+        listId,
+      )).firstWhere((p) => p.name == 'Milk');
       await repo.setPrice(milk.id, 1.5);
       await repo.toggleProductChecked(milk.id, true);
-      final bread = (await db.productsForList(listId))
-          .firstWhere((p) => p.name == 'Bread');
+      final bread = (await db.productsForList(
+        listId,
+      )).firstWhere((p) => p.name == 'Bread');
       await repo.toggleProductChecked(bread.id, true);
       await repo.clearChecked(listId); // clears milk and bread
       await repo.toggleProductChecked(milk.id, false);
@@ -581,10 +610,7 @@ void main() {
 
       expect(await repo.watchMeals(listId).first, isEmpty);
       expect(await repo.watchAllProducts(listId).first, isEmpty);
-      expect(
-        (await repo.watchCookedMeals(user).first).single.name,
-        'Curry',
-      );
+      expect((await repo.watchCookedMeals(user).first).single.name, 'Curry');
       expect(
         (await repo.watchSuggestions(user).first).single.name,
         'Rice',
@@ -593,10 +619,7 @@ void main() {
 
       await repo.undoCooked(cooked);
       expect((await repo.watchMeals(listId).first).single.name, 'Curry');
-      expect(
-        (await repo.watchAllProducts(listId).first).single.name,
-        'Rice',
-      );
+      expect((await repo.watchAllProducts(listId).first).single.name, 'Rice');
       expect(await repo.watchCookedMeals(user).first, isEmpty);
     });
 
@@ -633,10 +656,9 @@ void main() {
     final theirMeal = (await repo.watchMeals(theirs).first).single;
     await repo.planMeal(theirMeal.id, today);
 
-    expect(
-      (await repo.watchUnplannedMeals(user).first).map((m) => m.name),
-      ['My idea'],
-    );
+    expect((await repo.watchUnplannedMeals(user).first).map((m) => m.name), [
+      'My idea',
+    ]);
     expect(await repo.watchPlannedMeals(user, today).first, isEmpty);
     expect(
       (await repo.watchPlannedMeals(otherUser, today).first).single.name,
@@ -648,8 +670,10 @@ void main() {
 /// The search API is irrelevant to these tests and must not touch a network.
 class _NoSearch implements RecipeSearchApi {
   @override
-  Future<List<RecipeSearchResult>> search(String query, {String locale = 'en'}) async =>
-      const [];
+  Future<List<RecipeSearchResult>> search(
+    String query, {
+    String locale = 'en',
+  }) async => const [];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

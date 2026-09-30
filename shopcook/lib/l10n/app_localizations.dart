@@ -596,12 +596,6 @@ abstract class AppLocalizations {
   /// **'Import ingredients'**
   String get recipeImport;
 
-  /// No description provided for @recipeVideoNoImport.
-  ///
-  /// In en, this message translates to:
-  /// **'Videos have no ingredient list to import.'**
-  String get recipeVideoNoImport;
-
   /// No description provided for @recipeRemoveTooltip.
   ///
   /// In en, this message translates to:
@@ -2161,6 +2155,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown product. Type its name and it will be remembered for next time.'**
   String get scanUnknown;
+
+  /// No description provided for @scanAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {name}'**
+  String scanAdded(String name);
 
   /// No description provided for @voiceTooltip.
   ///
