@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -34,14 +35,23 @@ final widgetSnapshotProvider = Provider<WidgetSnapshot?>((ref) {
   final lists = ref.watch(_widgetListsProvider).valueOrNull;
   final products = ref.watch(_widgetProductsProvider).valueOrNull;
   if (lists == null || products == null) return null;
-  return pickWidgetSnapshot(lists, products);
+  // The widget's list scrolls, so it can take a full shop.
+  return pickWidgetSnapshot(lists, products, maxLines: 40);
 });
 
 /// Blanks the home screen widget, so a list does not stay on the home
 /// screen after its owner has signed out or deleted their account.
 Future<void> clearHomeWidget() async {
   try {
-    for (final key in ['list_id', 'title', 'summary', 'items']) {
+    for (final key in [
+      'list_id',
+      'title',
+      'summary',
+      'summaries',
+      'left',
+      'items_json',
+      'empty_text',
+    ]) {
       await HomeWidget.saveWidgetData<String>(key, null);
     }
     await HomeWidget.updateWidget(qualifiedAndroidName: _androidWidget);
@@ -64,7 +74,8 @@ class HomeWidgetSync extends ConsumerStatefulWidget {
   ConsumerState<HomeWidgetSync> createState() => _HomeWidgetSyncState();
 }
 
-class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
+class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync>
+    with WidgetsBindingObserver {
   StreamSubscription<Uri?>? _clicks;
   bool _opening = false;
   WidgetSnapshot? _pushed;
@@ -76,6 +87,7 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
     // Both fail on a platform without the widget (tests, iOS with no
     // extension); there is nothing to open there, so errors are dropped.
     _clicks = HomeWidget.widgetClicked.listen(_open, onError: (_) {});
+    WidgetsBinding.instance.addObserver(this);
     HomeWidget.initiallyLaunchedFromHomeWidget()
         .then(_open)
         .catchError((_) {});
@@ -83,8 +95,19 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _clicks?.cancel();
     super.dispose();
+  }
+
+  /// Items ticked on the widget were written to the database by Android,
+  /// behind Drift's back, so its queries do not know. Coming back to the
+  /// app, they are told, and every list on screen reads again.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    final db = ref.read(databaseProvider);
+    db.markTablesUpdated([db.products]);
   }
 
   Future<void> _open(Uri? uri) async {
@@ -122,9 +145,11 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
 
     final l10n = context.l10n;
     final list = snapshot.list;
-    final lines = [
-      for (final line in snapshot.lines) '• $line',
-      if (snapshot.more > 0) l10n.widgetMore(snapshot.more),
+    final rows = [
+      for (var i = 0; i < snapshot.lines.length; i++)
+        {'id': snapshot.ids[i], 'text': snapshot.lines[i], 'checked': false},
+      // No id: shown, but not tickable.
+      if (snapshot.more > 0) {'id': '', 'text': l10n.widgetMore(snapshot.more)},
     ];
 
     try {
@@ -138,13 +163,20 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
           'summary',
           list == null ? '' : l10n.widgetSummary(snapshot.left),
         ),
+        // Ticking on the widget changes the count with no app to word it,
+        // so the line for every count down to none goes along.
         HomeWidget.saveWidgetData<String>(
-          'items',
-          list == null
-              ? l10n.widgetNoLists
-              : lines.isEmpty
-              ? l10n.widgetAllDone
-              : lines.join('\n'),
+          'summaries',
+          jsonEncode([
+            if (list != null)
+              for (var n = 0; n <= snapshot.left; n++) l10n.widgetSummary(n),
+          ]),
+        ),
+        HomeWidget.saveWidgetData<String>('left', '${snapshot.left}'),
+        HomeWidget.saveWidgetData<String>('items_json', jsonEncode(rows)),
+        HomeWidget.saveWidgetData<String>(
+          'empty_text',
+          list == null ? l10n.widgetNoLists : l10n.widgetAllDone,
         ),
       ]);
       await HomeWidget.updateWidget(qualifiedAndroidName: _androidWidget);

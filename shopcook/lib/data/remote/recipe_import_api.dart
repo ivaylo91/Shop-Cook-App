@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Why an import came back with nothing.
@@ -63,11 +66,20 @@ class RecipeImportApi {
   RecipeImportApi(this._client, {String Function()? language})
     : _language = language ?? (() => 'en');
 
-  Future<RecipeImport> fetchIngredients(String url) async {
+  Future<RecipeImport> fetchIngredients(String url) =>
+      _read({'url': url, 'language': _language()});
+
+  /// Reads the ingredients in a photo of a recipe: a cookbook page or a
+  /// handwritten card. The server does the reading (Google Cloud Vision),
+  /// since the phone's own text recognition does not know Cyrillic.
+  Future<RecipeImport> readPhoto(Uint8List jpeg) =>
+      _read({'image': base64Encode(jpeg), 'language': _language()});
+
+  Future<RecipeImport> _read(Map<String, String> body) async {
     try {
       final response = await _client.functions.invoke(
         'import-recipe',
-        body: {'url': url, 'language': _language()},
+        body: body,
       );
       final data = response.data;
       if (data is! Map) {

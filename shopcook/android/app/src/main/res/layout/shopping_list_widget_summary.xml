@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "3 left to buy": the first row of the list rather than part of the
+     header, because Android applies a list refresh straight away but may
+     hold back a redraw of the whole widget, and the count must follow the
+     ticks. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_summary_row"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:maxLines="1"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="6dp"
+    android:textColor="@color/widget_accent"
+    android:textSize="13sp"
+    android:textStyle="bold" />

@@ -9,8 +9,18 @@
 // A YouTube link is read through the YouTube API instead (YOUTUBE_API_KEY,
 // the key search uses): the ingredients from the video's description, or
 // from the recipe page the description links to. Web pages need no key.
+//
+// A photo of a recipe (a cookbook page, a handwritten card) is sent as
+// `image` instead of `url`: Google Cloud Vision reads the text, and the
+// same parser as a video description finds the ingredients in it. The
+// phone's own text recognition does not read Cyrillic.
 
-import { fromDescription, recipeLinks, youtubeId } from "./youtube.ts";
+import {
+  fromDescription,
+  headline,
+  recipeLinks,
+  youtubeId,
+} from "./youtube.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -499,6 +509,62 @@ async function fromVideo(
   };
 }
 
+/// Largest photo accepted, as base64: about 4.5 MB of JPEG, far more than
+/// the app sends (it scales photos down to 2000 px first).
+const MAX_IMAGE = 6_000_000;
+
+/// The ingredients and method in a photo of a recipe.
+async function fromPhoto(
+  image: string,
+  language: string | undefined,
+): Promise<Record<string, unknown>> {
+  const key = Deno.env.get("VISION_API_KEY") ?? Deno.env.get("YOUTUBE_API_KEY");
+  if (!key) return { ingredients: [], error: "Photo import is not set up." };
+  if (image.length > MAX_IMAGE) {
+    return { ingredients: [], error: "That photo is too large." };
+  }
+
+  let text = "";
+  try {
+    const res = await fetch(
+      `https://vision.googleapis.com/v1/images:annotate?key=${key}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requests: [{
+            image: { content: image },
+            features: [{ type: "DOCUMENT_TEXT_DETECTION" }],
+            imageContext: { languageHints: ["bg", "en"] },
+          }],
+        }),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok || data?.responses?.[0]?.error) {
+      const message = data?.error?.message ??
+        data?.responses?.[0]?.error?.message ?? `status ${res.status}`;
+      console.error("vision:", message);
+      return { ingredients: [], error: "Could not read the photo." };
+    }
+    text = data?.responses?.[0]?.fullTextAnnotation?.text ?? "";
+  } catch {
+    return { ingredients: [], error: "Could not reach the photo reader." };
+  }
+
+  const found = fromDescription(text, { language });
+  if (found.ingredients.length === 0) {
+    return { ingredients: [], error: "No ingredient list found in the photo." };
+  }
+  return {
+    title: headline(text),
+    ...found,
+    servings: "",
+    minutes: 0,
+    image: "",
+  };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -509,10 +575,16 @@ Deno.serve(async (req: Request) => {
 
   let url = "";
   let language: string | undefined;
+  let image: unknown;
   try {
-    ({ url, language } = await req.json());
+    ({ url, language, image } = await req.json());
   } catch {
     return reply({ error: "Send a JSON body with a url." }, 400);
+  }
+  const lang = typeof language === "string" ? language : undefined;
+
+  if (typeof image === "string" && image.length > 0) {
+    return reply(await fromPhoto(image, lang));
   }
 
   if (typeof url !== "string" || !isPubliclyFetchable(url)) {
@@ -522,7 +594,6 @@ Deno.serve(async (req: Request) => {
   const videoId = youtubeId(url);
   if (videoId) {
     // Sent by the app from build 12; older ones go by the video's title.
-    const lang = typeof language === "string" ? language : undefined;
     return reply(await fromVideo(videoId, lang));
   }
 

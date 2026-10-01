@@ -243,7 +243,7 @@ class ListDetailScreen extends ConsumerWidget {
       product,
       onFindRecipes: () => context.push(
         '/ingredient-recipes',
-        extra: (product: product, mealName: null),
+        extra: (name: product.name, mealId: product.mealId, mealName: null),
       ),
       onMoveToMeal: () => _moveToMeal(context, ref, product, meals),
       onDelete: () => _deleteItemWithUndo(context, ref, product),

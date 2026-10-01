@@ -229,6 +229,10 @@ class PantryItems extends Table {
   TextColumn get name => text()();
   DateTimeColumn get addedAt => dateTime()();
 
+  /// The day it should be used by, when the user gave one. A reminder goes
+  /// out the morning before (see use_by_reminders.dart).
+  DateTimeColumn get useBy => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {userId, key};
 }
@@ -282,7 +286,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   /// The migration ladder. Every step has to be additive and idempotent in
   /// order, because an install can be on any earlier version — a phone that
@@ -403,6 +407,11 @@ class AppDatabase extends _$AppDatabase {
       // v12: recipes attached to a shared list's meals are shared too.
       if (from < 12) {
         await createRecipeLinkTriggers();
+      }
+      // v13: use-by dates on things at home. Below v11 the pantry was just
+      // created above, from today's definition, so it has the column.
+      if (from >= 11 && from < 13) {
+        await m.addColumn(pantryItems, pantryItems.useBy);
       }
     },
     beforeOpen: (details) async {
@@ -616,6 +625,12 @@ class AppDatabase extends _$AppDatabase {
           addedAt: DateTime.now(),
         ),
       );
+
+  /// Sets or clears (null) the day [key] should be used by.
+  Future<void> setPantryUseBy(String userId, String key, DateTime? day) =>
+      (update(pantryItems)
+            ..where((t) => t.userId.equals(userId) & t.key.equals(key)))
+          .write(PantryItemsCompanion(useBy: Value(day)));
 
   Future<void> removeFromPantry(String userId, String key) =>
       (delete(pantryItems)

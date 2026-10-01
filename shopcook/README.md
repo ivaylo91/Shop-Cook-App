@@ -478,10 +478,17 @@ recipe viewer's app bar) opens the recipe one step per screen:
   steps' text.
 - Any time mentioned in a step ("20 minutes", "10-15 минути", "1 час")
   becomes a one-tap timer. A range times its lower end. Running timers sit
-  above the buttons; when one ends the phone vibrates and plays the system
-  alert. Leaving with a timer running asks first.
-- **Timers only run while cooking mode is open.** There is no notification
-  plugin, so a timer cannot ring once you leave the screen.
+  above the buttons.
+- **Timers keep going outside cooking mode** (`kitchen_timers.dart`). Each
+  is a notification with a live countdown; at the end a scheduled
+  notification takes its place and rings at alarm volume, so it is heard
+  with the phone locked, the app in the background or closed. Leaving the
+  recipe no longer asks first, and the tray shows the same timers on any
+  recipe.
+- **On the minute.** Android 14 and later can hold a scheduled alarm back
+  for a few minutes unless the app is allowed "Alarms & reminders". The
+  first timer offers that setting once (`SCHEDULE_EXACT_ALARM`); without it
+  the timer still rings, possibly a little late.
 
 Recipe data comes from the `import-recipe` function and is **saved on the
 recipe** (`recipes.details`). A recipe is read as soon as it is saved, while
@@ -489,8 +496,8 @@ there is signal, so it works in a kitchen with none; a link saved without a
 title takes the page's title at the same time. Recipes saved before this, or while offline, are read in the
 background the next time the Recipes tab is open. A recipe never read before
 shows a "no connection" screen with a retry instead of the generic "can't
-read this page" one. Videos have no step data, so cooking mode is not
-offered for them.
+read this page" one. A video's ingredients and method come from its
+description; see "Recipes from videos and photos" below.
 
 ## Scanning and speaking items
 
@@ -517,8 +524,17 @@ button is used.
 ## Home screen widget
 
 Long-press the home screen → Widgets → ShopCook. The widget shows the list
-with the most left to buy: its name, how many items are left, and the first
-six of them. Tapping it opens that list.
+with the most left to buy: its name, how many items are left, and the items
+themselves in a scrolling list. **Tapping an item ticks it off** (and again
+unticks it); tapping the header opens the list.
+
+A tick is written straight into the app's SQLite file by Android
+(`ShoppingListWidget.kt`), with no Flutter engine started for it, and the
+count is redrawn from summary lines the app saved for every count. The
+database's sync triggers fire as for any other change, so on a shared list
+the tick is queued and reaches the others the next time the app syncs.
+When the app comes back to the front it tells Drift the products table
+changed, since Drift cannot see a write it did not make.
 
 The widget is plain Android views (`ShoppingListWidget.kt`,
 `res/layout/shopping_list_widget.xml`) drawn by `home_widget`. It has no
@@ -527,6 +543,41 @@ it shows, in the app's language, and pushes it whenever a list changes.
 It therefore updates while the app is running; changes made elsewhere reach
 it the next time the app opens. iOS would need a WidgetKit extension and is
 not done.
+
+## Use-by dates
+
+On the **At home** page (the pantry), tap anything to give it a use-by
+date. Dated things move to the top, soonest first, marked in red from the
+day before. A reminder goes out at 9 the morning before
+("Кисело мляко изтича утре"), and tapping it opens the pantry, where the
+same tap offers recipe ideas for it.
+
+Reminders are scheduled on the phone (`use_by_reminders.dart`): a host in
+the tab shell keeps the scheduled set matching the pantry, so setting,
+changing or clearing a date, removing an item and signing out all take
+care of themselves, and reminders are put back on start (and by the
+notification plugin after a reboot). Schema v13 added
+`pantry_items.use_by`.
+
+## Recipes from videos and photos
+
+**Videos.** The import function reads a YouTube video's description through
+the YouTube API (the key search uses). Ingredients are taken from under an
+"Ingredients"/"Продукти" heading, or failing that the longest run of lines
+that start with an amount; the method from under "Method"/"Начин на
+приготвяне". A description that gives the recipe twice (Bulgarian and
+English, or Bulgarian and Russian) is read in one language: the app's,
+else the video title's. With no list in the description, a recipe page the
+description links to is read instead.
+
+**Photos** (built, switched off by `photoImportEnabled` until Vision is
+enabled). On a meal, **From a photo** beside Ingredients takes or picks a
+photo of a recipe (a cookbook page, a handwritten card). The function sends
+it to Google Cloud Vision, since the phone's own text recognition does not
+read Cyrillic, and the same parser finds the ingredients. Vision has to be
+enabled on the Google Cloud project of the key (`VISION_API_KEY`, or the
+YouTube key when that is not set); it is free for the first 1,000 photos a
+month.
 
 ## Sharing into ShopCook
 

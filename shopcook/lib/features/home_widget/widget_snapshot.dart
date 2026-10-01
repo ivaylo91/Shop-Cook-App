@@ -11,6 +11,9 @@ class WidgetSnapshot {
   /// Item lines to print, already cut to fit.
   final List<String> lines;
 
+  /// The item behind each of [lines], which a tap on the widget ticks off.
+  final List<String> ids;
+
   /// How many unticked items did not fit.
   final int more;
 
@@ -18,6 +21,7 @@ class WidgetSnapshot {
     required this.list,
     required this.left,
     required this.lines,
+    this.ids = const [],
     required this.more,
   });
 
@@ -28,10 +32,12 @@ class WidgetSnapshot {
       other.list?.name == list?.name &&
       other.left == left &&
       other.more == more &&
-      _sameLines(other.lines, lines);
+      _sameLines(other.lines, lines) &&
+      _sameLines(other.ids, ids);
 
   @override
-  int get hashCode => Object.hash(list?.id, list?.name, left, more, lines.length);
+  int get hashCode =>
+      Object.hash(list?.id, list?.name, left, more, lines.length);
 
   static bool _sameLines(List<String> a, List<String> b) {
     if (a.length != b.length) return false;
@@ -63,20 +69,21 @@ WidgetSnapshot pickWidgetSnapshot(
 
   var chosen = lists.first;
   for (final list in lists) {
-    if ((unticked[list.id]?.length ?? 0) >
-        (unticked[chosen.id]?.length ?? 0)) {
+    if ((unticked[list.id]?.length ?? 0) > (unticked[chosen.id]?.length ?? 0)) {
       chosen = list;
     }
   }
 
   final items = [...?unticked[chosen.id]]
     ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-  final shown = items.take(maxLines).map(_line).toList();
+  final kept = items.take(maxLines).toList();
+  final shown = kept.map(_line).toList();
 
   return WidgetSnapshot(
     list: chosen,
     left: items.length,
     lines: shown,
+    ids: [for (final item in kept) item.id],
     more: items.length - shown.length,
   );
 }

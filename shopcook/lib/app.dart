@@ -121,9 +121,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/ingredient-recipes',
         builder: (context, state) {
-          final args = state.extra as ({Product product, String? mealName});
+          final args =
+              state.extra as ({String name, String? mealId, String? mealName});
           return IngredientRecipesScreen(
-            product: args.product,
+            name: args.name,
+            mealId: args.mealId,
             mealName: args.mealName,
           );
         },
@@ -156,9 +158,7 @@ class GoRouterRefreshStream extends ChangeNotifier {
   late final StreamSubscription<dynamic> _subscription;
 
   GoRouterRefreshStream(Stream<dynamic> stream) {
-    _subscription = stream.asBroadcastStream().listen(
-      (_) => notifyListeners(),
-    );
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/design.dart';
 import '../../core/localization.dart';
@@ -49,6 +50,103 @@ Future<void> importIngredients(
     );
     return;
   }
+
+  await _offer(context, ref, imported, listId: listId, mealId: mealId);
+}
+
+/// Whether "From a photo" is offered. Off until Google Cloud Vision is
+/// enabled on the server's Google project; the import function answers
+/// "could not read" until then. See "Recipes from videos and photos" in
+/// the README.
+const photoImportEnabled = false;
+
+/// The same, from a photo of a recipe: a cookbook page, a card from a
+/// relative, a magazine clipping.
+Future<void> importIngredientsFromPhoto(
+  BuildContext context,
+  WidgetRef ref, {
+  required String listId,
+  required String mealId,
+}) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final l10n = context.l10n;
+
+  final source = await showAppSheet<ImageSource>(
+    context: context,
+    title: l10n.photoImportTitle,
+    builder: (context) => Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          leading: const FaIcon(FontAwesomeIcons.camera, size: 16),
+          title: Text(l10n.photoImportCamera),
+          onTap: () => Navigator.pop(context, ImageSource.camera),
+        ),
+        ListTile(
+          leading: const FaIcon(FontAwesomeIcons.image, size: 16),
+          title: Text(l10n.photoImportGallery),
+          onTap: () => Navigator.pop(context, ImageSource.gallery),
+        ),
+      ],
+    ),
+  );
+  if (source == null || !context.mounted) return;
+
+  final XFile? photo;
+  try {
+    // Text stays readable at 2000 px, and the upload stays small.
+    photo = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 2000,
+      maxHeight: 2000,
+      imageQuality: 80,
+    );
+  } catch (_) {
+    messenger.replaceSnackBar(
+      SnackBar(content: Text(l10n.photoImportNoCamera)),
+    );
+    return;
+  }
+  if (photo == null || !context.mounted) return;
+  final bytes = await photo.readAsBytes();
+  if (!context.mounted) return;
+
+  showAppDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const _LoadingDialog(),
+  );
+  final imported = await ref.read(recipeImportApiProvider).readPhoto(bytes);
+  if (!context.mounted) return;
+  Navigator.of(context).pop(); // close the loading dialog
+
+  if (!imported.hasIngredients) {
+    messenger.replaceSnackBar(
+      SnackBar(
+        content: Text(
+          imported.failure == ImportFailure.unreachable
+              ? l10n.importUnreachable
+              : l10n.photoImportNoneFound,
+        ),
+      ),
+    );
+    return;
+  }
+
+  await _offer(context, ref, imported, listId: listId, mealId: mealId);
+}
+
+/// Shows what was found, ticked, for the user to choose from, then adds the
+/// chosen ones to the meal.
+Future<void> _offer(
+  BuildContext context,
+  WidgetRef ref,
+  RecipeImport imported, {
+  required String listId,
+  required String mealId,
+}) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final l10n = context.l10n;
 
   final parsed = imported.ingredients.map(parseIngredient).toList();
 

@@ -6,6 +6,7 @@ import '../../core/design.dart';
 import '../../core/localization.dart';
 import '../home_widget/home_widget_sync.dart';
 import '../notifications/push.dart';
+import '../pantry/use_by_reminders.dart';
 import '../onboarding/intro.dart';
 import '../share_intake/share_intake.dart';
 import '../sharing/list_sync_host.dart';
@@ -34,7 +35,9 @@ class AppShell extends StatelessWidget {
         child: PushHost(
           child: ListSyncHost(
             child: HomeWidgetSync(
-              child: ShareIntake(shell: shell, child: shell),
+              child: UseByReminders(
+                child: ShareIntake(shell: shell, child: shell),
+              ),
             ),
           ),
         ),

@@ -1219,15 +1219,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get cookModeOpenPage => 'Отвори страницата';
 
   @override
-  String get cookModeLeaveTitle => 'Спираш ли готвенето?';
-
-  @override
-  String get cookModeLeaveMessage => 'Включените таймери ще спрат.';
-
-  @override
-  String get cookModeLeaveConfirm => 'Спри';
-
-  @override
   String get cookModeOfflineTitle => 'Няма връзка';
 
   @override
@@ -1402,4 +1393,84 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get settingsAccountDeleted => 'Акаунтът ти е изтрит.';
+
+  @override
+  String get timerChannelRunning => 'Текущи таймери';
+
+  @override
+  String get timerChannelDone => 'Таймери за готвене';
+
+  @override
+  String get timerDoneTitle => 'Времето изтече';
+
+  @override
+  String get timerExactTitle => 'Да звъни точно навреме?';
+
+  @override
+  String get timerExactMessage =>
+      'Когато телефонът е заключен, Android може да забави таймера с няколко минути. Разреши „Будилници и напомняния“ за ShopCook на следващия екран и таймерите ще звънят точно навреме.';
+
+  @override
+  String get timerExactAllow => 'Към настройките';
+
+  @override
+  String get mealFromPhoto => 'От снимка';
+
+  @override
+  String get photoImportTitle => 'Съставки от снимка';
+
+  @override
+  String get photoImportCamera => 'Снимай рецептата';
+
+  @override
+  String get photoImportGallery => 'Избери снимка';
+
+  @override
+  String get photoImportNoCamera => 'Камерата не може да се отвори.';
+
+  @override
+  String get photoImportNoneFound =>
+      'В снимката няма открит списък със съставки. Опитай пак, като списъкът е на фокус и се вижда целият.';
+
+  @override
+  String get useBySet => 'Добави срок на годност';
+
+  @override
+  String get useByChange => 'Промени срока на годност';
+
+  @override
+  String get useByClear => 'Премахни срока на годност';
+
+  @override
+  String get useByPickerTitle => 'Годно до';
+
+  @override
+  String get useByToday => 'Изтича днес';
+
+  @override
+  String get useByTomorrow => 'Изтича утре';
+
+  @override
+  String get useByPast => 'Срокът на годност е минал';
+
+  @override
+  String useByOn(String day) {
+    return 'Годно до $day';
+  }
+
+  @override
+  String get useByChannel => 'Напомняния за срок на годност';
+
+  @override
+  String useByReminderTitle(String name) {
+    return '$name изтича утре';
+  }
+
+  @override
+  String get useByReminderBody =>
+      'Докосни за рецепти, в които да го използваш.';
+
+  @override
+  String get pantryDatesHint =>
+      'Докосни продукт, за да му зададеш срок на годност. Ще получиш напомняне сутринта предишния ден.';
 }

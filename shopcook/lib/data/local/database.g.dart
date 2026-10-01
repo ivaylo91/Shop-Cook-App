@@ -4033,8 +4033,17 @@ class $PantryItemsTable extends PantryItems
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _useByMeta = const VerificationMeta('useBy');
   @override
-  List<GeneratedColumn> get $columns => [userId, key, name, addedAt];
+  late final GeneratedColumn<DateTime> useBy = GeneratedColumn<DateTime>(
+    'use_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [userId, key, name, addedAt, useBy];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -4079,6 +4088,12 @@ class $PantryItemsTable extends PantryItems
     } else if (isInserting) {
       context.missing(_addedAtMeta);
     }
+    if (data.containsKey('use_by')) {
+      context.handle(
+        _useByMeta,
+        useBy.isAcceptableOrUnknown(data['use_by']!, _useByMeta),
+      );
+    }
     return context;
   }
 
@@ -4104,6 +4119,10 @@ class $PantryItemsTable extends PantryItems
         DriftSqlType.dateTime,
         data['${effectivePrefix}added_at'],
       )!,
+      useBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}use_by'],
+      ),
     );
   }
 
@@ -4122,11 +4141,16 @@ class PantryItem extends DataClass implements Insertable<PantryItem> {
   /// The name as the user last wrote it.
   final String name;
   final DateTime addedAt;
+
+  /// The day it should be used by, when the user gave one. A reminder goes
+  /// out the morning before (see use_by_reminders.dart).
+  final DateTime? useBy;
   const PantryItem({
     required this.userId,
     required this.key,
     required this.name,
     required this.addedAt,
+    this.useBy,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4135,6 +4159,9 @@ class PantryItem extends DataClass implements Insertable<PantryItem> {
     map['key'] = Variable<String>(key);
     map['name'] = Variable<String>(name);
     map['added_at'] = Variable<DateTime>(addedAt);
+    if (!nullToAbsent || useBy != null) {
+      map['use_by'] = Variable<DateTime>(useBy);
+    }
     return map;
   }
 
@@ -4144,6 +4171,9 @@ class PantryItem extends DataClass implements Insertable<PantryItem> {
       key: Value(key),
       name: Value(name),
       addedAt: Value(addedAt),
+      useBy: useBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(useBy),
     );
   }
 
@@ -4157,6 +4187,7 @@ class PantryItem extends DataClass implements Insertable<PantryItem> {
       key: serializer.fromJson<String>(json['key']),
       name: serializer.fromJson<String>(json['name']),
       addedAt: serializer.fromJson<DateTime>(json['addedAt']),
+      useBy: serializer.fromJson<DateTime?>(json['useBy']),
     );
   }
   @override
@@ -4167,6 +4198,7 @@ class PantryItem extends DataClass implements Insertable<PantryItem> {
       'key': serializer.toJson<String>(key),
       'name': serializer.toJson<String>(name),
       'addedAt': serializer.toJson<DateTime>(addedAt),
+      'useBy': serializer.toJson<DateTime?>(useBy),
     };
   }
 
@@ -4175,11 +4207,13 @@ class PantryItem extends DataClass implements Insertable<PantryItem> {
     String? key,
     String? name,
     DateTime? addedAt,
+    Value<DateTime?> useBy = const Value.absent(),
   }) => PantryItem(
     userId: userId ?? this.userId,
     key: key ?? this.key,
     name: name ?? this.name,
     addedAt: addedAt ?? this.addedAt,
+    useBy: useBy.present ? useBy.value : this.useBy,
   );
   PantryItem copyWithCompanion(PantryItemsCompanion data) {
     return PantryItem(
@@ -4187,6 +4221,7 @@ class PantryItem extends DataClass implements Insertable<PantryItem> {
       key: data.key.present ? data.key.value : this.key,
       name: data.name.present ? data.name.value : this.name,
       addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
+      useBy: data.useBy.present ? data.useBy.value : this.useBy,
     );
   }
 
@@ -4196,13 +4231,14 @@ class PantryItem extends DataClass implements Insertable<PantryItem> {
           ..write('userId: $userId, ')
           ..write('key: $key, ')
           ..write('name: $name, ')
-          ..write('addedAt: $addedAt')
+          ..write('addedAt: $addedAt, ')
+          ..write('useBy: $useBy')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(userId, key, name, addedAt);
+  int get hashCode => Object.hash(userId, key, name, addedAt, useBy);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4210,7 +4246,8 @@ class PantryItem extends DataClass implements Insertable<PantryItem> {
           other.userId == this.userId &&
           other.key == this.key &&
           other.name == this.name &&
-          other.addedAt == this.addedAt);
+          other.addedAt == this.addedAt &&
+          other.useBy == this.useBy);
 }
 
 class PantryItemsCompanion extends UpdateCompanion<PantryItem> {
@@ -4218,12 +4255,14 @@ class PantryItemsCompanion extends UpdateCompanion<PantryItem> {
   final Value<String> key;
   final Value<String> name;
   final Value<DateTime> addedAt;
+  final Value<DateTime?> useBy;
   final Value<int> rowid;
   const PantryItemsCompanion({
     this.userId = const Value.absent(),
     this.key = const Value.absent(),
     this.name = const Value.absent(),
     this.addedAt = const Value.absent(),
+    this.useBy = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PantryItemsCompanion.insert({
@@ -4231,6 +4270,7 @@ class PantryItemsCompanion extends UpdateCompanion<PantryItem> {
     required String key,
     required String name,
     required DateTime addedAt,
+    this.useBy = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : userId = Value(userId),
        key = Value(key),
@@ -4241,6 +4281,7 @@ class PantryItemsCompanion extends UpdateCompanion<PantryItem> {
     Expression<String>? key,
     Expression<String>? name,
     Expression<DateTime>? addedAt,
+    Expression<DateTime>? useBy,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4248,6 +4289,7 @@ class PantryItemsCompanion extends UpdateCompanion<PantryItem> {
       if (key != null) 'key': key,
       if (name != null) 'name': name,
       if (addedAt != null) 'added_at': addedAt,
+      if (useBy != null) 'use_by': useBy,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4257,6 +4299,7 @@ class PantryItemsCompanion extends UpdateCompanion<PantryItem> {
     Value<String>? key,
     Value<String>? name,
     Value<DateTime>? addedAt,
+    Value<DateTime?>? useBy,
     Value<int>? rowid,
   }) {
     return PantryItemsCompanion(
@@ -4264,6 +4307,7 @@ class PantryItemsCompanion extends UpdateCompanion<PantryItem> {
       key: key ?? this.key,
       name: name ?? this.name,
       addedAt: addedAt ?? this.addedAt,
+      useBy: useBy ?? this.useBy,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4283,6 +4327,9 @@ class PantryItemsCompanion extends UpdateCompanion<PantryItem> {
     if (addedAt.present) {
       map['added_at'] = Variable<DateTime>(addedAt.value);
     }
+    if (useBy.present) {
+      map['use_by'] = Variable<DateTime>(useBy.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4296,6 +4343,7 @@ class PantryItemsCompanion extends UpdateCompanion<PantryItem> {
           ..write('key: $key, ')
           ..write('name: $name, ')
           ..write('addedAt: $addedAt, ')
+          ..write('useBy: $useBy, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -8040,6 +8088,7 @@ typedef $$PantryItemsTableCreateCompanionBuilder =
       required String key,
       required String name,
       required DateTime addedAt,
+      Value<DateTime?> useBy,
       Value<int> rowid,
     });
 typedef $$PantryItemsTableUpdateCompanionBuilder =
@@ -8048,6 +8097,7 @@ typedef $$PantryItemsTableUpdateCompanionBuilder =
       Value<String> key,
       Value<String> name,
       Value<DateTime> addedAt,
+      Value<DateTime?> useBy,
       Value<int> rowid,
     });
 
@@ -8077,6 +8127,11 @@ class $$PantryItemsTableFilterComposer
 
   ColumnFilters<DateTime> get addedAt => $composableBuilder(
     column: $table.addedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get useBy => $composableBuilder(
+    column: $table.useBy,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8109,6 +8164,11 @@ class $$PantryItemsTableOrderingComposer
     column: $table.addedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get useBy => $composableBuilder(
+    column: $table.useBy,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PantryItemsTableAnnotationComposer
@@ -8131,6 +8191,9 @@ class $$PantryItemsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get addedAt =>
       $composableBuilder(column: $table.addedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get useBy =>
+      $composableBuilder(column: $table.useBy, builder: (column) => column);
 }
 
 class $$PantryItemsTableTableManager
@@ -8168,12 +8231,14 @@ class $$PantryItemsTableTableManager
                 Value<String> key = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<DateTime> addedAt = const Value.absent(),
+                Value<DateTime?> useBy = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PantryItemsCompanion(
                 userId: userId,
                 key: key,
                 name: name,
                 addedAt: addedAt,
+                useBy: useBy,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8182,12 +8247,14 @@ class $$PantryItemsTableTableManager
                 required String key,
                 required String name,
                 required DateTime addedAt,
+                Value<DateTime?> useBy = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PantryItemsCompanion.insert(
                 userId: userId,
                 key: key,
                 name: name,
                 addedAt: addedAt,
+                useBy: useBy,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

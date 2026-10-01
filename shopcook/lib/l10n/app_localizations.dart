@@ -2054,24 +2054,6 @@ abstract class AppLocalizations {
   /// **'Open the page'**
   String get cookModeOpenPage;
 
-  /// No description provided for @cookModeLeaveTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop cooking?'**
-  String get cookModeLeaveTitle;
-
-  /// No description provided for @cookModeLeaveMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Your running timers will stop.'**
-  String get cookModeLeaveMessage;
-
-  /// No description provided for @cookModeLeaveConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop'**
-  String get cookModeLeaveConfirm;
-
   /// No description provided for @cookModeOfflineTitle.
   ///
   /// In en, this message translates to:
@@ -2293,6 +2275,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your account has been deleted.'**
   String get settingsAccountDeleted;
+
+  /// No description provided for @timerChannelRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running timers'**
+  String get timerChannelRunning;
+
+  /// No description provided for @timerChannelDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooking timers'**
+  String get timerChannelDone;
+
+  /// No description provided for @timerDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time\'s up'**
+  String get timerDoneTitle;
+
+  /// No description provided for @timerExactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ring on the minute?'**
+  String get timerExactTitle;
+
+  /// No description provided for @timerExactMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'With the phone locked, Android can hold a timer back for a few minutes. Allow “Alarms & reminders” for ShopCook on the next screen and timers ring exactly on time.'**
+  String get timerExactMessage;
+
+  /// No description provided for @timerExactAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get timerExactAllow;
+
+  /// No description provided for @mealFromPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'From a photo'**
+  String get mealFromPhoto;
+
+  /// No description provided for @photoImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredients from a photo'**
+  String get photoImportTitle;
+
+  /// No description provided for @photoImportCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo of the recipe'**
+  String get photoImportCamera;
+
+  /// No description provided for @photoImportGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a photo'**
+  String get photoImportGallery;
+
+  /// No description provided for @photoImportNoCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera could not be opened.'**
+  String get photoImportNoCamera;
+
+  /// No description provided for @photoImportNoneFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No ingredient list found in that photo. Try again with the list sharp and in view.'**
+  String get photoImportNoneFound;
+
+  /// No description provided for @useBySet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a use-by date'**
+  String get useBySet;
+
+  /// No description provided for @useByChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the use-by date'**
+  String get useByChange;
+
+  /// No description provided for @useByClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the use-by date'**
+  String get useByClear;
+
+  /// No description provided for @useByPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use by'**
+  String get useByPickerTitle;
+
+  /// No description provided for @useByToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Use by today'**
+  String get useByToday;
+
+  /// No description provided for @useByTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Use by tomorrow'**
+  String get useByTomorrow;
+
+  /// No description provided for @useByPast.
+  ///
+  /// In en, this message translates to:
+  /// **'Past its use-by date'**
+  String get useByPast;
+
+  /// No description provided for @useByOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Use by {day}'**
+  String useByOn(String day);
+
+  /// No description provided for @useByChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Use-by reminders'**
+  String get useByChannel;
+
+  /// No description provided for @useByReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} should be used by tomorrow'**
+  String useByReminderTitle(String name);
+
+  /// No description provided for @useByReminderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap for recipe ideas that use it up.'**
+  String get useByReminderBody;
+
+  /// No description provided for @pantryDatesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap something to give it a use-by date. You get a reminder the morning before.'**
+  String get pantryDatesHint;
 }
 
 class _AppLocalizationsDelegate

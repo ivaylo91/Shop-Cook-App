@@ -20,7 +20,7 @@
 <body>
 <main>
   <h1>ShopCook</h1>
-  <p class="muted">Последна промяна / Last updated: 30.09.2026</p>
+  <p class="muted">Последна промяна / Last updated: 01.10.2026</p>
   <nav><a href="#bg">Български</a><a href="#en">English</a><a href="delete-account.html">Изтриване на акаунт / Delete account</a></nav>
 
   <section class="lang" id="bg" lang="bg">
@@ -33,10 +33,11 @@
 <p><strong>Споделени списъци.</strong> Когато споделиш списък, името му, ястията, продуктите в него (с количествата, цените и отметките) и връзките към рецептите на ястията се пазят при Supabase в ЕС, за да ги виждат и променят хората, които се присъединят с твоя код. Пази се и името, което си избереш (например „Ани“), за да се вижда кой какво е променил. Те виждат само този списък и това име, не останалите ти данни и не имейла ти. Когато спреш споделянето или изтриеш акаунта си, списъкът се изтрива от сървъра; всеки участник запазва копие на своя телефон. Ако напуснеш чужд списък, копието на другите остава.</p>
 <p><strong>Известия.</strong> Ако споделиш списък или се присъединиш към такъв и разрешиш известия, адресът за известия на телефона ти (токен от услугата Firebase Cloud Messaging на Google) се пази на нашия сървър. Известията за промени в списъка — името на списъка, името на човека, който го е променил, и имената на добавените продукти — стигат до телефона ти през тази услуга на Google. Излизането от акаунта или изтриването му премахва токена.</p>
 <p><strong>Доклади за сривове.</strong> Ако приложението се срине, на нашия сървър се изпраща описание на грешката, мястото в кода, версията на приложението и на операционната система. Докладите не са свързани с акаунта ти и не съдържат списъците ти. Изтриват се автоматично след 90 дни.</p>
-    <p><strong>Линкове към рецепти.</strong> Когато запазиш или отвориш рецепта, линкът се изпраща на нашия сървър, който зарежда страницата и връща продуктите, стъпките и снимката. Линкът и страницата не се съхраняват на сървъра.</p>
+    <p><strong>Линкове към рецепти.</strong> Когато запазиш или отвориш рецепта, линкът се изпраща на нашия сървър, който зарежда страницата и връща продуктите, стъпките и снимката. Линкът и страницата не се съхраняват на сървъра. За видео в YouTube номерът на видеото се изпраща към YouTube (Google), за да се прочете описанието му.</p>
     <p><strong>Търсене на рецепти.</strong> Името на продукта, за който търсиш, се изпраща през нашия сървър към YouTube (Google) и се връщат видеа. Не пазим историята на търсенията на сървъра; последните резултати се пазят на телефона за 7 дни.</p>
     <p><strong>Баркодове.</strong> Когато сканираш продукт, номерът на баркода се изпраща към Open Food Facts (openfoodfacts.org), за да се намери името на продукта. Не се изпраща нищо друго.</p>
     <p><strong>Камера.</strong> Използва се само докато сканираш. Изображението се обработва на телефона; не се записва и не се изпраща никъде.</p>
+    <p><strong>Таймери и срокове на годност.</strong> Таймерите за готвене, сроковете на годност и напомнянията за тях са само на телефона ти. Нищо от тях не се изпраща.</p>
     <p><strong>Микрофон.</strong> Използва се само докато диктуваш продукти. Разпознаването на реч се прави от услугата за гласово въвеждане на телефона ти (например Google), според нейните условия. Приложението получава само разпознатия текст и не записва звук.</p>
 
     <h2>Какво не правим</h2>
@@ -65,10 +66,11 @@
 <p><strong>Shared lists.</strong> When you share a list, its name, meals, items (with their amounts, prices and ticks) and the recipe links on its meals are stored with Supabase in the EU, so the people who join with your code can see and change it. The name you choose (for example “Anna”) is kept too, so members can see who changed what. They see only that list and that name — not your other data, and not your email address. When you stop sharing it or delete your account, the list is removed from the server; every member keeps a copy on their own phone. If you leave someone else's list, the others keep theirs.</p>
 <p><strong>Notifications.</strong> If you share or join a list and allow notifications, your phone's notification address (a token from Google's Firebase Cloud Messaging service) is stored on our server. Notifications about changes to the list — the list's name, the name of whoever changed it and the names of added items — reach your phone through that Google service. Signing out or deleting your account removes the token.</p>
 <p><strong>Crash reports.</strong> If the app crashes, a description of the error, where in the code it happened, and the app and operating system versions are sent to our server. Reports are not linked to your account and contain none of your lists. They are deleted automatically after 90 days.</p>
-    <p><strong>Recipe links.</strong> When you save or open a recipe, its link is sent to our server, which loads the page and returns its ingredients, steps and picture. Neither the link nor the page is stored on the server.</p>
+    <p><strong>Recipe links.</strong> When you save or open a recipe, its link is sent to our server, which loads the page and returns its ingredients, steps and picture. Neither the link nor the page is stored on the server. For a YouTube video, the video's id is sent to YouTube (Google) to read its description.</p>
     <p><strong>Recipe search.</strong> The name of the item you search for is sent through our server to YouTube (Google), which returns videos. We keep no search history on the server; recent results are kept on your phone for 7 days.</p>
     <p><strong>Barcodes.</strong> When you scan a product, the barcode number is sent to Open Food Facts (openfoodfacts.org) to find the product's name. Nothing else is sent.</p>
     <p><strong>Camera.</strong> Used only while you scan. Images are processed on the phone and are never stored or sent.</p>
+    <p><strong>Timers and use-by dates.</strong> Cooking timers, use-by dates and their reminders stay on your phone. Nothing about them is sent anywhere.</p>
     <p><strong>Microphone.</strong> Used only while you dictate items. Speech is recognized by your phone's voice input service (for example Google), under that service's terms. The app receives only the recognized text and records no audio.</p>
 
     <h2>What we do not do</h2>

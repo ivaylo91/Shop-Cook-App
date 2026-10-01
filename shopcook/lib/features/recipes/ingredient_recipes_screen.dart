@@ -7,7 +7,6 @@ import '../../core/design.dart';
 import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
-import '../../data/local/database.dart';
 import '../../data/remote/recipe_search_api.dart';
 
 /// "What can I cook with this?" for a single shopping item.
@@ -18,15 +17,19 @@ import '../../data/remote/recipe_search_api.dart';
 /// quota doing it, whereas the app gives the full result list, playback and
 /// comments for free.
 class IngredientRecipesScreen extends ConsumerStatefulWidget {
-  final Product product;
+  /// What to cook with: an item on a list, or something at home that
+  /// should be used up.
+  final String name;
 
-  /// Name of the meal this item belongs to, when it belongs to one. Only
-  /// then is there somewhere to attach a recipe.
+  /// The meal the item belongs to, when it belongs to one. Only then is
+  /// there somewhere to attach a recipe.
+  final String? mealId;
   final String? mealName;
 
   const IngredientRecipesScreen({
     super.key,
-    required this.product,
+    required this.name,
+    this.mealId,
     this.mealName,
   });
 
@@ -40,7 +43,7 @@ class _IngredientRecipesScreenState
   List<RecipeSearchResult> _results = const [];
   bool _loading = true;
 
-  String get _query => widget.product.name;
+  String get _query => widget.name;
 
   bool _started = false;
 
@@ -86,7 +89,7 @@ class _IngredientRecipesScreenState
     if (userId == null) return;
 
     final repository = ref.read(recipeRepositoryProvider);
-    final mealId = widget.product.mealId;
+    final mealId = widget.mealId;
 
     if (mealId == null) {
       await repository.saveSearchResult(userId: userId, result: result);
@@ -117,7 +120,7 @@ class _IngredientRecipesScreenState
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: Text(context.l10n.cookWith(widget.product.name)),
+          title: Text(context.l10n.cookWith(widget.name)),
           actions: [
             // Results are cached for a week; this is the way past the cache.
             IconButton(
@@ -150,7 +153,7 @@ class _IngredientRecipesScreenState
               for (final result in _results)
                 _ResultTile(
                   result: result,
-                  onMeal: widget.product.mealId != null,
+                  onMeal: widget.mealId != null,
                   mealName: widget.mealName,
                   onOpen: () => _open(result.url),
                   onKeep: () => _keep(result),

@@ -242,4 +242,29 @@ void main() {
       DateTime(2026, 1, 2),
     );
   });
+
+  test('a v12 pantry gains use-by dates and keeps what was in it', () async {
+    // A phone on v12 has the pantry without use_by. Build today's schema,
+    // then take the column away and wind the version back, which is that
+    // phone's database exactly.
+    final raw = sqlite3.openInMemory();
+    final fresh = AppDatabase.forTesting(NativeDatabase.opened(raw));
+    await fresh.addToPantry('user-1', 'Кисело мляко');
+    raw.execute('ALTER TABLE pantry_items DROP COLUMN use_by');
+    raw.execute('PRAGMA user_version = 12');
+
+    final db = AppDatabase.forTesting(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    final item = (await db.watchPantry('user-1').first).single;
+    expect(item.name, 'Кисело мляко');
+    expect(item.useBy, isNull);
+    await db.validateDatabaseSchema();
+
+    await db.setPantryUseBy('user-1', item.key, DateTime(2026, 10, 3));
+    expect(
+      (await db.watchPantry('user-1').first).single.useBy,
+      DateTime(2026, 10, 3),
+    );
+  });
 }

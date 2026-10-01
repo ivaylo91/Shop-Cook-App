@@ -9,10 +9,13 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/design.dart';
 import '../../core/localization.dart';
+import '../../core/local_notifications.dart';
 import '../../core/providers.dart';
+import '../../core/settings.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
 import '../../data/remote/recipe_import_api.dart';
+import 'kitchen_timers.dart';
 import 'scale_ingredients.dart';
 import 'step_timers.dart';
 
@@ -34,34 +37,26 @@ class CookingModeScreen extends ConsumerStatefulWidget {
   ConsumerState<CookingModeScreen> createState() => _CookingModeScreenState();
 }
 
-class _RunningTimer {
-  final int id;
-  final String label;
-  final DateTime endsAt;
-  bool rung = false;
-
-  _RunningTimer(this.id, this.label, this.endsAt);
-
-  Duration get remaining => endsAt.difference(DateTime.now());
-  bool get isUp => !endsAt.isAfter(DateTime.now());
-}
-
 class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
   final _pages = PageController();
   final _checked = <int>{};
 
   /// How much of the recipe is being made: 1 is as written.
   double _factor = 1;
-  final _timers = <_RunningTimer>[];
   Timer? _ticker;
   int _page = 0;
-  int _nextTimerId = 0;
+
+  /// Whether the phone lets timers notify. When it does not, the screen
+  /// makes the sound itself.
+  bool _canNotify = true;
 
   @override
   void initState() {
     super.initState();
     // Hands are covered in flour; the phone must not lock mid-step.
     WakelockPlus.enable();
+    // Back from another recipe or the home screen with timers running.
+    if (ref.read(kitchenTimersProvider).isNotEmpty) _keepTicking();
   }
 
   @override
@@ -72,49 +67,93 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
     super.dispose();
   }
 
-  void _startTimer(StepTimer timer) {
+  Future<void> _startTimer(StepTimer timer) async {
     HapticFeedback.selectionClick();
-    setState(() {
-      _timers.add(
-        _RunningTimer(
-          _nextTimerId++,
-          timer.label,
-          DateTime.now().add(timer.duration),
-        ),
-      );
-    });
+    final l10n = context.l10n;
+    final loaded = ref.read(recipeDetailsProvider(widget.recipe)).valueOrNull;
+
+    // Asked here, the first time it matters, not at install.
+    _canNotify = await LocalNotifications.askPermission();
+    if (!mounted) return;
+    await ref
+        .read(kitchenTimersProvider.notifier)
+        .start(
+          label: timer.label,
+          duration: timer.duration,
+          recipe: _title(loaded),
+          wording: TimerWording(
+            runningChannel: l10n.timerChannelRunning,
+            doneChannel: l10n.timerChannelDone,
+            doneTitle: l10n.timerDoneTitle,
+          ),
+        );
+    _keepTicking();
+    if (_canNotify) await _offerRingOnTime();
+  }
+
+  /// Android 14 and later hold a scheduled alarm until the phone next
+  /// wakes, which can be minutes late, unless "Alarms & reminders" is
+  /// allowed for the app. Offered once, when the first timer starts.
+  Future<void> _offerRingOnTime() async {
+    const asked = 'asked_ring_on_time';
+    final preferences = ref.read(sharedPreferencesProvider);
+    if (preferences.getBool(asked) == true) return;
+    if (await LocalNotifications.canRingOnTime()) return;
+    if (!mounted) return;
+    await preferences.setBool(asked, true);
+    if (!mounted) return;
+    final l10n = context.l10n;
+    final allow = await confirmAction(
+      context,
+      title: l10n.timerExactTitle,
+      message: l10n.timerExactMessage,
+      confirmLabel: l10n.timerExactAllow,
+    );
+    if (allow) await LocalNotifications.openRingOnTimeSettings();
+  }
+
+  void _keepTicking() {
     _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
 
   void _tick() {
     if (!mounted) return;
-    for (final timer in _timers) {
+    final timers = ref.read(kitchenTimersProvider);
+    for (final timer in timers) {
       if (timer.isUp && !timer.rung) {
         timer.rung = true;
         _ring();
       }
     }
-    if (_timers.isEmpty) {
+    if (timers.isEmpty) {
       _ticker?.cancel();
       _ticker = null;
     }
     setState(() {});
   }
 
-  /// No notification plugin, so the alarm is the phone buzzing and the
-  /// system alert sound — the screen is awake and in front of the cook.
+  /// The notification rings at alarm volume; the screen adds the buzz in
+  /// the hand, and the sound too when notifications are not allowed.
   Future<void> _ring() async {
     for (var i = 0; i < 4; i++) {
       if (!mounted) return;
       await HapticFeedback.heavyImpact();
-      await SystemSound.play(SystemSoundType.alert);
+      if (!_canNotify) await SystemSound.play(SystemSoundType.alert);
       await Future<void>.delayed(const Duration(milliseconds: 450));
     }
   }
 
-  void _stopTimer(_RunningTimer timer) {
-    setState(() => _timers.remove(timer));
+  void _stopTimer(KitchenTimer timer) {
+    ref.read(kitchenTimersProvider.notifier).stop(timer);
   }
+
+  /// The name the user saved it under; the page's own title only stands
+  /// in for a link saved without one.
+  String _title(RecipeImport? loaded) =>
+      widget.recipe.title == widget.recipe.sourceUrl &&
+          loaded?.title.isNotEmpty == true
+      ? loaded!.title
+      : widget.recipe.title;
 
   void _goTo(int page) {
     if (context.reduceMotion) {
@@ -122,18 +161,6 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
       return;
     }
     _pages.animateToPage(page, duration: Motion.base, curve: Motion.enter);
-  }
-
-  Future<bool> _confirmLeave() async {
-    if (_timers.every((t) => t.isUp)) return true;
-    final l10n = context.l10n;
-    return confirmAction(
-      context,
-      title: l10n.cookModeLeaveTitle,
-      message: l10n.cookModeLeaveMessage,
-      confirmLabel: l10n.cookModeLeaveConfirm,
-      destructive: true,
-    );
   }
 
   void _openPage() => context.push('/recipe', extra: widget.recipe);
@@ -144,51 +171,40 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
     final details = ref.watch(recipeDetailsProvider(widget.recipe));
     final loaded = details.valueOrNull;
 
-    return PopScope(
-      canPop: _timers.every((t) => t.isUp),
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) return;
-        final navigator = Navigator.of(context);
-        if (await _confirmLeave()) navigator.pop();
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            // The name the user saved it under; the page's own title only
-            // stands in for a link saved without one.
-            widget.recipe.title == widget.recipe.sourceUrl &&
-                    loaded?.title.isNotEmpty == true
-                ? loaded!.title
-                : widget.recipe.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          actions: [
-            if (loaded != null && loaded.hasIngredients)
-              IconButton(
-                icon: const FaIcon(FontAwesomeIcons.listCheck, size: 17),
-                tooltip: l10n.cookModeIngredients,
-                onPressed: () => _showIngredients(loaded),
-              ),
+    // Leaving is fine with timers running: they carry on as notifications
+    // (see kitchen_timers.dart) and are back in the tray on return.
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          _title(loaded),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        actions: [
+          if (loaded != null && loaded.hasIngredients)
             IconButton(
-              icon: const FaIcon(FontAwesomeIcons.globe, size: 17),
-              tooltip: l10n.cookModeOpenPage,
-              onPressed: _openPage,
+              icon: const FaIcon(FontAwesomeIcons.listCheck, size: 17),
+              tooltip: l10n.cookModeIngredients,
+              onPressed: () => _showIngredients(loaded),
             ),
-          ],
-        ),
-        body: details.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.all(Insets.lg),
-            child: SkeletonRows(count: 4),
+          IconButton(
+            icon: const FaIcon(FontAwesomeIcons.globe, size: 17),
+            tooltip: l10n.cookModeOpenPage,
+            onPressed: _openPage,
           ),
-          error: (_, __) => _unavailable(),
-          data: (recipe) => recipe.hasIngredients
-              ? _cook(recipe)
-              : recipe.failure == ImportFailure.unreachable
-              ? _offline()
-              : _unavailable(),
+        ],
+      ),
+      body: details.when(
+        loading: () => const Padding(
+          padding: EdgeInsets.all(Insets.lg),
+          child: SkeletonRows(count: 4),
         ),
+        error: (_, __) => _unavailable(),
+        data: (recipe) => recipe.hasIngredients
+            ? _cook(recipe)
+            : recipe.failure == ImportFailure.unreachable
+            ? _offline()
+            : _unavailable(),
       ),
     );
   }
@@ -225,6 +241,7 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
 
   Widget _cook(RecipeImport recipe) {
     final l10n = context.l10n;
+    final timers = ref.watch(kitchenTimersProvider);
     final palette = context.palette;
     final steps = recipe.steps;
     // Page 0 gathers the ingredients; each step follows on its own page.
@@ -285,8 +302,7 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
                     ),
             ),
           ),
-          if (_timers.isNotEmpty)
-            _TimerTray(timers: _timers, onStop: _stopTimer),
+          if (timers.isNotEmpty) _TimerTray(timers: timers, onStop: _stopTimer),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               Insets.lg,
@@ -314,10 +330,7 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
                         minimumSize: const Size.fromHeight(52),
                       ),
                       onPressed: onLast
-                          ? () async {
-                              final navigator = Navigator.of(context);
-                              if (await _confirmLeave()) navigator.pop();
-                            }
+                          ? () => Navigator.of(context).pop()
                           : () => _goTo(_page + 1),
                       icon: FaIcon(
                         onLast
@@ -608,8 +621,8 @@ class _StepPage extends StatelessWidget {
 }
 
 class _TimerTray extends StatelessWidget {
-  final List<_RunningTimer> timers;
-  final ValueChanged<_RunningTimer> onStop;
+  final List<KitchenTimer> timers;
+  final ValueChanged<KitchenTimer> onStop;
 
   const _TimerTray({required this.timers, required this.onStop});
 

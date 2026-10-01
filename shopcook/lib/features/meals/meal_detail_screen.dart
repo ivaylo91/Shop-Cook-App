@@ -83,6 +83,23 @@ class MealDetailScreen extends ConsumerWidget {
                       final count => count,
                     },
                     color: palette.accent,
+                    // A recipe on paper: the cookbook on the shelf, a card
+                    // from grandma.
+                    trailing: !photoImportEnabled
+                        ? null
+                        : TextButton.icon(
+                            onPressed: () => importIngredientsFromPhoto(
+                              context,
+                              ref,
+                              listId: listId,
+                              mealId: meal.id,
+                            ),
+                            icon: const FaIcon(
+                              FontAwesomeIcons.camera,
+                              size: 13,
+                            ),
+                            label: Text(l10n.mealFromPhoto),
+                          ),
                   ),
                   const SizedBox(height: Insets.md),
                   productsAsync.when(
@@ -314,7 +331,11 @@ class MealDetailScreen extends ConsumerWidget {
       product,
       onFindRecipes: () => context.push(
         '/ingredient-recipes',
-        extra: (product: product, mealName: meal.name),
+        extra: (
+          name: product.name,
+          mealId: product.mealId,
+          mealName: meal.name,
+        ),
       ),
       onDelete: () => _deleteItemWithUndo(context, ref, product),
     );

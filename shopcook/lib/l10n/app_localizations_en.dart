@@ -1219,15 +1219,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cookModeOpenPage => 'Open the page';
 
   @override
-  String get cookModeLeaveTitle => 'Stop cooking?';
-
-  @override
-  String get cookModeLeaveMessage => 'Your running timers will stop.';
-
-  @override
-  String get cookModeLeaveConfirm => 'Stop';
-
-  @override
   String get cookModeOfflineTitle => 'No connection';
 
   @override
@@ -1401,4 +1392,83 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAccountDeleted => 'Your account has been deleted.';
+
+  @override
+  String get timerChannelRunning => 'Running timers';
+
+  @override
+  String get timerChannelDone => 'Cooking timers';
+
+  @override
+  String get timerDoneTitle => 'Time\'s up';
+
+  @override
+  String get timerExactTitle => 'Ring on the minute?';
+
+  @override
+  String get timerExactMessage =>
+      'With the phone locked, Android can hold a timer back for a few minutes. Allow “Alarms & reminders” for ShopCook on the next screen and timers ring exactly on time.';
+
+  @override
+  String get timerExactAllow => 'Open settings';
+
+  @override
+  String get mealFromPhoto => 'From a photo';
+
+  @override
+  String get photoImportTitle => 'Ingredients from a photo';
+
+  @override
+  String get photoImportCamera => 'Take a photo of the recipe';
+
+  @override
+  String get photoImportGallery => 'Choose a photo';
+
+  @override
+  String get photoImportNoCamera => 'The camera could not be opened.';
+
+  @override
+  String get photoImportNoneFound =>
+      'No ingredient list found in that photo. Try again with the list sharp and in view.';
+
+  @override
+  String get useBySet => 'Add a use-by date';
+
+  @override
+  String get useByChange => 'Change the use-by date';
+
+  @override
+  String get useByClear => 'Remove the use-by date';
+
+  @override
+  String get useByPickerTitle => 'Use by';
+
+  @override
+  String get useByToday => 'Use by today';
+
+  @override
+  String get useByTomorrow => 'Use by tomorrow';
+
+  @override
+  String get useByPast => 'Past its use-by date';
+
+  @override
+  String useByOn(String day) {
+    return 'Use by $day';
+  }
+
+  @override
+  String get useByChannel => 'Use-by reminders';
+
+  @override
+  String useByReminderTitle(String name) {
+    return '$name should be used by tomorrow';
+  }
+
+  @override
+  String get useByReminderBody => 'Tap for recipe ideas that use it up.';
+
+  @override
+  String get pantryDatesHint =>
+      'Tap something to give it a use-by date. You get a reminder the morning before.';
 }

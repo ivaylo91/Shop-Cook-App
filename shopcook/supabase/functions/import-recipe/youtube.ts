@@ -261,6 +261,20 @@ function inOneLanguage(
   return cut.filter((line) => scriptOf(line) !== otherThan(script));
 }
 
+/// The line a photographed recipe is most likely titled with: the first
+/// short line that is neither a heading nor an ingredient.
+export function headline(text: string): string {
+  for (const raw of text.split(/\r?\n/).slice(0, 8)) {
+    const line = raw.trim();
+    const letters = line.replace(/[^\p{L}]/gu, "").length;
+    if (letters < 3 || line.length > 60) continue;
+    if (opens(line, INGREDIENTS) || opens(line, METHOD)) return "";
+    if (looksLikeIngredient(line) || OFF_TOPIC.test(line)) continue;
+    return line.replace(/[:：]\s*$/, "");
+  }
+  return "";
+}
+
 export function fromDescription(
   description: string,
   options: { language?: string; title?: string } = {},
