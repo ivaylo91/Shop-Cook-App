@@ -1471,4 +1471,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pantryDatesHint =>
       'Tap something to give it a use-by date. You get a reminder the morning before.';
+
+  @override
+  String get navShop => 'Shop';
+
+  @override
+  String get heroStartShopping => 'Start shopping';
+
+  @override
+  String get heroOpenList => 'Open list';
 }

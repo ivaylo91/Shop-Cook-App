@@ -4,7 +4,7 @@
     <color name="widget_background">#FFFFFF</color>
     <color name="widget_ink">#1A1C18</color>
     <color name="widget_ink_muted">#5B6156</color>
-    <color name="widget_accent">#2E7D32</color>
+    <color name="widget_accent">#1E875A</color>
 
     <string name="widget_description">Your shopping list at a glance</string>
     <string name="widget_empty_title">ShopCook</string>

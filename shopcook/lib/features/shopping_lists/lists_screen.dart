@@ -8,6 +8,7 @@ import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
+import '../home_widget/home_widget_sync.dart';
 import '../sharing/share_actions.dart';
 import 'list_detail_screen.dart';
 
@@ -116,6 +117,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
             if (lists.isEmpty) {
               return EmptyState(
                 icon: FontAwesomeIcons.rectangleList,
+                art: Art.basket,
                 title: l10n.listsEmptyTitle,
                 message: l10n.listsEmptyMessage,
                 actionLabel: l10n.listsEmptyAction,
@@ -129,10 +131,12 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 Insets.lg,
                 96,
               ),
-              itemCount: lists.length,
+              // The hero card first, then the lists.
+              itemCount: lists.length + 1,
               separatorBuilder: (_, __) => const SizedBox(height: Insets.md),
               itemBuilder: (context, index) {
-                final list = lists[index];
+                if (index == 0) return const _ShopHero();
+                final list = lists[index - 1];
                 return Dismissible(
                   key: ValueKey(list.id),
                   direction: DismissDirection.endToStart,
@@ -186,6 +190,97 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     await ref
         .read(shoppingListRepositoryProvider)
         .createList(name, userId: userId);
+  }
+}
+
+/// The banner at the top of Lists: the list with the most left to buy
+/// (the one the home screen widget and the Shop button use), how much is
+/// left, and a way straight into shopping mode, beside the basket picture.
+class _ShopHero extends ConsumerWidget {
+  const _ShopHero();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final l10n = context.l10n;
+    final snapshot = ref.watch(widgetSnapshotProvider);
+    final list = snapshot?.list;
+    if (list == null) return const SizedBox.shrink();
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Radii.card),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: palette.isDark
+              ? const [Color(0xFF1F3A2C), Color(0xFF2A2A1E)]
+              : const [Color(0xFFCDEFD9), Color(0xFFFFF1D6)],
+        ),
+        border: Border.all(color: palette.glassEdge),
+        boxShadow: palette.shadow(palette.accent, opacity: 0.12),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -8,
+            bottom: -10,
+            child: Illustration(Art.basket, size: 150),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Insets.xl,
+              Insets.xl,
+              150,
+              Insets.xl,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  list.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.title.copyWith(
+                    fontSize: 20,
+                    color: palette.isDark ? palette.ink : const Color(0xFF14532D),
+                  ),
+                ),
+                const SizedBox(height: Insets.xs),
+                Text(
+                  l10n.widgetSummary(snapshot!.left),
+                  style: AppText.body.copyWith(
+                    color: palette.accent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: Insets.lg),
+                PressScale(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 40),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Insets.lg,
+                      ),
+                    ),
+                    // Nothing left to buy: open the list to add to it.
+                    onPressed: () => snapshot.left > 0
+                        ? context.push('/list/${list.id}/shop', extra: list)
+                        : context.push('/list/${list.id}', extra: list),
+                    child: Text(
+                      snapshot.left > 0
+                          ? l10n.heroStartShopping
+                          : l10n.heroOpenList,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

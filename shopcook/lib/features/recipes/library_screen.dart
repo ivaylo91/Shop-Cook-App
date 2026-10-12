@@ -67,6 +67,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           data: (library) {
             if (library.isEmpty) {
               return EmptyState(
+                art: Art.cooking,
                 icon: FontAwesomeIcons.bookOpen,
                 title: l10n.libraryEmptyTitle,
                 message: l10n.libraryEmptyMessage,

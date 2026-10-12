@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../design.dart';
+import 'illustration.dart';
 
 /// A tinted section marker — recognisable by colour while scanning.
 ///
@@ -20,6 +21,9 @@ class SectionLabel extends StatelessWidget {
   /// button.
   final Widget? trailing;
 
+  /// A picture in place of [icon]: the aisle headings in shopping mode.
+  final Art? art;
+
   const SectionLabel({
     super.key,
     required this.icon,
@@ -27,6 +31,7 @@ class SectionLabel extends StatelessWidget {
     this.count,
     this.color,
     this.trailing,
+    this.art,
   });
 
   @override
@@ -36,14 +41,25 @@ class SectionLabel extends StatelessWidget {
 
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(Insets.sm),
-          decoration: BoxDecoration(
-            color: tint.withValues(alpha: palette.isDark ? 0.18 : 0.12),
-            borderRadius: BorderRadius.circular(Radii.chip),
+        if (art != null)
+          Container(
+            padding: const EdgeInsets.all(Insets.xs),
+            decoration: BoxDecoration(
+              color: palette.glass,
+              borderRadius: BorderRadius.circular(Radii.chip),
+              border: Border.all(color: palette.glassEdge),
+            ),
+            child: Illustration(art!, size: 36),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(Insets.sm),
+            decoration: BoxDecoration(
+              color: tint.withValues(alpha: palette.isDark ? 0.18 : 0.12),
+              borderRadius: BorderRadius.circular(Radii.chip),
+            ),
+            child: FaIcon(icon, size: 16, color: tint),
           ),
-          child: FaIcon(icon, size: 16, color: tint),
-        ),
         const SizedBox(width: Insets.md),
         Expanded(
           child: Text(

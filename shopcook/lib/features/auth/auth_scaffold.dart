@@ -28,7 +28,6 @@ class AuthScaffold extends StatelessWidget {
     final palette = context.palette;
 
     return Backdrop(
-      intensity: 1.6,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
@@ -43,7 +42,9 @@ class AuthScaffold extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const _Brand(),
-                    const SizedBox(height: Insets.xxl),
+                    const SizedBox(height: Insets.lg),
+                    const Center(child: Illustration(Art.basket, size: 200)),
+                    const SizedBox(height: Insets.lg),
                     Text(
                       title,
                       style: AppText.display.copyWith(

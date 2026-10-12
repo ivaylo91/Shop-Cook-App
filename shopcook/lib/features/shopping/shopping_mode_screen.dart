@@ -73,6 +73,7 @@ class ShoppingModeScreen extends ConsumerWidget {
         if (products.isEmpty) {
           return EmptyState(
             icon: FontAwesomeIcons.cartShopping,
+            art: Art.bag,
             title: l10n.shopEmptyTitle,
             message: l10n.shopEmptyMessage,
             actionLabel: l10n.shopEmptyAction,
@@ -180,6 +181,7 @@ class ShoppingModeScreen extends ConsumerWidget {
       const SizedBox(height: Insets.xl),
       SectionLabel(
         icon: category.icon,
+        art: Art.of(category),
         label: category.label(context.l10n),
         count: items.length,
         color: tint,

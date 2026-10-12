@@ -65,6 +65,7 @@ class PlanScreen extends ConsumerWidget {
 
             if (planned.isEmpty && unplanned.isEmpty && cooked.isEmpty) {
               return EmptyState(
+                art: Art.cooking,
                 icon: FontAwesomeIcons.calendarDays,
                 title: l10n.planEmptyTitle,
                 message: l10n.planEmptyMessage,

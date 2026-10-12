@@ -2419,6 +2419,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap something to give it a use-by date. You get a reminder the morning before.'**
   String get pantryDatesHint;
+
+  /// No description provided for @navShop.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop'**
+  String get navShop;
+
+  /// No description provided for @heroStartShopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Start shopping'**
+  String get heroStartShopping;
+
+  /// No description provided for @heroOpenList.
+  ///
+  /// In en, this message translates to:
+  /// **'Open list'**
+  String get heroOpenList;
 }
 
 class _AppLocalizationsDelegate

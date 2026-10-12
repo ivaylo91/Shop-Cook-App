@@ -475,5 +475,8 @@
   "useByReminderTitle": "{name} should be used by tomorrow",
   "@useByReminderTitle": {"placeholders": {"name": {"type": "String"}}},
   "useByReminderBody": "Tap for recipe ideas that use it up.",
-  "pantryDatesHint": "Tap something to give it a use-by date. You get a reminder the morning before."
+  "pantryDatesHint": "Tap something to give it a use-by date. You get a reminder the morning before.",
+  "navShop": "Shop",
+  "heroStartShopping": "Start shopping",
+  "heroOpenList": "Open list"
 }

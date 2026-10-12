@@ -463,11 +463,7 @@ class _AisleOrderCard extends ConsumerWidget {
               for (final (index, category) in order.indexed)
                 ListTile(
                   key: ValueKey(category.name),
-                  leading: FaIcon(
-                    category.icon,
-                    size: 16,
-                    color: palette.aisle(category),
-                  ),
+                  leading: Illustration(Art.of(category), size: 34),
                   title: Text(category.label(l10n)),
                   trailing: ReorderableDragStartListener(
                     index: index,

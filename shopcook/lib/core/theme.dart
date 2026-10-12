@@ -282,7 +282,7 @@ ThemeData buildAppTheme(Brightness brightness) {
         fontWeight: FontWeight.w600,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(Radii.chip),
+        borderRadius: BorderRadius.circular(20),
       ),
     ),
 

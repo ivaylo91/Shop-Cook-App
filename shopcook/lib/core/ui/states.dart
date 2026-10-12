@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../design.dart';
 import '../localization.dart';
+import 'illustration.dart';
 import 'press_scale.dart';
 
 /// Empty states are an opportunity: say what goes here and how to get there.
@@ -16,6 +17,10 @@ class EmptyState extends StatelessWidget {
   final VoidCallback? onAction;
   final FaIconData? actionIcon;
 
+  /// A picture to show instead of [icon], for the screens people land on
+  /// empty-handed the first time (no lists, no recipes yet).
+  final Art? art;
+
   const EmptyState({
     super.key,
     required this.icon,
@@ -24,6 +29,7 @@ class EmptyState extends StatelessWidget {
     this.actionLabel,
     this.onAction,
     this.actionIcon,
+    this.art,
   });
 
   @override
@@ -50,17 +56,19 @@ class EmptyState extends StatelessWidget {
                   child: child,
                 ),
               ),
-              child: Container(
-                padding: const EdgeInsets.all(Insets.xl),
-                decoration: BoxDecoration(
-                  color: palette.wash(
-                    palette.accent,
-                    palette.isDark ? 0.16 : 0.10,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: FaIcon(icon, size: 32, color: palette.accent),
-              ),
+              child: art != null
+                  ? Illustration(art!, size: 168)
+                  : Container(
+                      padding: const EdgeInsets.all(Insets.xl),
+                      decoration: BoxDecoration(
+                        color: palette.wash(
+                          palette.accent,
+                          palette.isDark ? 0.16 : 0.10,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: FaIcon(icon, size: 32, color: palette.accent),
+                    ),
             ),
             const SizedBox(height: Insets.xl),
             Text(

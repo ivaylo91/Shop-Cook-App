@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/design.dart';
-import '../../core/localization.dart';
 import '../home_widget/home_widget_sync.dart';
 import '../notifications/push.dart';
 import '../pantry/use_by_reminders.dart';
 import '../onboarding/intro.dart';
 import '../share_intake/share_intake.dart';
+import 'nav_bar.dart';
 import '../sharing/list_sync_host.dart';
 
 /// The persistent bottom navigation.
@@ -28,8 +26,6 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-
     return Scaffold(
       body: IntroGate(
         child: PushHost(
@@ -42,37 +38,13 @@ class AppShell extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: shell.currentIndex,
+      bottomNavigationBar: AppNavBar(
+        currentIndex: shell.currentIndex,
         // goBranch with initialLocation resets a branch when its tab is
         // tapped while already selected, which is the expected "take me to
         // the top" behaviour.
-        onDestinationSelected: (index) =>
+        onSelect: (index) =>
             shell.goBranch(index, initialLocation: index == shell.currentIndex),
-        backgroundColor: palette.card,
-        indicatorColor: palette.accent.withValues(
-          alpha: palette.isDark ? 0.24 : 0.14,
-        ),
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        destinations: [
-          NavigationDestination(
-            icon: const FaIcon(FontAwesomeIcons.rectangleList, size: 18),
-            label: context.l10n.navLists,
-          ),
-          NavigationDestination(
-            icon: const FaIcon(FontAwesomeIcons.calendarDays, size: 18),
-            label: context.l10n.navPlan,
-          ),
-          NavigationDestination(
-            icon: const FaIcon(FontAwesomeIcons.bookOpen, size: 18),
-            label: context.l10n.navRecipes,
-          ),
-          NavigationDestination(
-            icon: const FaIcon(FontAwesomeIcons.gear, size: 18),
-            label: context.l10n.navSettings,
-          ),
-        ],
       ),
     );
   }

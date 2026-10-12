@@ -24,7 +24,7 @@ abstract final class Insets {
 
 abstract final class Radii {
   static const chip = 12.0;
-  static const card = 20.0;
+  static const card = 24.0;
   static const pill = 999.0;
 }
 
@@ -133,15 +133,16 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   static const light = AppPalette(
     brightness: Brightness.light,
-    surface: Color(0xFFF6F8F2),
+    surface: Color(0xFFF1F7F2),
     card: Color(0xFFFFFFFF),
-    sunken: Color(0xFFEDF1E4),
-    ink: Color(0xFF1A1C18),
-    inkMuted: Color(0xFF5B6156),
-    inkFaint: Color(0xFF6B7165),
-    accent: Color(0xFF2E7D32),
+    sunken: Color(0xFFE5F1E9),
+    ink: Color(0xFF17201B),
+    inkMuted: Color(0xFF55615A),
+    inkFaint: Color(0xFF66726A),
+    // Emerald, as bright as white text on it allows: 4.6:1.
+    accent: Color(0xFF1E875A),
     onAccent: Color(0xFFFFFFFF),
-    divider: Color(0xFFE2E7D9),
+    divider: Color(0xFFE0ECE4),
   );
 
   /// Not an inversion of [light]: the ground is lifted off pure black so
@@ -149,18 +150,41 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// a dark ground is too low-contrast to carry a label.
   static const dark = AppPalette(
     brightness: Brightness.dark,
-    surface: Color(0xFF121510),
-    card: Color(0xFF1B1F19),
-    sunken: Color(0xFF22271F),
-    ink: Color(0xFFE9EDE2),
-    inkMuted: Color(0xFFAFB7A8),
-    inkFaint: Color(0xFF949C8C),
-    accent: Color(0xFF86C888),
-    onAccent: Color(0xFF0E2610),
-    divider: Color(0xFF2F352C),
+    surface: Color(0xFF0F1612),
+    card: Color(0xFF18211C),
+    sunken: Color(0xFF1F2A23),
+    ink: Color(0xFFE6EFE9),
+    inkMuted: Color(0xFFA9B8AF),
+    inkFaint: Color(0xFF8E9D94),
+    accent: Color(0xFF5CC995),
+    onAccent: Color(0xFF06241A),
+    divider: Color(0xFF2A362F),
   );
 
   bool get isDark => brightness == Brightness.dark;
+
+  /// The screen ground: mint at the top left through cream to a peach
+  /// glow at the bottom right, as on a fresh-produce stall. Behind every
+  /// page (see Backdrop); cards sit on it as frosted glass.
+  LinearGradient get ground => LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: isDark
+        ? const [Color(0xFF10201A), Color(0xFF0F1612), Color(0xFF1C1713)]
+        : const [Color(0xFFDDF2E5), Color(0xFFF4F8F1), Color(0xFFFCEDE3)],
+    stops: const [0, 0.55, 1],
+  );
+
+  /// A card's fill: white, slightly see-through, so the ground's colour
+  /// warms it from behind without reaching the text.
+  Color get glass => isDark
+      ? card.withValues(alpha: 0.88)
+      : card.withValues(alpha: 0.82);
+
+  /// The bright rim along a glass card's edge.
+  Color get glassEdge => isDark
+      ? const Color(0x14FFFFFF)
+      : const Color(0xE6FFFFFF);
 
   /// One hue per aisle, so sections are recognisable at a glance while
   /// scanning. Used only as a tinted chip and icon, never as a large fill —

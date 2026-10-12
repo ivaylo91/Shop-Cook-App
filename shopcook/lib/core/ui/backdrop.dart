@@ -28,16 +28,24 @@ class Backdrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final alpha = (palette.isDark ? 0.07 : 0.065) * intensity;
 
-    return ColoredBox(
-      color: palette.surface,
-      child: CustomPaint(
-        painter: _DoodlePainter(palette.accent.withValues(alpha: alpha)),
-        // Its own layer, so scrolling a list repaints the list and not the
-        // few hundred glyphs behind it.
-        child: RepaintBoundary(child: child),
-      ),
+    // The fresh-market gradient (AppPalette.ground). The doodle pattern
+    // that used to be here is kept below, faint, for screens that ask for
+    // more than 1: the sign-in screens, which have little else on them.
+    return DecoratedBox(
+      decoration: BoxDecoration(gradient: palette.ground),
+      child: intensity <= 1
+          ? RepaintBoundary(child: child)
+          : CustomPaint(
+              painter: _DoodlePainter(
+                palette.accent.withValues(
+                  alpha: (palette.isDark ? 0.05 : 0.045) * (intensity - 1),
+                ),
+              ),
+              // Its own layer, so scrolling repaints the content and not
+              // the few hundred glyphs behind it.
+              child: RepaintBoundary(child: child),
+            ),
     );
   }
 }

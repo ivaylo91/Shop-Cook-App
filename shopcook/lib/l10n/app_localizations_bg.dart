@@ -1473,4 +1473,13 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get pantryDatesHint =>
       'Докосни продукт, за да му зададеш срок на годност. Ще получиш напомняне сутринта предишния ден.';
+
+  @override
+  String get navShop => 'Пазарувай';
+
+  @override
+  String get heroStartShopping => 'Към пазаруването';
+
+  @override
+  String get heroOpenList => 'Отвори списъка';
 }

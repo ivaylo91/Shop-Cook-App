@@ -74,10 +74,18 @@ class _AppCardState extends State<AppCard> {
       ),
       // Clipped Material inside the shadow decoration rather than around it,
       // so ink ripples stay inside the rounded corners and the shadow is not
-      // clipped away with them.
+      // clipped away with them. Frosted glass: the ground shows faintly
+      // through, and a bright rim catches the edge.
       child: ClipRRect(
         borderRadius: radius,
-        child: Material(color: palette.card, child: content),
+        child: Material(
+          color: palette.glass,
+          shape: RoundedRectangleBorder(
+            borderRadius: radius,
+            side: BorderSide(color: palette.glassEdge),
+          ),
+          child: content,
+        ),
       ),
     );
 

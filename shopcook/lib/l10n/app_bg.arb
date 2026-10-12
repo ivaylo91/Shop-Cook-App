@@ -462,5 +462,8 @@
   "useByReminderTitle": "{name} изтича утре",
   "@useByReminderTitle": {"placeholders": {"name": {"type": "String"}}},
   "useByReminderBody": "Докосни за рецепти, в които да го използваш.",
-  "pantryDatesHint": "Докосни продукт, за да му зададеш срок на годност. Ще получиш напомняне сутринта предишния ден."
+  "pantryDatesHint": "Докосни продукт, за да му зададеш срок на годност. Ще получиш напомняне сутринта предишния ден.",
+  "navShop": "Пазарувай",
+  "heroStartShopping": "Към пазаруването",
+  "heroOpenList": "Отвори списъка"
 }

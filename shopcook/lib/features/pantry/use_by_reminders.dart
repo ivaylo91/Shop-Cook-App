@@ -110,7 +110,7 @@ class _UseByRemindersState extends ConsumerState<UseByReminders> {
           l10n.useByChannel,
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
-          color: const Color(0xFF2E7D32),
+          color: const Color(0xFF1E875A),
         ),
       );
       _scheduled[id] = signature;

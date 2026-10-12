@@ -161,6 +161,6 @@ final kitchenTimersProvider =
     NotifierProvider<KitchenTimers, List<KitchenTimer>>(KitchenTimers.new);
 
 /// The app's green, for the notification's small icon.
-const _accent = Color(0xFF2E7D32);
+const _accent = Color(0xFF1E875A);
 
 final _ringPattern = Int64List.fromList([0, 600, 300, 600, 300, 600]);
