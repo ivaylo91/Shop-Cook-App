@@ -32,7 +32,7 @@ void main() {
 
       test('sets the bundled family on body text for $brightness', () {
         final theme = buildAppTheme(brightness);
-        expect(theme.textTheme.bodyMedium?.fontFamily, 'Figtree');
+        expect(theme.textTheme.bodyMedium?.fontFamily, 'Manrope');
       });
     }
   });

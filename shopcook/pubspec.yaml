@@ -1,7 +1,7 @@
 name: shopcook
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.0+15
+version: 1.0.0+16
 
 environment:
   sdk: ^3.9.2
@@ -68,13 +68,21 @@ flutter:
   fonts:
     # Bundled rather than fetched at runtime, so the app keeps its
     # typography offline — which matters in a shop with no signal.
-    - family: Figtree
+    # Manrope because it has Cyrillic: Figtree, before it, had none, so
+    # every Bulgarian word fell back to the phone's own font. Static
+    # weights cut from the Google Fonts variable font (OFL, see OFL.txt),
+    # with the Bulgarian 'locl' feature removed from GSUB: it swaps in the
+    # Bulgarian letter shapes (д as g, и as u, т as m), and the app uses the
+    # standard ones, as most apps people read daily do.
+    - family: Manrope
       fonts:
-        - asset: assets/fonts/Figtree-Regular.ttf
+        - asset: assets/fonts/Manrope-Regular.ttf
           weight: 400
-        - asset: assets/fonts/Figtree-SemiBold.ttf
+        - asset: assets/fonts/Manrope-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Manrope-SemiBold.ttf
           weight: 600
-        - asset: assets/fonts/Figtree-Bold.ttf
+        - asset: assets/fonts/Manrope-Bold.ttf
           weight: 700
 
 # Generates the Android launcher icons from the brand assets. Regenerate

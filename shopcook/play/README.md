@@ -2,7 +2,7 @@
 
 Built by `store_art.py` from the app's own brand files
 (`assets/brand/icon.png`, `assets/brand/icon_foreground.png`) and its own
-font (Figtree), so the listing matches the app.
+font (Manrope), so the listing matches the app.
 
 | File | Where it goes | Play's requirement |
 |---|---|---|

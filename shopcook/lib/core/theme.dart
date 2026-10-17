@@ -70,7 +70,7 @@ ThemeData buildAppTheme(Brightness brightness) {
     scaffoldBackgroundColor: palette.surface,
     // Set once here so every Text inherits it; the tokens in design.dart
     // deliberately leave fontFamily unset and merge over this.
-    fontFamily: 'Figtree',
+    fontFamily: 'Manrope',
   );
 
   // Component themes are derived with copyWith rather than by naming each
@@ -111,7 +111,7 @@ ThemeData buildAppTheme(Brightness brightness) {
       scrolledUnderElevation: 0,
       centerTitle: false,
       titleTextStyle: AppText.title.copyWith(
-        fontFamily: 'Figtree',
+        fontFamily: 'Manrope',
         color: palette.ink,
       ),
       iconTheme: IconThemeData(color: palette.ink, size: 20),
@@ -136,12 +136,12 @@ ThemeData buildAppTheme(Brightness brightness) {
         borderRadius: BorderRadius.circular(Radii.card),
       ),
       titleTextStyle: AppText.title.copyWith(
-        fontFamily: 'Figtree',
+        fontFamily: 'Manrope',
         fontSize: 19,
         color: palette.ink,
       ),
       contentTextStyle: AppText.body.copyWith(
-        fontFamily: 'Figtree',
+        fontFamily: 'Manrope',
         color: palette.inkMuted,
       ),
     ),
@@ -188,11 +188,11 @@ ThemeData buildAppTheme(Brightness brightness) {
       iconColor: palette.inkMuted,
       textColor: palette.ink,
       titleTextStyle: AppText.title.copyWith(
-        fontFamily: 'Figtree',
+        fontFamily: 'Manrope',
         color: palette.ink,
       ),
       subtitleTextStyle: AppText.caption.copyWith(
-        fontFamily: 'Figtree',
+        fontFamily: 'Manrope',
         color: palette.inkMuted,
       ),
       contentPadding: const EdgeInsets.symmetric(
@@ -231,7 +231,7 @@ ThemeData buildAppTheme(Brightness brightness) {
         minimumSize: const Size(0, 48),
         padding: const EdgeInsets.symmetric(horizontal: Insets.xl),
         textStyle: AppText.body.copyWith(
-          fontFamily: 'Figtree',
+          fontFamily: 'Manrope',
           fontWeight: FontWeight.w600,
         ),
         shape: RoundedRectangleBorder(
@@ -245,7 +245,7 @@ ThemeData buildAppTheme(Brightness brightness) {
         foregroundColor: palette.accent,
         minimumSize: const Size(0, 44),
         textStyle: AppText.body.copyWith(
-          fontFamily: 'Figtree',
+          fontFamily: 'Manrope',
           fontWeight: FontWeight.w600,
         ),
         shape: RoundedRectangleBorder(
@@ -260,7 +260,7 @@ ThemeData buildAppTheme(Brightness brightness) {
         minimumSize: const Size(0, 48),
         side: BorderSide(color: palette.divider),
         textStyle: AppText.body.copyWith(
-          fontFamily: 'Figtree',
+          fontFamily: 'Manrope',
           fontWeight: FontWeight.w600,
         ),
         shape: RoundedRectangleBorder(
@@ -286,7 +286,7 @@ ThemeData buildAppTheme(Brightness brightness) {
       hoverElevation: 3,
       highlightElevation: 1,
       extendedTextStyle: AppText.body.copyWith(
-        fontFamily: 'Figtree',
+        fontFamily: 'Manrope',
         fontWeight: FontWeight.w600,
       ),
       shape: RoundedRectangleBorder(
@@ -298,7 +298,7 @@ ThemeData buildAppTheme(Brightness brightness) {
       behavior: SnackBarBehavior.floating,
       backgroundColor: palette.isDark ? palette.sunken : palette.ink,
       contentTextStyle: AppText.body.copyWith(
-        fontFamily: 'Figtree',
+        fontFamily: 'Manrope',
         color: palette.isDark ? palette.ink : palette.card,
       ),
       actionTextColor: palette.accent,
@@ -325,7 +325,7 @@ ThemeData buildAppTheme(Brightness brightness) {
       surfaceTintColor: Colors.transparent,
       elevation: 3,
       textStyle: AppText.body.copyWith(
-        fontFamily: 'Figtree',
+        fontFamily: 'Manrope',
         color: palette.ink,
       ),
       shape: RoundedRectangleBorder(
