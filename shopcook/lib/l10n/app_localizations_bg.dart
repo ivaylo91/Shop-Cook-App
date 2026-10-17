@@ -1482,4 +1482,8 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get heroOpenList => 'Отвори списъка';
+
+  @override
+  String get quickAddHint =>
+      'Докосни, за да добавиш. Отпред са нещата, които купуваш от този щанд.';
 }

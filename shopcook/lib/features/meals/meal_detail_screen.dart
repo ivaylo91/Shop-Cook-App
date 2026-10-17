@@ -114,12 +114,16 @@ class MealDetailScreen extends ConsumerWidget {
                         return InlineNote(message: l10n.mealIngredientsEmpty);
                       }
                       return AppCardList(
+                        dividerIndent: ProductRow.artIndent,
                         tint: palette.accent,
                         children: [
                           for (final product in products)
                             ProductRow(
                               key: ValueKey(product.id),
                               name: product.name,
+                              art: Art.of(
+                                ShoppingListRepository.aisleOf(product),
+                              ),
                               details: [
                                 '${product.quantity} ${product.unit}'.trim(),
                                 if (product.price != null)

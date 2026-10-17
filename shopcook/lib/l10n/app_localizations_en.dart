@@ -1480,4 +1480,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get heroOpenList => 'Open list';
+
+  @override
+  String get quickAddHint =>
+      'Tap to add. Things you buy from this aisle come first.';
 }

@@ -2437,6 +2437,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open list'**
   String get heroOpenList;
+
+  /// No description provided for @quickAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to add. Things you buy from this aisle come first.'**
+  String get quickAddHint;
 }
 
 class _AppLocalizationsDelegate

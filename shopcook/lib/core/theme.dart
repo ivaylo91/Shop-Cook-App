@@ -14,6 +14,9 @@ import 'ui/transitions.dart';
 /// slots means plain Material widgets are on the design system for free —
 /// which is what makes the untouched screens presentable before anyone
 /// rewrites their layout.
+/// Corner radius of text fields.
+const _field = 18.0;
+
 ThemeData buildAppTheme(Brightness brightness) {
   final palette = brightness == Brightness.dark
       ? AppPalette.dark
@@ -143,32 +146,37 @@ ThemeData buildAppTheme(Brightness brightness) {
       ),
     ),
 
+    // Soft white fields with a light rim, like the cards, rather than a
+    // grey outline; the accent ring only while typing. Rounder than a chip
+    // so they sit with the pill buttons under them.
     inputDecorationTheme: base.inputDecorationTheme.copyWith(
       filled: true,
-      fillColor: palette.card,
+      fillColor: palette.glass,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: Insets.lg,
-        vertical: Insets.lg,
+        vertical: 18,
       ),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Radii.chip),
-        borderSide: BorderSide(color: palette.divider),
+        borderRadius: BorderRadius.circular(_field),
+        borderSide: BorderSide(color: palette.glassEdge),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Radii.chip),
-        borderSide: BorderSide(color: palette.divider),
+        borderRadius: BorderRadius.circular(_field),
+        borderSide: BorderSide(
+          color: palette.isDark ? palette.divider : palette.glassEdge,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Radii.chip),
-        borderSide: BorderSide(color: palette.accent, width: 2),
+        borderRadius: BorderRadius.circular(_field),
+        borderSide: BorderSide(color: palette.accent, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Radii.chip),
+        borderRadius: BorderRadius.circular(_field),
         borderSide: BorderSide(color: scheme.error),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Radii.chip),
-        borderSide: BorderSide(color: scheme.error, width: 2),
+        borderRadius: BorderRadius.circular(_field),
+        borderSide: BorderSide(color: scheme.error, width: 1.5),
       ),
       labelStyle: AppText.body.copyWith(color: palette.inkMuted),
       hintStyle: AppText.body.copyWith(color: palette.inkFaint),

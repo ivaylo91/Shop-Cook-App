@@ -136,14 +136,22 @@ class AuthField extends StatelessWidget {
         onChanged: (_) => onChanged?.call(),
         onSubmitted: (_) => onSubmitted?.call(),
         decoration: InputDecoration(
-          labelText: label,
+          // A placeholder inside the field, not a label that floats up onto
+          // the border: with the icon beside it there is no doubt which
+          // field is which, and the floating label cut a gap into the ring.
+          hintText: label,
           errorText: errorText,
-          // Centred explicitly: InputDecoration drops the prefix icon into a
-          // 48x48 minimum box, and FaIcon has no box of its own to centre
-          // within it, so a bare FaIcon sits hard against the left edge.
+          // Centred explicitly: FaIcon has no box of its own to centre
+          // within, so a bare FaIcon sits hard against the left edge. The
+          // box is narrower than InputDecoration's 48 dp default, which left
+          // a wide gap between the icon and the text.
           prefixIcon: SizedBox(
-            width: 48,
+            width: 44,
             child: Center(child: FaIcon(icon, size: 15)),
+          ),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 44,
+            minHeight: 44,
           ),
           // Keep the show/hide toggle tappable, but out of the tab order:
           // pressing "Next" on the password field should reach the next

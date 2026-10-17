@@ -7,6 +7,8 @@ import '../../core/design.dart';
 import '../../core/localization.dart';
 import '../../core/providers.dart';
 import '../../core/ui/ui.dart';
+import 'quick_add.dart';
+import '../../data/repositories/shopping_list_repository.dart';
 import '../../data/local/database.dart';
 import '../../core/money.dart';
 import '../products/item_composer.dart';
@@ -112,6 +114,8 @@ class ListDetailScreen extends ConsumerWidget {
                     },
                   ),
                   const SizedBox(height: Insets.sm),
+                  QuickAddAisles(listId: list.id),
+                  const SizedBox(height: Insets.lg),
                   SectionLabel(
                     icon: FontAwesomeIcons.basketShopping,
                     label: l10n.listDetailOtherItems,
@@ -165,12 +169,16 @@ class ListDetailScreen extends ConsumerWidget {
                         );
                       }
                       return AppCardList(
+                        dividerIndent: ProductRow.artIndent,
                         tint: palette.inkMuted,
                         children: [
                           for (final product in products)
                             ProductRow(
                               key: ValueKey(product.id),
                               name: product.name,
+                              art: Art.of(
+                                ShoppingListRepository.aisleOf(product),
+                              ),
                               details: [
                                 '${product.quantity} ${product.unit}'.trim(),
                                 if (product.price != null)

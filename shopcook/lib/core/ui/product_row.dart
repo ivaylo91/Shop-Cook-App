@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../design.dart';
+import 'illustration.dart';
 
 /// One checkable item: a name, an optional detail line, and a tick.
 ///
@@ -27,6 +28,10 @@ class ProductRow extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback? onLongPress;
 
+  /// The item's aisle picture, beside the tick, where the list is not
+  /// already grouped by aisle. Fades with the name once ticked.
+  final Art? art;
+
   const ProductRow({
     super.key,
     required this.name,
@@ -35,7 +40,11 @@ class ProductRow extends StatelessWidget {
     this.details,
     this.trailing,
     this.onLongPress,
+    this.art,
   });
+
+  /// Where a card's separators start under rows with a picture.
+  static const artIndent = 104.0;
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +70,17 @@ class ProductRow extends StatelessWidget {
             child: Row(
               children: [
                 CheckDot(checked: checked),
-                const SizedBox(width: Insets.sm),
+                const SizedBox(width: Insets.xs),
+                if (art != null) ...[
+                  AnimatedOpacity(
+                    opacity: checked ? 0.45 : 1,
+                    duration: Motion.fast,
+                    curve: Motion.enter,
+                    child: Illustration(art!, size: 40),
+                  ),
+                  const SizedBox(width: Insets.md),
+                ] else
+                  const SizedBox(width: Insets.xs),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

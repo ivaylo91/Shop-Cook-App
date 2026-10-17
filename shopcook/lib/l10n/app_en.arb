@@ -478,5 +478,6 @@
   "pantryDatesHint": "Tap something to give it a use-by date. You get a reminder the morning before.",
   "navShop": "Shop",
   "heroStartShopping": "Start shopping",
-  "heroOpenList": "Open list"
+  "heroOpenList": "Open list",
+  "quickAddHint": "Tap to add. Things you buy from this aisle come first."
 }

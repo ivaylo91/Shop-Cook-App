@@ -64,8 +64,8 @@ const Map<ProductCategory, List<String>> _keywords = {
     'крема сирене', 'топено сирене', 'фета', 'маскарпоне', 'рикота',
   ],
   ProductCategory.frozen: [
-    'frozen', 'ice cream',
-    'замразен', 'сладолед', 'фризер',
+    'frozen', 'ice cream', 'pizza',
+    'замразен', 'сладолед', 'фризер', 'пица',
   ],
   ProductCategory.pantry: [
     'bean', 'black pepper', 'cereal', 'flour', 'honey', 'jam', 'lentil',
@@ -88,6 +88,7 @@ const Map<ProductCategory, List<String>> _keywords = {
   ],
   ProductCategory.household: [
     'detergent', 'dish', 'foil', 'soap', 'towel', 'wrap',
+    'toilet paper', 'kitchen roll', 'bin bag', 'trash bag', 'garbage bag',
     'препарат', 'прах за пране', 'омекотител', 'сапун', 'шампоан', 'фолио',
     'салфетк', 'тоалетна хартия', 'домакинска хартия', 'гъба за съдове',
     'торб', 'белина', 'паста за зъби', 'домакинск',
@@ -108,6 +109,13 @@ ProductCategory categorize(String productName) {
   if (phrase != null) return phrase;
 
   final words = name.split(RegExp(r'[\s,./()]+')).where((w) => w.isNotEmpty);
+
+  // "Frozen peas", "замразени зеленчуци": bought from the freezer, whatever
+  // the head noun says.
+  final first = words.first;
+  if (first == 'frozen' || first.startsWith('замразен')) {
+    return ProductCategory.frozen;
+  }
 
   // Otherwise the last word is the head noun — "orange juice" is a juice
   // rather than an orange.
