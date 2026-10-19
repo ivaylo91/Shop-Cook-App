@@ -31,208 +31,149 @@ class SettingsScreen extends ConsumerWidget {
     final l10n = context.l10n;
     final mode = ref.watch(themeModeProvider);
     final locale = ref.watch(localeProvider);
-    final email = ref.watch(authRepositoryProvider).currentUser?.email;
+    final pantry = ref.watch(pantryProvider).valueOrNull?.length ?? 0;
 
     return Backdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(l10n.navSettings)),
+        appBar: ScreenHeader(title: l10n.navSettings),
         body: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            Insets.lg,
-            Insets.lg,
-            Insets.lg,
-            Insets.xxl,
-          ),
+          padding: const EdgeInsets.fromLTRB(Insets.lg, 6, Insets.lg, 110),
           children: [
-            SectionLabel(
-              icon: FontAwesomeIcons.circleHalfStroke,
-              label: l10n.settingsAppearance,
-              color: palette.accent,
-            ),
+            const _ProfileCard(),
             const SizedBox(height: Insets.md),
-            AppCard(
-              padding: const EdgeInsets.all(Insets.sm),
-              shadowOpacity: 0.07,
-              // The group's value and handler live on the ancestor now; the
-              // per-tile groupValue/onChanged pair is deprecated.
-              child: RadioGroup<ThemeMode>(
-                groupValue: mode,
-                onChanged: (value) {
-                  if (value != null) {
-                    ref.read(themeModeProvider.notifier).set(value);
-                  }
-                },
-                child: Column(
-                  children: [
-                    for (final option in ThemeMode.values)
-                      RadioListTile<ThemeMode>(
-                        value: option,
-                        title: Text(_themeLabel(l10n, option)),
-                        subtitle: option == ThemeMode.system
-                            ? Text(l10n.themeSystemSubtitle)
-                            : null,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: Insets.sm,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: Insets.xl),
-            SectionLabel(
-              icon: FontAwesomeIcons.language,
-              label: l10n.settingsLanguage,
-              color: palette.accent,
-            ),
-            const SizedBox(height: Insets.md),
-            AppCard(
-              padding: const EdgeInsets.all(Insets.sm),
-              shadowOpacity: 0.07,
-              // Null means "follow the phone", which is the default: a Bulgarian
-              // phone should open the app in Bulgarian without anyone choosing.
-              child: RadioGroup<Locale?>(
-                groupValue: locale,
-                onChanged: (value) =>
-                    ref.read(localeProvider.notifier).set(value),
-                child: Column(
-                  children: [
-                    RadioListTile<Locale?>(
-                      value: null,
-                      title: Text(l10n.languageSystem),
-                      subtitle: Text(l10n.themeSystemSubtitle),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: Insets.sm,
-                      ),
-                    ),
-                    for (final option in supportedAppLocales)
-                      RadioListTile<Locale?>(
-                        value: option,
-                        // Each language named in itself, so someone who has the
-                        // app in a language they cannot read can still find the
-                        // way out.
-                        title: Text(localeEndonym(option)),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: Insets.sm,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: Insets.xl),
-            SectionLabel(
-              icon: FontAwesomeIcons.arrowDownUpAcrossLine,
-              label: l10n.settingsAisleOrder,
-              color: palette.accent,
-            ),
-            const SizedBox(height: Insets.sm),
-            Text(
-              l10n.settingsAisleOrderNote,
-              style: AppText.caption.copyWith(color: palette.inkMuted),
-            ),
-            const SizedBox(height: Insets.md),
-            const _AisleOrderCard(),
-            const SizedBox(height: Insets.xl),
-            SectionLabel(
-              icon: FontAwesomeIcons.house,
-              label: l10n.pantryTitle,
-              color: palette.accent,
-            ),
-            const SizedBox(height: Insets.md),
-            const _PantryCard(),
-            const SizedBox(height: Insets.xl),
-            SectionLabel(
-              icon: FontAwesomeIcons.user,
-              label: l10n.settingsAccount,
-              color: palette.inkMuted,
-            ),
-            const SizedBox(height: Insets.md),
-            AppCard(
-              padding: const EdgeInsets.all(Insets.lg),
-              tint: palette.ink,
-              shadowOpacity: 0.06,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            _Group(
+              title: l10n.settingsAppearance,
+              child: Row(
                 children: [
-                  Text(
-                    email ?? l10n.settingsSignedIn,
-                    style: AppText.body.copyWith(
-                      color: palette.ink,
-                      fontWeight: FontWeight.w600,
+                  for (final (i, option) in ThemeMode.values.indexed) ...[
+                    if (i > 0) const SizedBox(width: Insets.sm),
+                    Expanded(
+                      child: _ThemeTile(
+                        label: _themeLabel(l10n, option),
+                        icon: switch (option) {
+                          ThemeMode.system => FontAwesomeIcons.mobileScreen,
+                          ThemeMode.light => FontAwesomeIcons.sun,
+                          ThemeMode.dark => FontAwesomeIcons.moon,
+                        },
+                        selected: mode == option,
+                        onTap: () =>
+                            ref.read(themeModeProvider.notifier).set(option),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: Insets.md),
+            _Group(
+              title: l10n.settingsLanguage,
+              // Null means "follow the phone", which is the default: a
+              // Bulgarian phone should open the app in Bulgarian without
+              // anyone choosing.
+              child: Column(
+                children: [
+                  _ChoiceRow(
+                    title: l10n.languageSystem,
+                    subtitle: l10n.themeSystemSubtitle,
+                    selected: locale == null,
+                    onTap: () => ref.read(localeProvider.notifier).set(null),
+                  ),
+                  for (final option in supportedAppLocales)
+                    _ChoiceRow(
+                      // Each language named in itself, so someone who has
+                      // the app in a language they cannot read can still
+                      // find the way out.
+                      title: localeEndonym(option),
+                      selected: locale == option,
+                      onTap: () =>
+                          ref.read(localeProvider.notifier).set(option),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: Insets.md),
+            AppCard(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Insets.lg,
+                vertical: Insets.sm,
+              ),
+              shadowOpacity: 0.07,
+              child: Column(
+                children: [
+                  _LinkRow(
+                    icon: FontAwesomeIcons.arrowDownUpAcrossLine,
+                    tile: const Color(0xFFE2EEFB),
+                    tint: const Color(0xFF2C5E95),
+                    title: l10n.settingsAisleOrder,
+                    subtitle: l10n.settingsAisleOrderSubtitle,
+                    onTap: () => showAppSheet<void>(
+                      context: context,
+                      title: l10n.settingsAisleOrder,
+                      subtitle: l10n.settingsAisleOrderNote,
+                      builder: (context) => const _AisleOrderCard(),
                     ),
                   ),
-                  const SizedBox(height: Insets.xs),
-                  Text(
-                    // Being honest about this matters: someone who signs in on a
-                    // new phone and finds it empty would otherwise assume the
-                    // app lost their data.
-                    l10n.settingsDeviceOnly,
-                    style: AppText.caption.copyWith(color: palette.inkMuted),
+                  _LinkRow(
+                    icon: FontAwesomeIcons.house,
+                    tile: const Color(0xFFFFEBD6),
+                    tint: const Color(0xFFA9520F),
+                    title: l10n.pantryTitle,
+                    subtitle: '${l10n.pantryCount(pantry)} · ${l10n.pantryNote}',
+                    onTap: () => context.push('/pantry'),
                   ),
-                  const SizedBox(height: Insets.md),
-                  const _DisplayNameRow(),
-                  const SizedBox(height: Insets.md),
-                  OutlinedButton.icon(
+                  _LinkRow(
+                    icon: FontAwesomeIcons.circlePlay,
+                    tile: const Color(0xFFDFF2E5),
+                    tint: const Color(0xFF2F7A45),
+                    title: l10n.settingsShowIntro,
+                    subtitle: l10n.appTagline,
+                    onTap: () => showIntro(context),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: Insets.lg),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
                     onPressed: () => _signOut(context, ref),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      foregroundColor: palette.accent,
+                      backgroundColor: palette.floating,
+                      side: BorderSide(color: palette.accent, width: 1.5),
+                      textStyle: AppText.body.copyWith(
+                        fontFamily: 'Manrope',
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     icon: const FaIcon(
                       FontAwesomeIcons.rightFromBracket,
-                      size: 14,
+                      size: 15,
                     ),
                     label: Text(l10n.settingsSignOut),
                   ),
-                  const SizedBox(height: Insets.sm),
-                  const _DeleteAccountButton(),
-                ],
-              ),
+                ),
+                const SizedBox(width: Insets.sm),
+                const Expanded(child: _DeleteAccountButton()),
+              ],
             ),
             const SizedBox(height: Insets.xl),
-            SectionLabel(
-              icon: FontAwesomeIcons.circleInfo,
-              label: l10n.settingsAbout,
-              color: palette.inkMuted,
-            ),
-            const SizedBox(height: Insets.md),
-            AppCard(
-              padding: const EdgeInsets.all(Insets.lg),
-              tint: palette.ink,
-              shadowOpacity: 0.06,
-              child: Row(
-                children: [
-                  const ShopCookLogoBadge(size: 44),
-                  const SizedBox(width: Insets.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.appTitle,
-                          style: AppText.body.copyWith(
-                            color: palette.ink,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          l10n.appTagline,
-                          style: AppText.caption.copyWith(
-                            color: palette.inkMuted,
-                          ),
-                        ),
-                      ],
-                    ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const ShopCookLogoBadge(size: 28),
+                const SizedBox(width: Insets.sm),
+                Text(
+                  l10n.appTitle,
+                  style: AppText.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: palette.inkMuted,
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: Insets.sm),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => showIntro(context),
-                icon: const FaIcon(FontAwesomeIcons.circlePlay, size: 14),
-                label: Text(l10n.settingsShowIntro),
-              ),
+                ),
+              ],
             ),
           ],
         ),
@@ -270,44 +211,124 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-/// How many things are marked as at home, and the way to the list of them.
-class _PantryCard extends ConsumerWidget {
-  const _PantryCard();
+/// Who is signed in, the name others see in shared lists, and where the
+/// lists are kept.
+class _ProfileCard extends ConsumerWidget {
+  const _ProfileCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
     final palette = context.palette;
-    final count = ref.watch(pantryProvider).valueOrNull?.length ?? 0;
+    final l10n = context.l10n;
+    final name = ref.watch(displayNameProvider).trim();
+    final email = ref.watch(authRepositoryProvider).currentUser?.email ?? '';
+    final initial = (name.isNotEmpty ? name : email).characters.firstOrNull;
 
     return AppCard(
       padding: const EdgeInsets.all(Insets.lg),
       shadowOpacity: 0.07,
-      onTap: () => context.push('/pantry'),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.pantryCount(count),
-                  style: AppText.body.copyWith(
-                    color: palette.ink,
-                    fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF2FA77A), Color(0xFF17805B)],
                   ),
                 ),
-                Text(
-                  l10n.pantryNote,
-                  style: AppText.caption.copyWith(color: palette.inkMuted),
+                child: initial == null
+                    ? const FaIcon(
+                        FontAwesomeIcons.user,
+                        size: 20,
+                        color: Color(0xFFFFFFFF),
+                      )
+                    : Text(
+                        initial.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFFFFFFFF),
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name.isEmpty ? l10n.settingsYourNameNotSet : name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.title.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: palette.ink,
+                      ),
+                    ),
+                    Text(
+                      email.isEmpty ? l10n.settingsSignedIn : email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.caption.copyWith(color: palette.inkMuted),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () => askDisplayName(context, ref),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: Insets.md),
+                  textStyle: AppText.caption.copyWith(
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                child: Text(l10n.settingsEdit),
+              ),
+            ],
+          ),
+          const SizedBox(height: Insets.md),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: palette.accent.withValues(
+                alpha: palette.isDark ? 0.18 : 0.13,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FaIcon(
+                  FontAwesomeIcons.shieldHalved,
+                  size: 15,
+                  color: palette.heroInk,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    // Being honest about this matters: someone who signs in
+                    // on a new phone and finds it empty would otherwise
+                    // assume the app lost their data.
+                    l10n.settingsDeviceOnly,
+                    style: AppText.caption.copyWith(
+                      fontSize: 12,
+                      height: 1.45,
+                      color: palette.heroInk,
+                    ),
+                  ),
                 ),
               ],
             ),
-          ),
-          FaIcon(
-            FontAwesomeIcons.chevronRight,
-            size: 13,
-            color: palette.inkFaint,
           ),
         ],
       ),
@@ -315,43 +336,292 @@ class _PantryCard extends ConsumerWidget {
   }
 }
 
-/// The name others see in shared lists, with a tap to change it.
-class _DisplayNameRow extends ConsumerWidget {
-  const _DisplayNameRow();
+/// A card with a small heading over its contents.
+class _Group extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _Group({required this.title, required this.child});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(Insets.lg, 14, Insets.lg, Insets.md),
+      shadowOpacity: 0.07,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            title,
+            style: AppText.body.copyWith(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: context.palette.ink,
+            ),
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+/// One of the three looks, as a tile with its icon.
+class _ThemeTile extends StatelessWidget {
+  final String label;
+  final FaIconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ThemeTile({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final palette = context.palette;
-    final name = ref.watch(displayNameProvider);
+    final fg = selected ? palette.heroInk : palette.ink;
+
+    return Semantics(
+      inMutuallyExclusiveGroup: true,
+      checked: selected,
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: Material(
+        color: selected
+            ? palette.accent.withValues(alpha: palette.isDark ? 0.16 : 0.07)
+            : palette.sunken.withValues(alpha: 0.6),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(
+            color: selected ? palette.accent : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: SizedBox(
+            height: 84,
+            child: Stack(
+              children: [
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FaIcon(icon, size: 20, color: fg),
+                      const SizedBox(height: 6),
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: fg,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (selected)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: _Tick(size: 20),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A round green tick: the chosen one.
+class _Tick extends StatelessWidget {
+  final double size;
+
+  const _Tick({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: palette.accent),
+      child: FaIcon(
+        FontAwesomeIcons.check,
+        size: size * 0.5,
+        color: palette.onAccent,
+      ),
+    );
+  }
+}
+
+/// A row in a single-choice list, with a round tick at its end.
+class _ChoiceRow extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ChoiceRow({
+    required this.title,
+    this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Semantics(
+      inMutuallyExclusiveGroup: true,
+      checked: selected,
+      button: true,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(Radii.chip),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 52),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppText.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: palette.ink,
+                        ),
+                      ),
+                      if (subtitle != null)
+                        Text(
+                          subtitle!,
+                          style: AppText.caption.copyWith(
+                            fontSize: 12,
+                            color: palette.inkMuted,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: Insets.md),
+                if (selected)
+                  const _Tick(size: 24)
+                else
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: palette.divider, width: 2),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A row that leads somewhere, behind a pastel icon tile.
+class _LinkRow extends StatelessWidget {
+  final FaIconData icon;
+  final Color tile;
+  final Color tint;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _LinkRow({
+    required this.icon,
+    required this.tile,
+    required this.tint,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
 
     return InkWell(
       borderRadius: BorderRadius.circular(Radii.chip),
-      onTap: () => askDisplayName(context, ref),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: Insets.sm),
-        child: Row(
-          children: [
-            FaIcon(FontAwesomeIcons.idBadge, size: 16, color: palette.accent),
-            const SizedBox(width: Insets.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${l10n.settingsYourName}: '
-                    '${name.isEmpty ? l10n.settingsYourNameNotSet : name}',
-                    style: AppText.body.copyWith(color: palette.ink),
-                  ),
-                  Text(
-                    l10n.settingsYourNameSubtitle,
-                    style: AppText.caption.copyWith(color: palette.inkMuted),
-                  ),
-                ],
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 60),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: palette.isDark
+                      ? Color.alphaBlend(
+                          tint.withValues(alpha: 0.3),
+                          palette.card,
+                        )
+                      : tile,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: FaIcon(
+                  icon,
+                  size: 17,
+                  color: palette.isDark ? palette.ink : tint,
+                ),
               ),
-            ),
-            FaIcon(FontAwesomeIcons.pen, size: 13, color: palette.inkFaint),
-          ],
+              const SizedBox(width: Insets.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppText.body.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: palette.ink,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.caption.copyWith(
+                        fontSize: 12,
+                        color: palette.inkMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: Insets.sm),
+              FaIcon(
+                FontAwesomeIcons.chevronRight,
+                size: 13,
+                color: palette.inkMuted,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -419,7 +689,14 @@ class _DeleteAccountButtonState extends ConsumerState<_DeleteAccountButton> {
 
     return TextButton.icon(
       onPressed: _busy ? null : _delete,
-      style: TextButton.styleFrom(foregroundColor: error),
+      style: TextButton.styleFrom(
+        foregroundColor: error,
+        minimumSize: const Size.fromHeight(50),
+        textStyle: AppText.body.copyWith(
+          fontFamily: 'Manrope',
+          fontWeight: FontWeight.w800,
+        ),
+      ),
       icon: _busy
           ? SizedBox(
               width: 14,
@@ -442,10 +719,10 @@ class _AisleOrderCard extends ConsumerWidget {
     final palette = context.palette;
     final order = ref.watch(aisleOrderProvider);
 
-    return AppCard(
-      padding: const EdgeInsets.symmetric(vertical: Insets.sm),
-      shadowOpacity: 0.07,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Insets.lg),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           ReorderableListView(
             shrinkWrap: true,

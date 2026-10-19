@@ -34,11 +34,17 @@ class ItemComposer extends ConsumerStatefulWidget {
   /// Null takes the generic hint; screens with a narrower job pass their own.
   final String? hintText;
 
+  /// Set into a page, as at the top of the home screen, rather than as
+  /// the bar along the bottom of one: no bar behind it, and suggestions
+  /// open under the field instead of over it.
+  final bool inline;
+
   const ItemComposer({
     super.key,
     required this.listId,
     this.mealId,
     this.hintText,
+    this.inline = false,
   });
 
   @override
@@ -294,91 +300,155 @@ class _ItemComposerState extends ConsumerState<ItemComposer> {
     // With nothing typed, the ways in other than typing; once typing, add.
     final empty = _controller.text.trim().isEmpty && !_busy;
 
+    // The pill to type in, with the microphone inside it, and beside it a
+    // square button that scans while the field is empty and adds once
+    // something is typed.
+    final field = Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 52,
+            padding: const EdgeInsets.only(left: Insets.lg, right: Insets.xs),
+            decoration: BoxDecoration(
+              color: palette.floating,
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(color: palette.glassEdge),
+              boxShadow: palette.shadow(palette.accent, opacity: 0.06),
+            ),
+            child: Row(
+              children: [
+                FaIcon(
+                  FontAwesomeIcons.magnifyingGlass,
+                  size: 15,
+                  color: palette.inkMuted,
+                ),
+                const SizedBox(width: Insets.md),
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focus,
+                    textCapitalization: TextCapitalization.sentences,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _submit(),
+                    decoration: InputDecoration(
+                      hintText:
+                          widget.hintText ??
+                          context.l10n.listDetailComposerHint,
+                      filled: false,
+                      isDense: true,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: Insets.md,
+                      ),
+                    ),
+                  ),
+                ),
+                if (empty)
+                  IconButton(
+                    onPressed: _dictate,
+                    tooltip: l10n.voiceTooltip,
+                    icon: FaIcon(
+                      FontAwesomeIcons.microphone,
+                      size: 17,
+                      color: palette.inkMuted,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: Insets.sm + 2),
+        Tooltip(
+          message: empty ? l10n.scanTooltip : l10n.composerAdd,
+          child: PressScale(
+            child: Material(
+              color: palette.accent,
+              borderRadius: BorderRadius.circular(18),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: _busy ? null : (empty ? _scan : () => _submit()),
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: palette.accent.withValues(alpha: 0.30),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: _busy
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: palette.onAccent,
+                          ),
+                        )
+                      : FaIcon(
+                          empty
+                              ? FontAwesomeIcons.barcode
+                              : FontAwesomeIcons.plus,
+                          size: 19,
+                          color: palette.onAccent,
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    final suggestions = _Suggestions(
+      query: _controller.text,
+      onPick: (name) => _submit(name),
+    );
+    final preview = _preview == null
+        ? null
+        : _ParsePreview(parsed: _preview!);
+
+    if (widget.inline) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        // Suggestions only while typing: the home has the aisles for
+        // browsing, and recent names under an empty field were noise.
+        children: [
+          field,
+          ?preview,
+          if (_controller.text.trim().isNotEmpty) suggestions,
+        ],
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
-        color: palette.card,
-        border: Border(top: BorderSide(color: palette.divider)),
+        color: palette.isDark ? palette.card : palette.glass,
+        border: Border(top: BorderSide(color: palette.glassEdge)),
       ),
       child: SafeArea(
         top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _Suggestions(
-              query: _controller.text,
-              onPick: (name) => _submit(name),
-            ),
-            if (_preview != null) _ParsePreview(parsed: _preview!),
+            suggestions,
+            ?preview,
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 Insets.md,
                 Insets.sm,
-                Insets.sm,
+                Insets.md,
                 Insets.sm,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      focusNode: _focus,
-                      textCapitalization: TextCapitalization.sentences,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _submit(),
-                      decoration: InputDecoration(
-                        hintText:
-                            widget.hintText ??
-                            context.l10n.listDetailComposerHint,
-                        filled: false,
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: Insets.md,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (empty) ...[
-                    IconButton(
-                      onPressed: _dictate,
-                      tooltip: l10n.voiceTooltip,
-                      icon: FaIcon(
-                        FontAwesomeIcons.microphone,
-                        size: 18,
-                        color: palette.inkMuted,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _scan,
-                      tooltip: l10n.scanTooltip,
-                      icon: FaIcon(
-                        FontAwesomeIcons.barcode,
-                        size: 18,
-                        color: palette.inkMuted,
-                      ),
-                    ),
-                  ] else
-                    IconButton(
-                      onPressed: _busy ? null : () => _submit(),
-                      tooltip: context.l10n.composerAdd,
-                      icon: _busy
-                          ? SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: palette.accent,
-                              ),
-                            )
-                          : FaIcon(
-                              FontAwesomeIcons.circlePlus,
-                              size: 20,
-                              color: palette.accent,
-                            ),
-                    ),
-                ],
-              ),
+              child: field,
             ),
           ],
         ),

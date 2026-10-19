@@ -12,6 +12,7 @@ export 'illustration.dart';
 export 'press_scale.dart';
 export 'product_row.dart';
 export 'progress_bar.dart';
+export 'screen_header.dart';
 export 'section_label.dart';
 export 'skeleton.dart';
 export 'snack.dart';

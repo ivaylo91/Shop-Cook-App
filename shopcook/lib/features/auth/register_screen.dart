@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/design.dart';
 import '../../core/localization.dart';
 import '../../core/providers.dart';
-import '../../core/ui/ui.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'auth_scaffold.dart';
 
@@ -117,7 +116,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return AuthScaffold(
       title: l10n.registerTitle,
       subtitle: l10n.registerSubtitle,
-      children: [
+      form: [
         AuthField(
           controller: _email,
           label: l10n.authEmail,
@@ -170,25 +169,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
           const SizedBox(height: Insets.lg),
         ],
-        PressScale(
-          child: FilledButton(
-            onPressed: _busy ? null : _submit,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-            ),
-            child: _busy
-                ? SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: context.palette.onAccent,
-                    ),
-                  )
-                : Text(l10n.registerSubmit),
-          ),
+        AuthSubmitButton(
+          label: l10n.registerSubmit,
+          busy: _busy,
+          onPressed: _submit,
         ),
-        const SizedBox(height: Insets.lg),
+      ],
+      below: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

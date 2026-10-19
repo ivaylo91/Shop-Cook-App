@@ -52,18 +52,28 @@ class AppNavBar extends ConsumerWidget {
     final ground = palette.ground;
     return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [ground.colors[1], ground.colors[2]]),
+        gradient: LinearGradient(colors: [ground.colors[2], ground.colors[3]]),
       ),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(Insets.lg, 0, Insets.lg, bottom + 10),
+        padding: EdgeInsets.fromLTRB(Insets.md, 0, Insets.md, bottom + Insets.md),
         child: SizedBox(
-          height: 66,
+          height: 70,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: palette.glass,
-              borderRadius: BorderRadius.circular(28),
+              color: palette.isDark
+                  ? palette.card.withValues(alpha: 0.94)
+                  : const Color(0xF0FFFFFF),
+              borderRadius: BorderRadius.circular(26),
               border: Border.all(color: palette.glassEdge),
-              boxShadow: palette.shadow(palette.accent, opacity: 0.14),
+              boxShadow: [
+                BoxShadow(
+                  color: palette.isDark
+                      ? const Color(0x66000000)
+                      : const Color(0x1F174D36),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
             child: Row(
               children: [tab(0), tab(1), const _ShopButton(), tab(2), tab(3)],
@@ -91,7 +101,7 @@ class _Tab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final color = selected ? palette.accent : palette.inkFaint;
+    final color = selected ? palette.accent : palette.inkMuted;
 
     return Semantics(
       selected: selected,
@@ -108,7 +118,7 @@ class _Tab extends StatelessWidget {
               scale: selected && !context.reduceMotion ? 1.1 : 1,
               duration: Motion.base,
               curve: Motion.enter,
-              child: FaIcon(icon, size: 18, color: color),
+              child: FaIcon(icon, size: 19, color: color),
             ),
             const SizedBox(height: 4),
             Text(
@@ -118,7 +128,7 @@ class _Tab extends StatelessWidget {
               style: AppText.caption.copyWith(
                 fontSize: 11,
                 color: color,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
           ],
@@ -145,7 +155,7 @@ class _ShopButton extends ConsumerWidget {
         maxHeight: 90,
         alignment: Alignment.topCenter,
         child: Transform.translate(
-          offset: const Offset(0, -16),
+          offset: const Offset(0, -20),
           child: Semantics(
             button: true,
             label: context.l10n.navShop,
@@ -161,8 +171,8 @@ class _ShopButton extends ConsumerWidget {
                   clipBehavior: Clip.none,
                   children: [
                     Container(
-                      width: 62,
-                      height: 62,
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: palette.accent,
@@ -170,20 +180,20 @@ class _ShopButton extends ConsumerWidget {
                           color: palette.isDark
                               ? palette.surface
                               : const Color(0xFFFFFFFF),
-                          width: 4,
+                          width: 5,
                         ),
                         boxShadow: [
                           BoxShadow(
                             color: palette.accent.withValues(alpha: 0.35),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
+                            blurRadius: 22,
+                            offset: const Offset(0, 10),
                           ),
                         ],
                       ),
                       child: Center(
                         child: FaIcon(
                           FontAwesomeIcons.cartShopping,
-                          size: 20,
+                          size: 21,
                           color: palette.onAccent,
                         ),
                       ),
@@ -197,7 +207,7 @@ class _ShopButton extends ConsumerWidget {
                           height: 22,
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEE6A3F),
+                            color: const Color(0xFFC9471F),
                             borderRadius: BorderRadius.circular(Radii.pill),
                             border: Border.all(
                               color: const Color(0xFFFFFFFF),
@@ -209,7 +219,7 @@ class _ShopButton extends ConsumerWidget {
                             left > 99 ? '99+' : '$left',
                             style: const TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                               color: Color(0xFFFFFFFF),
                               height: 1,
                             ),

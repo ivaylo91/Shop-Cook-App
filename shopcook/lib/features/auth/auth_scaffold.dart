@@ -1,31 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/brand/shopcook_logo.dart';
 import '../../core/design.dart';
 import '../../core/localization.dart';
+import '../../core/settings.dart';
 import '../../core/ui/ui.dart';
 
 /// Shared frame for the sign in and register screens, so the two feel like
 /// one flow rather than two separately built pages.
+///
+/// The brand and a language switch along the top, a two-line headline, the
+/// basket on a soft glow, then the form on a glass card, and under it the
+/// way to the other screen.
 class AuthScaffold extends StatelessWidget {
   final String title;
-  final String subtitle;
-  final List<Widget> children;
 
-  /// Shown under the form, quieter than the rest: the copyright line.
+  /// A first line over [title], in green: "Shop smart." over "Cook happy."
+  final String? accentTitle;
+  final String subtitle;
+
+  /// The form: fields, any error, and the submit button. On the card.
+  final List<Widget> form;
+
+  /// Under the card: the way to the other screen.
+  final List<Widget> below;
+
+  /// Shown at the very bottom, quieter than the rest: the copyright line.
   final Widget? footer;
 
   const AuthScaffold({
     super.key,
     required this.title,
+    this.accentTitle,
     required this.subtitle,
-    required this.children,
+    required this.form,
+    this.below = const [],
     this.footer,
   });
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final headline = AppText.display.copyWith(
+      fontSize: 30,
+      height: 1.15,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -0.5,
+      color: palette.ink,
+    );
 
     return Backdrop(
       child: Scaffold(
@@ -33,7 +56,12 @@ class AuthScaffold extends StatelessWidget {
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(Insets.xl),
+              padding: const EdgeInsets.fromLTRB(
+                Insets.lg,
+                Insets.lg,
+                Insets.lg,
+                Insets.lg,
+              ),
               child: ConstrainedBox(
                 // Long lines are hard to read; keep the form column narrow
                 // even on a tablet.
@@ -42,25 +70,82 @@ class AuthScaffold extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const _Brand(),
-                    const SizedBox(height: Insets.lg),
-                    const Center(child: Illustration(Art.basket, size: 200)),
-                    const SizedBox(height: Insets.lg),
-                    Text(
-                      title,
-                      style: AppText.display.copyWith(
-                        fontSize: 26,
-                        color: palette.ink,
+                    const SizedBox(height: 22),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Insets.sm,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                if (accentTitle != null)
+                                  TextSpan(
+                                    text: '$accentTitle\n',
+                                    style: TextStyle(color: palette.accent),
+                                  ),
+                                TextSpan(text: title),
+                              ],
+                            ),
+                            style: headline,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            subtitle,
+                            style: AppText.body.copyWith(
+                              color: palette.inkMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: Insets.md),
+                    Center(
+                      child: Container(
+                        width: 230,
+                        height: 150,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(75),
+                          gradient: RadialGradient(
+                            center: const Alignment(0, 0.2),
+                            colors: [
+                              const Color(
+                                0xFFFFFFFF,
+                              ).withValues(alpha: palette.isDark ? 0.08 : 1),
+                              const Color(0x00FFFFFF),
+                            ],
+                            stops: const [0, 0.7],
+                          ),
+                        ),
+                        child: const Illustration(Art.basket, size: 150),
                       ),
                     ),
                     const SizedBox(height: Insets.sm),
-                    Text(
-                      subtitle,
-                      style: AppText.body.copyWith(color: palette.inkMuted),
+                    Container(
+                      padding: const EdgeInsets.all(Insets.lg),
+                      decoration: BoxDecoration(
+                        color: palette.glass,
+                        borderRadius: BorderRadius.circular(Radii.card),
+                        border: Border.all(color: palette.glassEdge),
+                        boxShadow: palette.shadow(
+                          palette.accent,
+                          opacity: 0.08,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: form,
+                      ),
                     ),
-                    const SizedBox(height: Insets.xl),
-                    ...children,
+                    if (below.isNotEmpty) ...[
+                      const SizedBox(height: Insets.md),
+                      ...below,
+                    ],
                     if (footer != null) ...[
-                      const SizedBox(height: Insets.xxl),
+                      const SizedBox(height: Insets.lg),
                       footer!,
                     ],
                   ],
@@ -74,20 +159,162 @@ class AuthScaffold extends StatelessWidget {
   }
 }
 
-class _Brand extends StatelessWidget {
+class _Brand extends ConsumerWidget {
   const _Brand();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final current = Localizations.localeOf(context).languageCode;
+
     return Row(
       children: [
-        const ShopCookLogoBadge(size: 52),
-        const SizedBox(width: Insets.md),
-        Text(
-          context.l10n.appTitle,
-          style: AppText.title.copyWith(color: context.palette.ink),
+        const ShopCookLogoBadge(size: 44),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            context.l10n.appTitle,
+            style: AppText.title.copyWith(
+              fontWeight: FontWeight.w800,
+              color: palette.ink,
+            ),
+          ),
+        ),
+        // The language, switchable before signing in: someone handed a
+        // phone set to the other language should not have to find
+        // Settings first.
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: palette.floating,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final locale in supportedAppLocales.reversed)
+                _LanguageChip(
+                  code: locale.languageCode == 'bg' ? 'БГ' : 'EN',
+                  name: localeEndonym(locale),
+                  selected: locale.languageCode == current,
+                  onTap: () => ref.read(localeProvider.notifier).set(locale),
+                ),
+            ],
+          ),
         ),
       ],
+    );
+  }
+}
+
+class _LanguageChip extends StatelessWidget {
+  final String code;
+  final String name;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _LanguageChip({
+    required this.code,
+    required this.name,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Semantics(
+      inMutuallyExclusiveGroup: true,
+      checked: selected,
+      button: true,
+      label: name,
+      excludeSemantics: true,
+      child: Material(
+        color: selected ? palette.accent : Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Container(
+            height: 36,
+            constraints: const BoxConstraints(minWidth: 50),
+            padding: const EdgeInsets.symmetric(horizontal: Insets.md),
+            alignment: Alignment.center,
+            child: Text(
+              code,
+              style: AppText.caption.copyWith(
+                fontWeight: FontWeight.w800,
+                color: selected ? palette.onAccent : palette.ink,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The form's main button: its label at the start and an arrow in a
+/// circle at the end, or a spinner while it works.
+class AuthSubmitButton extends StatelessWidget {
+  final String label;
+  final bool busy;
+  final VoidCallback onPressed;
+
+  const AuthSubmitButton({
+    super.key,
+    required this.label,
+    required this.busy,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return PressScale(
+      child: FilledButton(
+        // Kept green while it works; the spinner says it is busy.
+        onPressed: busy ? () {} : onPressed,
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(56),
+          padding: const EdgeInsets.only(left: Insets.xl, right: Insets.sm),
+          textStyle: AppText.body.copyWith(
+            fontFamily: 'Manrope',
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(child: Text(label)),
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: palette.onAccent.withValues(alpha: 0.22),
+              ),
+              child: busy
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: palette.onAccent,
+                      ),
+                    )
+                  : FaIcon(
+                      FontAwesomeIcons.arrowRight,
+                      size: 16,
+                      color: palette.onAccent,
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -122,10 +349,18 @@ class AuthField extends StatelessWidget {
     this.suffix,
   });
 
+  static OutlineInputBorder _well(Color ring) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(16),
+    borderSide: ring == Colors.transparent
+        ? BorderSide.none
+        : BorderSide(color: ring, width: 1.5),
+  );
+
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Padding(
-      padding: const EdgeInsets.only(bottom: Insets.lg),
+      padding: const EdgeInsets.only(bottom: 10),
       child: TextField(
         controller: controller,
         obscureText: obscure,
@@ -136,6 +371,16 @@ class AuthField extends StatelessWidget {
         onChanged: (_) => onChanged?.call(),
         onSubmitted: (_) => onSubmitted?.call(),
         decoration: InputDecoration(
+          // A recessed well inside the card, rather than a white field on
+          // white: no rim at rest, the accent ring only while typing.
+          filled: true,
+          fillColor: palette.isDark ? palette.sunken : const Color(0xFFF4F7F4),
+          contentPadding: const EdgeInsets.symmetric(vertical: 17),
+          border: _well(Colors.transparent),
+          enabledBorder: _well(Colors.transparent),
+          focusedBorder: _well(palette.accent),
+          errorBorder: _well(Theme.of(context).colorScheme.error),
+          focusedErrorBorder: _well(Theme.of(context).colorScheme.error),
           // A placeholder inside the field, not a label that floats up onto
           // the border: with the icon beside it there is no doubt which
           // field is which, and the floating label cut a gap into the ring.

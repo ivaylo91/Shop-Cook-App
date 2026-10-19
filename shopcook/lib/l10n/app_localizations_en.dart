@@ -1484,4 +1484,118 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get quickAddHint =>
       'Tap to add. Things you buy from this aisle come first.';
+
+  @override
+  String homeGreeting(String name) {
+    return 'Hi, $name';
+  }
+
+  @override
+  String get homeGreetingNoName => 'Hi there';
+
+  @override
+  String get homeAddHint => 'Add a product…';
+
+  @override
+  String get homeAisles => 'Aisles';
+
+  @override
+  String homeToBuy(int count) {
+    return 'To buy · $count';
+  }
+
+  @override
+  String get homeSeeAll => 'See all';
+
+  @override
+  String get homeYourLists => 'Your lists';
+
+  @override
+  String heroItemsLeft(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+      zero: 'all picked',
+    );
+    return '$name: $_temp0';
+  }
+
+  @override
+  String get homeMoreAisles => 'More';
+
+  @override
+  String get libraryImportTitle => 'Save a recipe from YouTube or a website';
+
+  @override
+  String get libraryImportSubtitle =>
+      'Its ingredients go straight onto your list.';
+
+  @override
+  String get libraryPasteLink => 'Paste a link';
+
+  @override
+  String get libraryImportAction => 'Save';
+
+  @override
+  String libraryFilterAll(int count) {
+    return 'All · $count';
+  }
+
+  @override
+  String libraryFilterInMeal(int count) {
+    return 'In a meal · $count';
+  }
+
+  @override
+  String libraryFilterNoMeal(int count) {
+    return 'No meal · $count';
+  }
+
+  @override
+  String libraryBadgeMeals(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'In $count meals',
+      one: 'In 1 meal',
+      zero: 'No meal',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mealScreenTitle => 'Meal';
+
+  @override
+  String mealIngredientCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ingredients',
+      one: '1 ingredient',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String mealPlannedBadge(String day) {
+    return 'Planned: $day';
+  }
+
+  @override
+  String get mealTickWhatYouHave => 'Tick what you have';
+
+  @override
+  String get settingsEdit => 'Edit';
+
+  @override
+  String get settingsAisleOrderSubtitle => 'Sort them like your own shop';
+
+  @override
+  String get loginHeadline1 => 'Shop smart.';
+
+  @override
+  String get loginHeadline2 => 'Cook happy.';
 }

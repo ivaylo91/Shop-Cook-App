@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/design.dart';
 import '../../core/localization.dart';
 import '../../core/providers.dart';
-import '../../core/ui/ui.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'auth_scaffold.dart';
 
@@ -94,7 +93,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final l10n = context.l10n;
 
     return AuthScaffold(
-      title: l10n.loginTitle,
+      accentTitle: l10n.loginHeadline1,
+      title: l10n.loginHeadline2,
       subtitle: l10n.loginSubtitle,
       // Not translated: a name and a year read the same in both languages.
       footer: Text(
@@ -102,7 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         textAlign: TextAlign.center,
         style: AppText.caption.copyWith(color: context.palette.inkFaint),
       ),
-      children: [
+      form: [
         AuthField(
           controller: _email,
           label: l10n.authEmail,
@@ -135,25 +135,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _FormError(message: _formError!),
           const SizedBox(height: Insets.lg),
         ],
-        PressScale(
-          child: FilledButton(
-            onPressed: _busy ? null : _submit,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-            ),
-            child: _busy
-                ? SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: context.palette.onAccent,
-                    ),
-                  )
-                : Text(l10n.loginSubmit),
-          ),
+        AuthSubmitButton(
+          label: l10n.loginSubmit,
+          busy: _busy,
+          onPressed: _submit,
         ),
-        const SizedBox(height: Insets.lg),
+      ],
+      below: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

@@ -6,11 +6,15 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/design.dart';
 import '../../core/localization.dart';
 import '../../core/providers.dart';
+import '../../core/settings.dart';
 import '../../core/ui/ui.dart';
 import '../../data/local/database.dart';
+import '../../data/repositories/shopping_list_repository.dart';
+import '../products/item_composer.dart';
 import '../home_widget/home_widget_sync.dart';
 import '../sharing/share_actions.dart';
 import 'list_detail_screen.dart';
+import 'quick_add.dart';
 
 /// Screens at least this wide show the lists and the open list side by side.
 /// Below it — every phone, and a tablet held upright — a list opens as a page
@@ -87,22 +91,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     return Backdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text(l10n.navLists),
-          actions: [
-            IconButton(
-              onPressed: () => context.push('/spending'),
-              tooltip: l10n.spendingTitle,
-              icon: const FaIcon(FontAwesomeIcons.chartColumn, size: 16),
-            ),
-            TextButton.icon(
-              onPressed: () => joinSharedList(context, ref),
-              icon: const FaIcon(FontAwesomeIcons.userPlus, size: 14),
-              label: Text(l10n.joinAction),
-            ),
-            const SizedBox(width: Insets.sm),
-          ],
-        ),
+        appBar: const _HomeHeader(),
         body: listsAsync.when(
           loading: () => const Padding(
             padding: EdgeInsets.all(Insets.lg),
@@ -124,18 +113,52 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 onAction: () => _createList(context, ref),
               );
             }
+            final hero = ref.watch(widgetSnapshotProvider)?.list;
             return ListView.separated(
               padding: const EdgeInsets.fromLTRB(
                 Insets.lg,
-                Insets.lg,
+                Insets.sm,
                 Insets.lg,
                 96,
               ),
-              // The hero card first, then the lists.
+              // The busiest list's corner of the home first — adding to it,
+              // its banner, its aisles and what is left on it — then every
+              // list.
               itemCount: lists.length + 1,
               separatorBuilder: (_, __) => const SizedBox(height: Insets.md),
               itemBuilder: (context, index) {
-                if (index == 0) return const _ShopHero();
+                if (index == 0) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (hero != null) ...[
+                        ItemComposer(
+                          key: ValueKey('home-composer-${hero.id}'),
+                          listId: hero.id,
+                          hintText: l10n.homeAddHint,
+                          inline: true,
+                        ),
+                        const SizedBox(height: Insets.lg),
+                      ],
+                      const _ShopHero(),
+                      if (hero != null) ...[
+                        const SizedBox(height: Insets.xl),
+                        _HomeHeading(title: l10n.homeAisles),
+                        const SizedBox(height: Insets.md),
+                        AisleGrid(listId: hero.id),
+                        _ToBuy(list: hero),
+                      ],
+                      const SizedBox(height: Insets.xl),
+                      // A new list from the heading rather than a floating
+                      // button, which sat over the cards to buy.
+                      _HomeHeading(
+                        title: l10n.homeYourLists,
+                        action: '+ ${l10n.listsNewTitle}',
+                        onAction: () => _createList(context, ref),
+                      ),
+                    ],
+                  );
+                }
                 final list = lists[index - 1];
                 return Dismissible(
                   key: ValueKey(list.id),
@@ -163,13 +186,6 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
               },
             );
           },
-        ),
-        floatingActionButton: PressScale(
-          child: FloatingActionButton(
-            onPressed: () => _createList(context, ref),
-            tooltip: l10n.listsNewTitle,
-            child: const FaIcon(FontAwesomeIcons.plus, size: 18),
-          ),
         ),
       ),
     );
@@ -208,60 +224,56 @@ class _ShopHero extends ConsumerWidget {
     if (list == null) return const SizedBox.shrink();
 
     return Container(
+      height: 140,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(Radii.card),
+        borderRadius: BorderRadius.circular(Radii.hero),
+        // 120° in CSS terms: mint at the left, apricot at the right.
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: const Alignment(-1, -0.58),
+          end: const Alignment(1, 0.58),
           colors: palette.isDark
-              ? const [Color(0xFF1F3A2C), Color(0xFF2A2A1E)]
-              : const [Color(0xFFCDEFD9), Color(0xFFFFF1D6)],
+              ? const [Color(0xFF1F3A2C), Color(0xFF2E2819)]
+              : const [Color(0xFFD6EFDF), Color(0xFFFBEBD5)],
         ),
         border: Border.all(color: palette.glassEdge),
-        boxShadow: palette.shadow(palette.accent, opacity: 0.12),
+        boxShadow: palette.shadow(palette.accent, opacity: 0.10),
       ),
       child: Stack(
         children: [
           Positioned(
-            right: -8,
-            bottom: -10,
+            right: -6,
+            bottom: -12,
             child: Illustration(Art.basket, size: 150),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Insets.xl,
-              Insets.xl,
-              150,
-              Insets.xl,
-            ),
+            padding: const EdgeInsets.fromLTRB(20, 18, 140, 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  list.name,
+                  l10n.heroItemsLeft(list.name, snapshot!.left),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppText.title.copyWith(
-                    fontSize: 20,
-                    color: palette.isDark ? palette.ink : const Color(0xFF14532D),
+                    fontSize: 18,
+                    height: 1.25,
+                    fontWeight: FontWeight.w800,
+                    color: palette.heroInk,
                   ),
                 ),
-                const SizedBox(height: Insets.xs),
-                Text(
-                  l10n.widgetSummary(snapshot!.left),
-                  style: AppText.body.copyWith(
-                    color: palette.accent,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: Insets.lg),
                 PressScale(
                   child: FilledButton(
                     style: FilledButton.styleFrom(
-                      minimumSize: const Size(0, 40),
+                      minimumSize: const Size(0, 36),
                       padding: const EdgeInsets.symmetric(
                         horizontal: Insets.lg,
+                      ),
+                      textStyle: AppText.caption.copyWith(
+                        fontFamily: 'Manrope',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     // Nothing left to buy: open the list to add to it.
@@ -279,6 +291,261 @@ class _ShopHero extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The top of the home: who it is for, the tab's name, and the two ways
+/// out that are not about one list — spending and joining a shared list.
+class _HomeHeader extends ConsumerWidget implements PreferredSizeWidget {
+  const _HomeHeader();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(76);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final l10n = context.l10n;
+    final name = ref.watch(displayNameProvider).trim();
+
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, Insets.lg, Insets.lg, Insets.sm),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    name.isEmpty
+                        ? l10n.homeGreetingNoName
+                        : l10n.homeGreeting(name),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.caption.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: palette.inkMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.navLists,
+                    style: AppText.title.copyWith(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: palette.ink,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            RoundIconButton(
+              icon: FontAwesomeIcons.chartColumn,
+              tooltip: l10n.spendingTitle,
+              onPressed: () => context.push('/spending'),
+            ),
+            const SizedBox(width: Insets.sm),
+            RoundIconButton(
+              icon: FontAwesomeIcons.userPlus,
+              tooltip: l10n.joinAction,
+              onPressed: () => joinSharedList(context, ref),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A heading on the home, with an optional link at the far end.
+class _HomeHeading extends StatelessWidget {
+  final String title;
+  final String? action;
+  final VoidCallback? onAction;
+
+  const _HomeHeading({required this.title, this.action, this.onAction});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Row(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 2),
+            child: Text(
+              title,
+              style: AppText.title.copyWith(
+                fontWeight: FontWeight.w800,
+                color: palette.ink,
+              ),
+            ),
+          ),
+        ),
+        if (action != null)
+          TextButton(
+            onPressed: onAction,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: Insets.sm),
+              textStyle: AppText.caption.copyWith(
+                fontFamily: 'Manrope',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            child: Text(action!),
+          ),
+      ],
+    );
+  }
+}
+
+/// What is still to buy on the busiest list, as cards three across, each
+/// tickable into the basket from here.
+class _ToBuy extends ConsumerWidget {
+  final ShoppingList list;
+
+  /// Two rows; the rest is one tap away on the list itself.
+  static const _shown = 6;
+
+  const _ToBuy({required this.list});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final products =
+        ref.watch(_listProductsProvider(list.id)).valueOrNull ?? const [];
+    final left = [
+      for (final p in products)
+        if (!p.isChecked) p,
+    ];
+    if (left.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: Insets.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _HomeHeading(
+            title: l10n.homeToBuy(left.length),
+            action: l10n.homeSeeAll,
+            onAction: () => context.push('/list/${list.id}', extra: list),
+          ),
+          const SizedBox(height: Insets.sm),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const gap = 10.0;
+              final width = (constraints.maxWidth - gap * 2) / 3;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final product in left.take(_shown))
+                    SizedBox(
+                      width: width,
+                      child: _ProductCard(
+                        key: ValueKey(product.id),
+                        product: product,
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One thing to buy: its aisle's picture, name and amount, and a round
+/// toggle that puts it in the basket.
+class _ProductCard extends ConsumerWidget {
+  final Product product;
+
+  const _ProductCard({super.key, required this.product});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final aisle = ShoppingListRepository.aisleOf(product);
+    final amount = '${product.quantity} ${product.unit}'.trim();
+    final checked = product.isChecked;
+
+    void toggle() => ref
+        .read(shoppingListRepositoryProvider)
+        .toggleProductChecked(product.id, !checked);
+
+    return Semantics(
+      button: true,
+      toggled: checked,
+      label: [product.name, amount].where((s) => s.isNotEmpty).join(', '),
+      excludeSemantics: true,
+      child: AppCard(
+        padding: const EdgeInsets.all(Insets.sm),
+        shadowOpacity: 0.07,
+        onTap: toggle,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 80,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: palette.aisleTile(aisle),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Illustration(Art.of(aisle), size: 66),
+            ),
+            const SizedBox(height: Insets.sm),
+            Text(
+              product.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.body.copyWith(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: palette.ink,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    amount,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.caption.copyWith(color: palette.inkMuted),
+                  ),
+                ),
+                AnimatedContainer(
+                  duration: Motion.fast,
+                  curve: Motion.enter,
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: checked ? palette.accent : Colors.transparent,
+                    border: Border.all(color: palette.accent, width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: FaIcon(
+                    checked ? FontAwesomeIcons.check : FontAwesomeIcons.plus,
+                    size: 13,
+                    color: checked ? palette.onAccent : palette.accent,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

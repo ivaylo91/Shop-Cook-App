@@ -13,6 +13,7 @@ class RecipeThumbnail extends StatelessWidget {
   final bool isVideo;
   final double width;
   final double height;
+  final double radius;
 
   const RecipeThumbnail({
     super.key,
@@ -20,6 +21,7 @@ class RecipeThumbnail extends StatelessWidget {
     required this.isVideo,
     this.width = 96,
     this.height = 72,
+    this.radius = Radii.chip,
   });
 
   @override
@@ -40,7 +42,7 @@ class RecipeThumbnail extends StatelessWidget {
     );
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(Radii.chip),
+      borderRadius: BorderRadius.circular(radius),
       child: url.isEmpty
           ? fallback
           : Image.network(

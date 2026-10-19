@@ -24,7 +24,10 @@ abstract final class Insets {
 
 abstract final class Radii {
   static const chip = 12.0;
-  static const card = 24.0;
+  static const card = 22.0;
+
+  /// The one banner at the top of a screen, a touch rounder than a card.
+  static const hero = 24.0;
   static const pill = 999.0;
 }
 
@@ -136,11 +139,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
     surface: Color(0xFFF1F7F2),
     card: Color(0xFFFFFFFF),
     sunken: Color(0xFFE5F1E9),
-    ink: Color(0xFF17201B),
-    inkMuted: Color(0xFF55615A),
-    inkFaint: Color(0xFF66726A),
-    // Emerald, as bright as white text on it allows: 4.6:1.
-    accent: Color(0xFF1E875A),
+    ink: Color(0xFF13261D),
+    inkMuted: Color(0xFF56665D),
+    inkFaint: Color(0xFF6A776F),
+    // Emerald, deep enough for white text on it: 5.0:1.
+    accent: Color(0xFF17805B),
     onAccent: Color(0xFFFFFFFF),
     divider: Color(0xFFE0ECE4),
   );
@@ -163,17 +166,43 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   bool get isDark => brightness == Brightness.dark;
 
-  /// The screen ground: mint at the top left through cream to a peach
-  /// glow at the bottom right, as on a fresh-produce stall. Behind every
-  /// page (see Backdrop); cards sit on it as frosted glass.
+  /// The screen ground: mint at the top through cream to a peach glow at
+  /// the bottom, as on a fresh-produce stall. Runs almost straight down
+  /// (172° in CSS terms). Behind every page (see Backdrop); cards sit on
+  /// it as frosted glass.
   LinearGradient get ground => LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
+    begin: const Alignment(-0.14, -1),
+    end: const Alignment(0.14, 1),
     colors: isDark
-        ? const [Color(0xFF10201A), Color(0xFF0F1612), Color(0xFF1C1713)]
-        : const [Color(0xFFDDF2E5), Color(0xFFF4F8F1), Color(0xFFFCEDE3)],
-    stops: const [0, 0.55, 1],
+        ? const [
+            Color(0xFF10201A),
+            Color(0xFF0F1612),
+            Color(0xFF14130F),
+            Color(0xFF1C1713),
+          ]
+        : const [
+            Color(0xFFD9F0E5),
+            Color(0xFFEEF6F0),
+            Color(0xFFF8F3EC),
+            Color(0xFFFCE9DD),
+          ],
+    stops: const [0, 0.38, 0.70, 1],
   );
+
+  /// Deep green for text set on a pale green or peach banner.
+  Color get heroInk => isDark ? ink : const Color(0xFF0E5A3F);
+
+  /// A pale tile behind an aisle's picture: each aisle its own pastel, as
+  /// on the shelf signs of a market. In dark mode, the aisle's hue washed
+  /// into the card colour instead.
+  Color aisleTile(ProductCategory category) => isDark
+      ? Color.alphaBlend(aisle(category).withValues(alpha: 0.18), card)
+      : _aisleTilesLight[category]!;
+
+  /// A round control floating on the ground: white, nearly opaque.
+  Color get floating => isDark
+      ? card.withValues(alpha: 0.92)
+      : const Color(0xFFFFFFFF).withValues(alpha: 0.88);
 
   /// A card's fill: white, slightly see-through, so the ground's colour
   /// warms it from behind without reaching the text.
@@ -268,6 +297,18 @@ const Map<ProductCategory, Color> _aislesLight = {
   ProductCategory.drinks: Color(0xFF7A5AA8),
   ProductCategory.household: Color(0xFF4F8A8B),
   ProductCategory.other: Color(0xFF6B7280),
+};
+
+const Map<ProductCategory, Color> _aisleTilesLight = {
+  ProductCategory.produce: Color(0xFFFDE4DC),
+  ProductCategory.bakery: Color(0xFFF6E7D3),
+  ProductCategory.meatAndFish: Color(0xFFFBE1E1),
+  ProductCategory.dairyAndEggs: Color(0xFFE2EEFB),
+  ProductCategory.frozen: Color(0xFFDDF0F5),
+  ProductCategory.pantry: Color(0xFFFFEBD6),
+  ProductCategory.drinks: Color(0xFFFFF2CF),
+  ProductCategory.household: Color(0xFFDFF2E5),
+  ProductCategory.other: Color(0xFFECEFEA),
 };
 
 /// The same nine hues lifted for a dark ground: the light values are

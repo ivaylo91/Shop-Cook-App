@@ -2443,6 +2443,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap to add. Things you buy from this aisle come first.'**
   String get quickAddHint;
+
+  /// No description provided for @homeGreeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, {name}'**
+  String homeGreeting(String name);
+
+  /// No description provided for @homeGreetingNoName.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi there'**
+  String get homeGreetingNoName;
+
+  /// No description provided for @homeAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a product…'**
+  String get homeAddHint;
+
+  /// No description provided for @homeAisles.
+  ///
+  /// In en, this message translates to:
+  /// **'Aisles'**
+  String get homeAisles;
+
+  /// No description provided for @homeToBuy.
+  ///
+  /// In en, this message translates to:
+  /// **'To buy · {count}'**
+  String homeToBuy(int count);
+
+  /// No description provided for @homeSeeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get homeSeeAll;
+
+  /// No description provided for @homeYourLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lists'**
+  String get homeYourLists;
+
+  /// No description provided for @heroItemsLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: {count, plural, =0{all picked} =1{1 item} other{{count} items}}'**
+  String heroItemsLeft(String name, int count);
+
+  /// No description provided for @homeMoreAisles.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get homeMoreAisles;
+
+  /// No description provided for @libraryImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save a recipe from YouTube or a website'**
+  String get libraryImportTitle;
+
+  /// No description provided for @libraryImportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Its ingredients go straight onto your list.'**
+  String get libraryImportSubtitle;
+
+  /// No description provided for @libraryPasteLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a link'**
+  String get libraryPasteLink;
+
+  /// No description provided for @libraryImportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get libraryImportAction;
+
+  /// No description provided for @libraryFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All · {count}'**
+  String libraryFilterAll(int count);
+
+  /// No description provided for @libraryFilterInMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'In a meal · {count}'**
+  String libraryFilterInMeal(int count);
+
+  /// No description provided for @libraryFilterNoMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'No meal · {count}'**
+  String libraryFilterNoMeal(int count);
+
+  /// No description provided for @libraryBadgeMeals.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No meal} =1{In 1 meal} other{In {count} meals}}'**
+  String libraryBadgeMeals(int count);
+
+  /// No description provided for @mealScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal'**
+  String get mealScreenTitle;
+
+  /// No description provided for @mealIngredientCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 ingredient} other{{count} ingredients}}'**
+  String mealIngredientCount(int count);
+
+  /// No description provided for @mealPlannedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned: {day}'**
+  String mealPlannedBadge(String day);
+
+  /// No description provided for @mealTickWhatYouHave.
+  ///
+  /// In en, this message translates to:
+  /// **'Tick what you have'**
+  String get mealTickWhatYouHave;
+
+  /// No description provided for @settingsEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get settingsEdit;
+
+  /// No description provided for @settingsAisleOrderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort them like your own shop'**
+  String get settingsAisleOrderSubtitle;
+
+  /// No description provided for @loginHeadline1.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop smart.'**
+  String get loginHeadline1;
+
+  /// No description provided for @loginHeadline2.
+  ///
+  /// In en, this message translates to:
+  /// **'Cook happy.'**
+  String get loginHeadline2;
 }
 
 class _AppLocalizationsDelegate

@@ -29,36 +29,47 @@ class MealDetailScreen extends ConsumerWidget {
     final palette = context.palette;
     final l10n = context.l10n;
     final locale = Localizations.localeOf(context).toLanguageTag();
+    // The live row rather than the snapshot the route was handed, so a
+    // day planned from here shows on the badge straight away.
+    final meal =
+        ref
+            .watch(_mealsOfListProvider(listId))
+            .valueOrNull
+            ?.where((m) => m.id == this.meal.id)
+            .firstOrNull ??
+        this.meal;
     final productsAsync = ref.watch(_mealProductsProvider(meal.id));
     final recipesAsync = ref.watch(_mealRecipesProvider(meal.id));
+
+    final recipes = recipesAsync.valueOrNull ?? const <Recipe>[];
+    final first = recipes.firstOrNull;
+    final products = productsAsync.valueOrNull;
 
     return Backdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text(meal.name),
-          actions: [
-            IconButton(
-              icon: FaIcon(
-                meal.plannedFor == null
-                    ? FontAwesomeIcons.calendarPlus
-                    : FontAwesomeIcons.calendarCheck,
-                size: 17,
-              ),
-              tooltip: meal.plannedFor == null
-                  ? l10n.mealPlanDay
-                  : l10n.mealPlannedFor(
-                      DateFormat('EEE d MMM', locale).format(meal.plannedFor!),
-                    ),
-              onPressed: () => _plan(context, ref),
-            ),
-            IconButton(
-              icon: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 17),
+        appBar: ScreenHeader(
+          title: l10n.mealScreenTitle,
+          back: true,
+          trailing: [
+            RoundIconButton(
+              icon: FontAwesomeIcons.magnifyingGlass,
               tooltip: l10n.mealFindRecipe,
               onPressed: () => context.push(
                 '/list/$listId/meal/${meal.id}/search',
                 extra: meal,
               ),
+            ),
+            RoundIconButton(
+              icon: meal.plannedFor == null
+                  ? FontAwesomeIcons.calendarPlus
+                  : FontAwesomeIcons.calendarCheck,
+              tooltip: meal.plannedFor == null
+                  ? l10n.mealPlanDay
+                  : l10n.mealPlannedFor(
+                      DateFormat('EEE d MMM', locale).format(meal.plannedFor!),
+                    ),
+              onPressed: () => _plan(context, ref, meal),
             ),
           ],
         ),
@@ -68,40 +79,171 @@ class MealDetailScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(
                   Insets.lg,
-                  Insets.lg,
+                  Insets.sm,
                   Insets.lg,
                   Insets.xl,
                 ),
                 children: [
-                  SectionLabel(
-                    icon: FontAwesomeIcons.carrot,
-                    label: l10n.mealIngredients,
-                    // Null rather than 0: a bare "0" beside a heading whose
-                    // own empty state already says so is just noise.
-                    count: switch (productsAsync.valueOrNull?.length) {
-                      null || 0 => null,
-                      final count => count,
-                    },
-                    color: palette.accent,
-                    // A recipe on paper: the cookbook on the shelf, a card
-                    // from grandma.
-                    trailing: !photoImportEnabled
-                        ? null
-                        : TextButton.icon(
-                            onPressed: () => importIngredientsFromPhoto(
-                              context,
-                              ref,
-                              listId: listId,
-                              mealId: meal.id,
+                  _MealPicture(recipe: first),
+                  const SizedBox(height: 14),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              meal.name,
+                              style: AppText.title.copyWith(
+                                fontSize: 22,
+                                height: 1.2,
+                                fontWeight: FontWeight.w800,
+                                color: palette.ink,
+                              ),
                             ),
-                            icon: const FaIcon(
-                              FontAwesomeIcons.camera,
-                              size: 13,
+                            const SizedBox(height: Insets.xs),
+                            Row(
+                              children: [
+                                if (first != null) ...[
+                                  FaIcon(
+                                    first.sourceType == RecipeSourceType.video
+                                        ? FontAwesomeIcons.youtube
+                                        : FontAwesomeIcons.globe,
+                                    size: 12,
+                                    color:
+                                        first.sourceType ==
+                                            RecipeSourceType.video
+                                        ? const Color(0xFFD93025)
+                                        : palette.inkMuted,
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                Flexible(
+                                  child: Text(
+                                    [
+                                      if (first != null)
+                                        first.sourceType ==
+                                                RecipeSourceType.video
+                                            ? l10n.recipeSourceVideo
+                                            : l10n.recipeSourceWeb,
+                                      if (products != null &&
+                                          products.isNotEmpty)
+                                        l10n.mealIngredientCount(
+                                          products.length,
+                                        ),
+                                    ].join(' · '),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppText.caption.copyWith(
+                                      color: palette.inkMuted,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            label: Text(l10n.mealFromPhoto),
+                          ],
+                        ),
+                      ),
+                      if (meal.plannedFor != null) ...[
+                        const SizedBox(width: Insets.sm),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Insets.md,
+                            vertical: 6,
                           ),
+                          decoration: BoxDecoration(
+                            color: palette.accent.withValues(
+                              alpha: palette.isDark ? 0.22 : 0.14,
+                            ),
+                            borderRadius: BorderRadius.circular(Radii.chip),
+                          ),
+                          child: Text(
+                            l10n.mealPlannedBadge(
+                              DateFormat(
+                                'EEEE',
+                                locale,
+                              ).format(meal.plannedFor!),
+                            ),
+                            style: AppText.caption.copyWith(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: palette.heroInk,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(height: Insets.md),
+                  if (first != null) ...[
+                    const SizedBox(height: 14),
+                    // The one thing this page is for, once a recipe is on
+                    // it: its ingredients onto the list.
+                    PressScale(
+                      child: FilledButton.icon(
+                        onPressed: () => importIngredients(
+                          context,
+                          ref,
+                          recipeUrl: first.sourceUrl,
+                          listId: listId,
+                          mealId: meal.id,
+                        ),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(52),
+                          elevation: 0,
+                          shadowColor: palette.accent.withValues(alpha: 0.3),
+                        ),
+                        icon: const FaIcon(
+                          FontAwesomeIcons.fileImport,
+                          size: 15,
+                        ),
+                        label: Text(
+                          l10n.recipeImport,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 2),
+                          child: Text(
+                            l10n.mealIngredients,
+                            style: AppText.title.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: palette.ink,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // A recipe on paper: the cookbook on the shelf, a card
+                      // from grandma.
+                      if (photoImportEnabled)
+                        TextButton.icon(
+                          onPressed: () => importIngredientsFromPhoto(
+                            context,
+                            ref,
+                            listId: listId,
+                            mealId: meal.id,
+                          ),
+                          icon: const FaIcon(FontAwesomeIcons.camera, size: 13),
+                          label: Text(l10n.mealFromPhoto),
+                        )
+                      else if (products != null && products.isNotEmpty)
+                        Text(
+                          l10n.mealTickWhatYouHave,
+                          style: AppText.caption.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: palette.accent,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   productsAsync.when(
                     loading: () => const SkeletonRows(count: 3),
                     error: (_, __) => ErrorState(
@@ -113,17 +255,12 @@ class MealDetailScreen extends ConsumerWidget {
                       if (products.isEmpty) {
                         return InlineNote(message: l10n.mealIngredientsEmpty);
                       }
-                      return AppCardList(
-                        dividerIndent: ProductRow.artIndent,
-                        tint: palette.accent,
+                      return Column(
                         children: [
-                          for (final product in products)
-                            ProductRow(
+                          for (final product in products) ...[
+                            _IngredientCard(
                               key: ValueKey(product.id),
-                              name: product.name,
-                              art: Art.of(
-                                ShoppingListRepository.aisleOf(product),
-                              ),
+                              product: product,
                               details: [
                                 '${product.quantity} ${product.unit}'.trim(),
                                 if (product.price != null)
@@ -141,37 +278,25 @@ class MealDetailScreen extends ConsumerWidget {
                                   me: ref.watch(currentUserIdProvider),
                                 ),
                               ].where((part) => part.isNotEmpty).join(' · '),
-                              checked: product.isChecked,
                               onToggle: (value) => ref
                                   .read(shoppingListRepositoryProvider)
                                   .toggleProductChecked(product.id, value),
-                              onLongPress: () =>
+                              onOpen: () =>
                                   _openItemSheet(context, ref, product),
-                              trailing: IconButton(
-                                icon: const FaIcon(
-                                  FontAwesomeIcons.ellipsisVertical,
-                                  size: 16,
-                                ),
-                                tooltip: l10n.itemActions,
-                                onPressed: () =>
-                                    _openItemSheet(context, ref, product),
-                              ),
                             ),
+                            const SizedBox(height: Insets.sm),
+                          ],
                         ],
                       );
                     },
                   ),
-                  const SizedBox(height: Insets.xl),
+                  const SizedBox(height: Insets.lg),
                   SectionLabel(
                     icon: FontAwesomeIcons.bookOpen,
                     label: l10n.mealRecipe,
                     color: palette.aisle(_recipeSectionHue),
                     trailing: TextButton.icon(
-                      onPressed: () => _addFromLibrary(
-                        context,
-                        ref,
-                        recipesAsync.valueOrNull ?? const [],
-                      ),
+                      onPressed: () => _addFromLibrary(context, ref, recipes),
                       icon: const FaIcon(FontAwesomeIcons.bookOpen, size: 13),
                       label: Text(l10n.mealFromLibrary),
                     ),
@@ -190,11 +315,14 @@ class MealDetailScreen extends ConsumerWidget {
                       }
                       return Column(
                         children: [
-                          for (final recipe in recipes) ...[
+                          for (final (i, recipe) in recipes.indexed) ...[
                             _RecipeCard(
                               recipe: recipe,
                               listId: listId,
                               mealId: meal.id,
+                              // The first one's import is the big button
+                              // at the top of the page.
+                              showImport: i > 0,
                             ),
                             const SizedBox(height: Insets.md),
                           ],
@@ -275,9 +403,9 @@ class MealDetailScreen extends ConsumerWidget {
 
   /// Gives the meal a day, or takes it off the plan.
   ///
-  /// The screen is handed a snapshot of the meal, so the date it shows comes
-  /// from that snapshot; the Plan tab reads the live row.
-  Future<void> _plan(BuildContext context, WidgetRef ref) async {
+  /// Takes the live [meal], so moving or clearing starts from the day it
+  /// has now rather than the one it had when the screen opened.
+  Future<void> _plan(BuildContext context, WidgetRef ref, Meal meal) async {
     final l10n = context.l10n;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final today = ShoppingListRepository.dayOf(DateTime.now());
@@ -376,11 +504,13 @@ class _RecipeCard extends ConsumerWidget {
   final Recipe recipe;
   final String listId;
   final String mealId;
+  final bool showImport;
 
   const _RecipeCard({
     required this.recipe,
     required this.listId,
     required this.mealId,
+    this.showImport = true,
   });
 
   @override
@@ -426,6 +556,7 @@ class _RecipeCard extends ConsumerWidget {
               ),
             ],
           ),
+          if (showImport) ...[
           const SizedBox(height: Insets.md),
           // Import gets a row of its own: "Внеси съставките" does not fit
           // in half a card beside a second button, and wrapped badly.
@@ -449,6 +580,7 @@ class _RecipeCard extends ConsumerWidget {
               ),
             ),
           ),
+          ],
           const SizedBox(height: Insets.sm),
           Row(
             children: [
@@ -491,6 +623,160 @@ class _RecipeCard extends ConsumerWidget {
   }
 }
 
+/// The meal's picture: the recipe's own, on a soft white glow, or the
+/// cooking picture while there is no recipe with one.
+class _MealPicture extends StatelessWidget {
+  final Recipe? recipe;
+
+  const _MealPicture({required this.recipe});
+
+  @override
+  Widget build(BuildContext context) {
+    final recipe = this.recipe;
+    final hasPhoto = recipe != null && recipe.thumbnailUrl.isNotEmpty;
+
+    return Container(
+      height: 170,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        gradient: RadialGradient(
+          center: const Alignment(0, 0.1),
+          colors: [
+            const Color(0xFFFFFFFF).withValues(
+              alpha: context.palette.isDark ? 0.06 : 1,
+            ),
+            const Color(0xFFFFFFFF).withValues(
+              alpha: context.palette.isDark ? 0.02 : 0.4,
+            ),
+            const Color(0x00FFFFFF),
+          ],
+          stops: const [0, 0.6, 1],
+        ),
+      ),
+      child: hasPhoto
+          ? RecipeThumbnail(
+              url: recipe.thumbnailUrl,
+              isVideo: recipe.sourceType == RecipeSourceType.video,
+              width: 250,
+              height: 150,
+              radius: Radii.card,
+            )
+          : const Illustration(Art.cooking, size: 160),
+    );
+  }
+}
+
+/// One ingredient as a card of its own: its aisle's picture, name and
+/// amount, and a round tick for "got it".
+class _IngredientCard extends StatelessWidget {
+  final Product product;
+  final String details;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback onOpen;
+
+  const _IngredientCard({
+    super.key,
+    required this.product,
+    required this.details,
+    required this.onToggle,
+    required this.onOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final aisle = ShoppingListRepository.aisleOf(product);
+    final checked = product.isChecked;
+
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(Insets.sm, Insets.sm, 6, Insets.sm),
+      shadowOpacity: 0.07,
+      onTap: onOpen,
+      onLongPress: onOpen,
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: palette.aisleTile(aisle),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Illustration(Art.of(aisle), size: 42),
+          ),
+          const SizedBox(width: Insets.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.body.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: checked ? palette.inkMuted : palette.ink,
+                    decoration: checked ? TextDecoration.lineThrough : null,
+                    decorationColor: palette.inkMuted,
+                  ),
+                ),
+                if (details.isNotEmpty)
+                  Text(
+                    details,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.caption.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: palette.inkMuted,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Semantics(
+            checked: checked,
+            label: product.name,
+            excludeSemantics: true,
+            child: InkResponse(
+              onTap: () => onToggle(!checked),
+              radius: 24,
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: Motion.fast,
+                    curve: Motion.enter,
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: checked ? palette.accent : Colors.transparent,
+                      border: checked
+                          ? null
+                          : Border.all(color: palette.inkFaint, width: 2),
+                    ),
+                    alignment: Alignment.center,
+                    child: checked
+                        ? FaIcon(
+                            FontAwesomeIcons.check,
+                            size: 12,
+                            color: palette.onAccent,
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Recipes borrow the pantry hue: warm, and distinct from the green the
 /// ingredient list already uses.
 const _recipeSectionHue = ProductCategory.pantry;
@@ -500,6 +786,13 @@ final _mealProductsProvider = StreamProvider.family<List<Product>, String>((
   mealId,
 ) {
   return ref.watch(shoppingListRepositoryProvider).watchProductsForMeal(mealId);
+});
+
+final _mealsOfListProvider = StreamProvider.family<List<Meal>, String>((
+  ref,
+  listId,
+) {
+  return ref.watch(shoppingListRepositoryProvider).watchMeals(listId);
 });
 
 final _mealRecipesProvider = StreamProvider.family<List<Recipe>, String>((

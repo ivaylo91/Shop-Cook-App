@@ -1486,4 +1486,117 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get quickAddHint =>
       'Докосни, за да добавиш. Отпред са нещата, които купуваш от този щанд.';
+
+  @override
+  String homeGreeting(String name) {
+    return 'Здравей, $name';
+  }
+
+  @override
+  String get homeGreetingNoName => 'Здравей';
+
+  @override
+  String get homeAddHint => 'Добави продукт…';
+
+  @override
+  String get homeAisles => 'Щандове';
+
+  @override
+  String homeToBuy(int count) {
+    return 'За купуване · $count';
+  }
+
+  @override
+  String get homeSeeAll => 'Виж всички';
+
+  @override
+  String get homeYourLists => 'Твоите списъци';
+
+  @override
+  String heroItemsLeft(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count продукта',
+      one: '1 продукт',
+      zero: 'всичко е взето',
+    );
+    return '$name: $_temp0';
+  }
+
+  @override
+  String get homeMoreAisles => 'Още';
+
+  @override
+  String get libraryImportTitle => 'Запази рецепта от YouTube или сайт';
+
+  @override
+  String get libraryImportSubtitle => 'Съставките влизат направо в списъка.';
+
+  @override
+  String get libraryPasteLink => 'Постави линк';
+
+  @override
+  String get libraryImportAction => 'Внеси';
+
+  @override
+  String libraryFilterAll(int count) {
+    return 'Всички · $count';
+  }
+
+  @override
+  String libraryFilterInMeal(int count) {
+    return 'В ястие · $count';
+  }
+
+  @override
+  String libraryFilterNoMeal(int count) {
+    return 'Без ястие · $count';
+  }
+
+  @override
+  String libraryBadgeMeals(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'В $count ястия',
+      one: 'В 1 ястие',
+      zero: 'Без ястие',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mealScreenTitle => 'Ястие';
+
+  @override
+  String mealIngredientCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count съставки',
+      one: '1 съставка',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String mealPlannedBadge(String day) {
+    return 'В плана: $day';
+  }
+
+  @override
+  String get mealTickWhatYouHave => 'Отметни какво имаш';
+
+  @override
+  String get settingsEdit => 'Промени';
+
+  @override
+  String get settingsAisleOrderSubtitle => 'Подреди ги като в твоя магазин';
+
+  @override
+  String get loginHeadline1 => 'Пазарувай умно.';
+
+  @override
+  String get loginHeadline2 => 'Готви с радост.';
 }

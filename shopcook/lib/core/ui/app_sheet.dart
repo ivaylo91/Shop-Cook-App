@@ -21,6 +21,9 @@ Future<T?> showAppSheet<T>({
 }) {
   return showModalBottomSheet<T>(
     context: context,
+    // Over the whole app, so the floating nav bar does not sit on top of
+    // the sheet's last rows when it is opened from a tab.
+    useRootNavigator: true,
     isScrollControlled: isScrollControlled,
     showDragHandle: true,
     sheetAnimationStyle: sheetMotion(context),

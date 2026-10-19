@@ -24,7 +24,7 @@ class QuickAddAisles extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 96,
+      height: 112,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         // Flush with the cards under it, and able to scroll to the edge.
@@ -33,8 +33,10 @@ class QuickAddAisles extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: Insets.sm),
         itemBuilder: (context, index) {
           final category = ProductCategory.values[index];
-          return _AisleTile(
+          return AisleTile(
             category: category,
+            width: 80,
+            maxLines: 2,
             onTap: () => showQuickAdd(context, listId: listId, aisle: category),
           );
         },
@@ -43,11 +45,62 @@ class QuickAddAisles extends StatelessWidget {
   }
 }
 
-class _AisleTile extends StatelessWidget {
+/// The aisles as a grid of four across, for the home screen: every aisle
+/// but "other", which has no starters to offer.
+class AisleGrid extends StatelessWidget {
+  final String listId;
+
+  const AisleGrid({super.key, required this.listId});
+
+  @override
+  Widget build(BuildContext context) {
+    final aisles = [
+      for (final category in ProductCategory.values)
+        if (category != ProductCategory.other) category,
+    ];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const columns = 4;
+        final width = constraints.maxWidth / columns;
+        return Wrap(
+          runSpacing: Insets.md,
+          children: [
+            for (final category in aisles)
+              SizedBox(
+                width: width,
+                child: Center(
+                  child: AisleTile(
+                    category: category,
+                    // The full name on two lines: "Плодове и зеленчуци"
+                    // cut to "Плодове и …" said less than nothing.
+                    width: width,
+                    maxLines: 2,
+                    onTap: () =>
+                        showQuickAdd(context, listId: listId, aisle: category),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// One aisle: its picture on its own pastel tile, and its name.
+class AisleTile extends StatelessWidget {
   final ProductCategory category;
   final VoidCallback onTap;
+  final double width;
+  final int maxLines;
 
-  const _AisleTile({required this.category, required this.onTap});
+  const AisleTile({
+    super.key,
+    required this.category,
+    required this.onTap,
+    this.width = 76,
+    this.maxLines = 1,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -62,32 +115,29 @@ class _AisleTile extends StatelessWidget {
         child: GestureDetector(
           onTap: onTap,
           child: SizedBox(
-            width: 76,
+            width: width,
             child: Column(
               children: [
                 Container(
                   width: 64,
                   height: 64,
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: palette.glass,
-                    borderRadius: BorderRadius.circular(Radii.card - 4),
-                    border: Border.all(color: palette.glassEdge),
-                    boxShadow: palette.shadow(
-                      palette.aisle(category),
-                      opacity: 0.10,
-                    ),
+                    color: palette.aisleTile(category),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Illustration(Art.of(category), size: 52),
+                  child: Illustration(Art.of(category), size: 50),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   label,
-                  maxLines: 1,
+                  maxLines: maxLines,
+                  textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                   style: AppText.caption.copyWith(
                     fontSize: 12,
-                    color: palette.inkMuted,
+                    height: 1.2,
+                    color: palette.ink,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
