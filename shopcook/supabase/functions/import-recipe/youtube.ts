@@ -176,14 +176,28 @@ export function scriptFor(language: string | undefined): Script | null {
   return /^(bg|ru|uk|sr|mk|be|kk)$/i.test(language) ? "cyrillic" : "latin";
 }
 
+/// Where a line with both languages on it changes language: a slash (but
+/// not a fraction's, "1/2"), a bar, or a spaced dash or equals sign.
+const TRANSLATION = /\s*\|\s*|(?<!\d)\s*\/\s*|\s*\/\s*(?!\d)|\s+[-–—=]\s+/u;
+
+/// The alphabet of a part of a line, leaving out its amount: "200 ml" in a
+/// Bulgarian line is a unit, not an English translation.
+function wordsScript(part: string): Script | null {
+  return scriptOf(part.trim().replace(AMOUNT, ""));
+}
+
 /// One line with both languages on it ("1 кг картофи / 1 kg potatoes",
-/// "Мляко (Milk)", "Brašno | Flour") cut down to the one in [script].
+/// "500 г брашно - 500 g flour", "Мляко (Milk)", "Brašno | Flour") cut
+/// down to the one in [script]. A line split this way within one language
+/// ("2 - 3 яйца", "сол / пипер") is left as it is.
 function oneLanguage(line: string, script: Script): string {
-  const parts = line.split(/\s+\/\s+|\s*\|\s*/).filter((p) => p.trim());
+  const parts = line.split(TRANSLATION).filter((p) => p.trim());
   let text = line;
-  if (parts.length > 1) {
-    const kept = parts.filter((p) => scriptOf(p) !== otherThan(script));
-    if (kept.length > 0) text = kept.join(" ");
+  if (
+    parts.some((p) => wordsScript(p) === otherThan(script)) &&
+    parts.some((p) => wordsScript(p) === script)
+  ) {
+    text = parts.filter((p) => wordsScript(p) !== otherThan(script)).join(" ");
   }
   // A translation in brackets after the name.
   const bare = text.replace(/\s*\(([^()]*)\)/g, (whole, inner: string) =>
@@ -243,22 +257,39 @@ function oneSectionLanguage(
 /// otherwise [fallback] (the video title's), otherwise the first line's.
 ///
 /// A few lines in the other alphabet are left alone — "Nutella" in a
-/// Bulgarian list is an ingredient, not a translation. Only when a good
-/// share of the list is in the other alphabet is it a second copy.
+/// Bulgarian list is an ingredient, not a translation, and an English app
+/// must not keep it alone. Only when a good share of the list is in an
+/// alphabet is it a copy; a line giving both counts for both.
 function inOneLanguage(
   lines: string[],
   preferred: Script | null,
   fallback: Script | null,
 ): string[] {
-  const present = new Set(lines.map(scriptOf).filter(Boolean));
-  if (present.size < 2) return lines;
-  const script = [preferred, fallback, scriptOf(lines.find(scriptOf) ?? "")]
-    .find((s): s is Script => s != null && present.has(s))!;
+  const tagged = lines.map(scriptsIn);
+  const copies = (["cyrillic", "latin"] as Script[]).filter((s) => {
+    const count = tagged.filter((t) => t.includes(s)).length;
+    return count >= 2 && count >= lines.length * 0.3;
+  });
+  if (copies.length === 0) return lines;
+  if (copies.length === 1) {
+    return lines.map((line) => oneLanguage(line, copies[0]));
+  }
+  const script = [preferred, fallback, tagged.find((t) => t.length > 0)?.[0]]
+    .find((s): s is Script => s != null)!;
 
-  const cut = lines.map((line) => oneLanguage(line, script));
-  const foreign = cut.filter((line) => scriptOf(line) === otherThan(script));
-  if (foreign.length < 2 || foreign.length < cut.length * 0.3) return cut;
-  return cut.filter((line) => scriptOf(line) !== otherThan(script));
+  return lines
+    .map((line) => oneLanguage(line, script))
+    .filter((line) => scriptOf(line) !== otherThan(script));
+}
+
+/// The alphabets a line is written in: both when it gives a translation.
+function scriptsIn(line: string): Script[] {
+  const parts = line.split(TRANSLATION).flatMap((p) => p.split(/[()]/));
+  return [
+    ...new Set(
+      parts.map(wordsScript).filter((s): s is Script => s != null),
+    ),
+  ];
 }
 
 /// The line a photographed recipe is most likely titled with: the first
