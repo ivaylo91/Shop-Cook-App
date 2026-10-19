@@ -55,7 +55,7 @@ class AppNavBar extends ConsumerWidget {
         gradient: LinearGradient(colors: [ground.colors[2], ground.colors[3]]),
       ),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(Insets.md, 0, Insets.md, bottom + Insets.md),
+        padding: EdgeInsets.fromLTRB(Insets.lg, 0, Insets.lg, bottom + Insets.lg),
         child: SizedBox(
           height: 70,
           child: DecoratedBox(
@@ -75,8 +75,11 @@ class AppNavBar extends ConsumerWidget {
                 ),
               ],
             ),
-            child: Row(
-              children: [tab(0), tab(1), const _ShopButton(), tab(2), tab(3)],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Insets.sm),
+              child: Row(
+                children: [tab(0), tab(1), const _ShopButton(), tab(2), tab(3)],
+              ),
             ),
           ),
         ),
